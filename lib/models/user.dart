@@ -1,0 +1,81 @@
+class User {
+  final String id;
+  final String email;
+  final String name;
+  final String? nickname;
+  final String? picture;
+  final bool isOnboarded;
+  final String? bio;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  User({
+    required this.id,
+    required this.email,
+    required this.name,
+    this.nickname,
+    this.picture,
+    required this.isOnboarded,
+    this.bio,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  bool get hasImage => picture != null && picture!.isNotEmpty;
+
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      id: json['id'] ?? json['_id'] ?? '',
+      email: json['email'] ?? '',
+      name: json['name'] ?? '',
+      nickname: json['nickname'],
+      picture: json['picture'],
+      isOnboarded: json['isOnboarded'] ?? false,
+      bio: json['bio'],
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'])
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'email': email,
+      'name': name,
+      'nickname': nickname,
+      'picture': picture,
+      'isOnboarded': isOnboarded,
+      'bio': bio,
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+    };
+  }
+
+  User copyWith({
+    String? id,
+    String? email,
+    String? name,
+    String? nickname,
+    String? picture,
+    bool? isOnboarded,
+    String? bio,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return User(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      name: name ?? this.name,
+      nickname: nickname ?? this.nickname,
+      picture: picture ?? this.picture,
+      isOnboarded: isOnboarded ?? this.isOnboarded,
+      bio: bio ?? this.bio,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+}

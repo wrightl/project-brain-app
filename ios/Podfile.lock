@@ -1,0 +1,68 @@
+PODS:
+  - AppAuth (2.0.0):
+    - AppAuth/Core (= 2.0.0)
+    - AppAuth/ExternalUserAgent (= 2.0.0)
+  - AppAuth/Core (2.0.0)
+  - AppAuth/ExternalUserAgent (2.0.0):
+    - AppAuth/Core
+  - Auth0 (2.10.0):
+    - JWTDecode (= 3.2.0)
+    - SimpleKeychain (= 1.2.0)
+  - auth0_flutter (1.9.0):
+    - Auth0 (= 2.10.0)
+    - Flutter
+    - FlutterMacOS
+    - JWTDecode (= 3.2.0)
+    - SimpleKeychain (= 1.2.0)
+  - Flutter (1.0.0)
+  - flutter_appauth (0.0.1):
+    - AppAuth (= 2.0.0)
+    - Flutter
+  - flutter_secure_storage (3.3.1):
+    - Flutter
+  - JWTDecode (3.2.0)
+  - shared_preferences_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - SimpleKeychain (1.2.0)
+
+DEPENDENCIES:
+  - auth0_flutter (from `.symlinks/plugins/auth0_flutter/darwin`)
+  - Flutter (from `Flutter`)
+  - flutter_appauth (from `.symlinks/plugins/flutter_appauth/ios`)
+  - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
+  - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
+
+SPEC REPOS:
+  trunk:
+    - AppAuth
+    - Auth0
+    - JWTDecode
+    - SimpleKeychain
+
+EXTERNAL SOURCES:
+  auth0_flutter:
+    :path: ".symlinks/plugins/auth0_flutter/darwin"
+  Flutter:
+    :path: Flutter
+  flutter_appauth:
+    :path: ".symlinks/plugins/flutter_appauth/ios"
+  flutter_secure_storage:
+    :path: ".symlinks/plugins/flutter_secure_storage/ios"
+  shared_preferences_foundation:
+    :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
+
+SPEC CHECKSUMS:
+  AppAuth: 1c1a8afa7e12f2ec3a294d9882dfa5ab7d3cb063
+  Auth0: 2876d0c36857422eda9cb580a6cc896c7d14cb36
+  auth0_flutter: eb1c74a8ddbd0a08533e47838a885b39c11b3951
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  flutter_appauth: d4abcf54856e5d8ba82ed7646ffc83245d4aa448
+  flutter_secure_storage: 50035aef357c5a8bdd67fd6bc81370d46efc4d16
+  JWTDecode: 7dae24cb9bf9b608eae61e5081029ec169bb5527
+  shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
+  SimpleKeychain: 768cf43ae778b1c21816e94dddf01bb8ee96a075
+
+PODFILE CHECKSUM: 1959d098c91d8a792531a723c4a9d7e9f6a01e38
+
+COCOAPODS: 1.16.2
