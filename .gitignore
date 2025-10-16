@@ -44,7 +44,12 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Ignore local environment files
+# Ignore all environment files
+.env
+.env.*
+*.env
 *.env.*
+
+# Unused files
 *.unused
 *.notused

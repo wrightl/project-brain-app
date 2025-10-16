@@ -1,25 +1,33 @@
 import 'dart:convert';
-// import 'package:projectbrain/authentication/auth_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:projectbrain/services/http_service.dart';
 
+/// Response object for chat streaming
 class ChatStreamResponse {
   final Stream<String> stream;
   final String? conversationId;
+
   ChatStreamResponse({required this.stream, this.conversationId});
 }
 
+/// Service for AI chat interactions
 class AIService extends HttpService {
   AIService({required super.authService});
 
-  Future<ChatStreamResponse> streamChatResponse(String text,
-      {String? conversationId}) async {
-    print('Sending chat message: $text');
+  /// Stream chat response from the AI
+  Future<ChatStreamResponse> streamChatResponse(
+    String text, {
+    String? conversationId,
+  }) async {
+    debugPrint('[AIService] Sending chat message (conversation: $conversationId)');
+
     final response = await send(
       '/chat/stream',
       jsonEncode({'content': text, 'conversationId': conversationId}),
     );
 
-    print('Received response with status: ${response.statusCode}');
+    debugPrint('[AIService] Received response with status: ${response.statusCode}');
+
     if (response.statusCode == 200) {
       final convId = response.headers['x-conversation-id'];
       final stream = response.stream
@@ -31,7 +39,8 @@ class AIService extends HttpService {
               try {
                 final data = jsonDecode(jsonStr);
                 return data['value'] ?? '';
-              } catch (_) {
+              } catch (e) {
+                debugPrint('[AIService] Error parsing stream chunk: $e');
                 return '';
               }
             }
@@ -39,12 +48,15 @@ class AIService extends HttpService {
           })
           .where((value) => value.isNotEmpty)
           .cast<String>();
+
       return ChatStreamResponse(stream: stream, conversationId: convId);
     } else {
-      print(
-          'Error streaming chat response: ${response.statusCode} ${response.reasonPhrase}');
+      debugPrint(
+        '[AIService] Error streaming chat response: ${response.statusCode} ${response.reasonPhrase}',
+      );
       throw Exception(
-          'Failed to stream chat response: ${response.statusCode} ${response.reasonPhrase}');
+        'Failed to stream chat response: ${response.statusCode} ${response.reasonPhrase}',
+      );
     }
   }
 }

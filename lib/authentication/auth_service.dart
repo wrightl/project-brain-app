@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
-import 'package:projectbrain/helpers/constants.dart';
+import 'package:projectbrain/core/config/app_config.dart';
 import 'package:projectbrain/models/auth0_id_token.dart';
 import 'package:projectbrain/models/auth0_user.dart';
 
@@ -45,7 +45,7 @@ class AuthService extends ChangeNotifier {
     Auth0? auth0,
     FlutterSecureStorage? secureStorage,
     http.Client? httpClient,
-  })  : _auth0 = auth0 ?? Auth0(AUTH_DOMAIN, AUTH_CLIENT_ID),
+  })  : _auth0 = auth0 ?? Auth0(AppConfig.authDomain, AppConfig.authClientId),
         _secureStorage = secureStorage ?? const FlutterSecureStorage(),
         _httpClient = httpClient ?? http.Client();
 
@@ -57,7 +57,7 @@ class AuthService extends ChangeNotifier {
 
     try {
       final storedRefreshToken =
-          await _secureStorage.read(key: REFRESH_TOKEN_KEY);
+          await _secureStorage.read(key: AppConfig.refreshTokenKey);
       if (storedRefreshToken == null) {
         debugPrint('[AuthService] No stored refresh token found');
         return false;
@@ -100,9 +100,9 @@ class AuthService extends ChangeNotifier {
       debugPrint('[AuthService] Starting login flow');
       final credentials = await _auth0.webAuthentication().login(
             useHTTPS: true,
-            audience: AUTH_AUDIENCE,
+            audience: AppConfig.authAudience,
             scopes: {'openid', 'profile', 'offline_access', 'email'},
-            redirectUrl: AUTH_REDIRECT_URI,
+            redirectUrl: AppConfig.authRedirectUri,
           );
 
       await _setLocalVariables(credentials);
@@ -131,7 +131,7 @@ class AuthService extends ChangeNotifier {
       // Perform Auth0 logout to clear SSO session
       try {
         await _auth0.webAuthentication().logout(
-              returnTo: AUTH_REDIRECT_URI,
+              returnTo: AppConfig.authRedirectUri,
             );
       } catch (e) {
         // Log but don't fail - we still want to clear local session
@@ -189,7 +189,7 @@ class AuthService extends ChangeNotifier {
   /// Fetch user profile information from Auth0
   Future<Auth0User> getUserDetails(String accessToken) async {
     try {
-      final url = Uri.https(AUTH_DOMAIN, '/userinfo');
+      final url = Uri.https(AppConfig.authDomain, '/userinfo');
 
       final response = await _httpClient.get(
         url,
@@ -224,7 +224,7 @@ class AuthService extends ChangeNotifier {
     // Store refresh token securely if available
     if (credentials.refreshToken != null) {
       await _secureStorage.write(
-        key: REFRESH_TOKEN_KEY,
+        key: AppConfig.refreshTokenKey,
         value: credentials.refreshToken,
       );
     }
@@ -234,7 +234,7 @@ class AuthService extends ChangeNotifier {
 
   /// Clear all authentication data
   Future<void> _clearSession() async {
-    await _secureStorage.delete(key: REFRESH_TOKEN_KEY);
+    await _secureStorage.delete(key: AppConfig.refreshTokenKey);
     _profile = null;
     _accessToken = null;
     _tokenExpiry = null;
@@ -272,17 +272,17 @@ class AuthService extends ChangeNotifier {
 
       // Audience can be a string or array of strings
       if (aud is String) {
-        final isValid = aud == AUTH_AUDIENCE;
+        final isValid = aud == AppConfig.authAudience;
         if (!isValid) {
           debugPrint(
-              '[AuthService] Audience mismatch: expected $AUTH_AUDIENCE, got $aud');
+              '[AuthService] Audience mismatch: expected ${AppConfig.authAudience}, got $aud');
         }
         return isValid;
       } else if (aud is List) {
-        final isValid = aud.contains(AUTH_AUDIENCE);
+        final isValid = aud.contains(AppConfig.authAudience);
         if (!isValid) {
           debugPrint(
-              '[AuthService] Audience mismatch: expected $AUTH_AUDIENCE in $aud');
+              '[AuthService] Audience mismatch: expected ${AppConfig.authAudience} in $aud');
         }
         return isValid;
       }
@@ -315,7 +315,7 @@ class AuthService extends ChangeNotifier {
         '[AuthService] Access token expired or expiring soon, refreshing');
     try {
       final storedRefreshToken =
-          await _secureStorage.read(key: REFRESH_TOKEN_KEY);
+          await _secureStorage.read(key: AppConfig.refreshTokenKey);
       if (storedRefreshToken == null) {
         debugPrint('[AuthService] No refresh token available');
         return false;
