@@ -6,17 +6,17 @@ part of 'auth0_permissions.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-Auth0Permission _$Auth0PermissionFromJson(Map<String, dynamic> json) {
-  return Auth0Permission(
-    permissionName: json['permission_name'] as String,
-    description: json['description'] as String,
-    resourceServerName: json['resource_server_name'] as String,
-    resourceServerIdentifier: json['resource_server_identifier'] as String,
-    sources: (json['sources'] as List<dynamic>)
-        .map((e) => Auth0PermissionsSource.fromJson(e as Map<String, dynamic>))
-        .toList(),
-  );
-}
+Auth0Permission _$Auth0PermissionFromJson(Map<String, dynamic> json) =>
+    Auth0Permission(
+      permissionName: json['permission_name'] as String,
+      description: json['description'] as String,
+      resourceServerName: json['resource_server_name'] as String,
+      resourceServerIdentifier: json['resource_server_identifier'] as String,
+      sources: (json['sources'] as List<dynamic>)
+          .map(
+              (e) => Auth0PermissionsSource.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
 
 Map<String, dynamic> _$Auth0PermissionToJson(Auth0Permission instance) =>
     <String, dynamic>{
@@ -28,13 +28,12 @@ Map<String, dynamic> _$Auth0PermissionToJson(Auth0Permission instance) =>
     };
 
 Auth0PermissionsSource _$Auth0PermissionsSourceFromJson(
-    Map<String, dynamic> json) {
-  return Auth0PermissionsSource(
-    sourceId: json['source_id'] as String,
-    sourceName: json['source_name'] as String,
-    sourceType: json['source_type'] as String,
-  );
-}
+        Map<String, dynamic> json) =>
+    Auth0PermissionsSource(
+      sourceId: json['source_id'] as String,
+      sourceName: json['source_name'] as String,
+      sourceType: json['source_type'] as String,
+    );
 
 Map<String, dynamic> _$Auth0PermissionsSourceToJson(
         Auth0PermissionsSource instance) =>

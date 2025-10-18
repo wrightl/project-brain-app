@@ -11,9 +11,14 @@ class ChatProvider extends ChangeNotifier {
   final ConversationService conversationService;
   final List<ChatMessage> _messages = [];
   Conversation? _conversation;
+  bool _isLoading = false;
+  String? _errorMessage;
 
   List<ChatMessage> get messages => List.unmodifiable(_messages);
   Conversation? get activeConversation => _conversation;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+  bool get hasError => _errorMessage != null;
 
   ChatProvider({
     required this.aiService,
@@ -22,11 +27,13 @@ class ChatProvider extends ChangeNotifier {
 
   /// Send a message and stream the response
   Future<void> sendMessage(String text) async {
-    _messages.add(ChatMessage(role: 'user', content: text));
+    _errorMessage = null;
+    _messages.add(const ChatMessage(role: 'user', content: '').copyWith(content: text));
     notifyListeners();
 
-    final newMessage = ChatMessage(role: 'assistant', content: '');
-    _messages.add(newMessage);
+    // Add placeholder assistant message
+    _messages.add(const ChatMessage(role: 'assistant', content: ''));
+    final assistantMessageIndex = _messages.length - 1;
     notifyListeners();
 
     try {
@@ -51,7 +58,10 @@ class ChatProvider extends ChangeNotifier {
       }
 
       await for (final chunk in stream) {
-        newMessage.content += chunk;
+        final currentMessage = _messages[assistantMessageIndex];
+        _messages[assistantMessageIndex] = currentMessage.copyWith(
+          content: currentMessage.content + chunk,
+        );
         notifyListeners();
       }
 
@@ -60,35 +70,67 @@ class ChatProvider extends ChangeNotifier {
       debugPrint('[ChatProvider] Error streaming: $e');
       debugPrint('[ChatProvider] Stack trace: $stackTrace');
 
+      _errorMessage = 'Failed to get response. Please try again.';
       // Update the message to show error
-      newMessage.content = 'Error: Failed to get response. Please try again.';
+      final currentMessage = _messages[assistantMessageIndex];
+      _messages[assistantMessageIndex] = currentMessage.copyWith(
+        content: 'Error: $_errorMessage',
+      );
       notifyListeners();
     }
   }
 
   /// Fetch all conversations for the current user
+  ///
+  /// Note: This method returns a Future and should not be called during build.
+  /// Use FutureBuilder or call it in initState/didChangeDependencies.
   Future<List<Conversation>> fetchConversations() async {
-    debugPrint('[ChatProvider] Fetching conversations...');
-    return await conversationService.getConversations();
+    try {
+      debugPrint('[ChatProvider] Fetching conversations...');
+      final conversations = await conversationService.getConversations();
+      return conversations;
+    } catch (e) {
+      debugPrint('[ChatProvider] Error fetching conversations: $e');
+      _errorMessage = 'Failed to load conversations';
+      rethrow;
+    }
   }
 
   /// Load a specific conversation by ID
   Future<Conversation> loadConversation(String id) async {
-    debugPrint('[ChatProvider] Loading conversation: $id');
-    final conversation =
-        await conversationService.getConversationWithMessagesById(id);
-    _messages.clear();
-    _messages.addAll(conversation.messages);
-    _conversation = conversation;
+    _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
-    return conversation;
+
+    try {
+      debugPrint('[ChatProvider] Loading conversation: $id');
+      final conversation = await conversationService.getConversationWithMessagesById(id);
+      _messages.clear();
+      _messages.addAll(conversation.messages);
+      _conversation = conversation;
+      return conversation;
+    } catch (e) {
+      debugPrint('[ChatProvider] Error loading conversation: $e');
+      _errorMessage = 'Failed to load conversation';
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   /// Clear the current conversation and start fresh
   void clearConversation() {
     _messages.clear();
     _conversation = null;
+    _errorMessage = null;
     notifyListeners();
     debugPrint('[ChatProvider] Conversation cleared');
+  }
+
+  /// Clear the current error message
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
   }
 }

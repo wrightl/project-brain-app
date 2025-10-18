@@ -61,12 +61,10 @@ dev_dependencies:
     sdk: flutter
 
   english_words: ^4.0.0
-  mockito: ^5.0.16
   test: ^1.16.0
   build_runner: ^2.4.13
   freezed: ^2.5.7
-  injectable_generator: ^2.6.2
-  bloc_test: ^9.1.7
+  json_serializable: ^6.9.2
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

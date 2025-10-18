@@ -1,13 +1,15 @@
-class ChatMessage {
-  final String role; // "user" or "assistant"
-  String content;
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  ChatMessage({required this.role, required this.content});
+part 'chatmessage.freezed.dart';
+part 'chatmessage.g.dart';
 
-  factory ChatMessage.fromJson(Map<String, dynamic> json) {
-    return ChatMessage(
-      role: json['role'] as String,
-      content: json['content'] as String,
-    );
-  }
+@freezed
+class ChatMessage with _$ChatMessage {
+  const factory ChatMessage({
+    required String role, // "user" or "assistant"
+    required String content,
+  }) = _ChatMessage;
+
+  factory ChatMessage.fromJson(Map<String, dynamic> json) =>
+      _$ChatMessageFromJson(json);
 }

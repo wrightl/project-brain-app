@@ -17,6 +17,21 @@ class _ChatPageState extends State<ChatPage> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  late Future<List<Conversation>> _conversationsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch conversations once during initialization
+    _loadConversations();
+  }
+
+  void _loadConversations() {
+    final chatProvider = context.read<ChatProvider>();
+    setState(() {
+      _conversationsFuture = chatProvider.fetchConversations();
+    });
+  }
 
   @override
   void didUpdateWidget(covariant ChatPage oldWidget) {
@@ -30,11 +45,8 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    final chatProvider = context.watch<ChatProvider>();
-    final authProvider = Provider.of<AuthProvider>(context);
-
-    late Future<List<Conversation>> conversations;
-    conversations = chatProvider.fetchConversations();
+    // Only watch specific parts to avoid rebuilding TextField
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -52,37 +64,50 @@ class _ChatPageState extends State<ChatPage> {
             _scaffoldKey.currentState?.openDrawer();
           },
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () {
+              context.read<ChatProvider>().clearConversation();
+            },
+            tooltip: 'New conversation',
+          ),
+        ],
       ),
       drawer: Drawer(
         child: SafeArea(
           child: FutureBuilder(
-              future: conversations,
+              future: _conversationsFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 } else if (snapshot.hasError) {
                   return Center(child: Text('Error: ${snapshot.error}'));
                 } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                  return ListView.builder(
-                    itemCount: snapshot.data!.length,
-                    itemBuilder: (context, index) {
-                      final conversation = snapshot.data![index];
-                      final isActive = chatProvider.activeConversation?.id ==
-                          conversation.id;
-                      return ListTile(
-                        title: Text(
-                          conversation.title,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        tileColor: isActive
-                            ? Theme.of(context)
-                                .colorScheme
-                                .primary
-                                .withOpacity(0.1)
-                            : null,
-                        onTap: () {
-                          chatProvider.loadConversation(conversation.id);
-                          Navigator.pop(context); // Close the drawer
+                  return Consumer<ChatProvider>(
+                    builder: (context, chatProvider, child) {
+                      return ListView.builder(
+                        itemCount: snapshot.data!.length,
+                        itemBuilder: (context, index) {
+                          final conversation = snapshot.data![index];
+                          final isActive = chatProvider.activeConversation?.id ==
+                              conversation.id;
+                          return ListTile(
+                            title: Text(
+                              conversation.title,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            tileColor: isActive
+                                ? Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withValues(alpha: 0.1)
+                                : null,
+                            onTap: () {
+                              chatProvider.loadConversation(conversation.id);
+                              Navigator.pop(context); // Close the drawer
+                            },
+                          );
                         },
                       );
                     },
@@ -96,11 +121,13 @@ class _ChatPageState extends State<ChatPage> {
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              itemCount: chatProvider.messages.length,
-              itemBuilder: (context, index) {
-                final message = chatProvider.messages[index];
+            child: Consumer<ChatProvider>(
+              builder: (context, chatProvider, child) {
+                return ListView.builder(
+                  controller: _scrollController,
+                  itemCount: chatProvider.messages.length,
+                  itemBuilder: (context, index) {
+                    final message = chatProvider.messages[index];
                 if (message.content.isEmpty && message.role != 'user') {
                   return Container(
                     alignment: Alignment.centerLeft,
@@ -144,47 +171,80 @@ class _ChatPageState extends State<ChatPage> {
                     ),
                   ),
                 );
+                  },
+                );
               },
             ),
           ),
-          SafeArea(
-            child: Row(
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8.0, vertical: 4.0),
-                    child: TextField(
-                      controller: _controller,
-                      decoration: const InputDecoration(
-                        hintText: "Type a message...",
-                        border: OutlineInputBorder(),
-                      ),
-                      onSubmitted: (text) {
-                        final trimmed = text.trim();
-                        if (trimmed.isNotEmpty) {
-                          chatProvider.sendMessage(trimmed);
-                          _controller.clear();
-                        }
-                      },
-                    ),
-                  ),
+          _ChatInputField(
+            controller: _controller,
+            scrollController: _scrollController,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Separate widget for the input field to prevent rebuilds
+class _ChatInputField extends StatelessWidget {
+  final TextEditingController controller;
+  final ScrollController scrollController;
+
+  const _ChatInputField({
+    required this.controller,
+    required this.scrollController,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Row(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 8.0, vertical: 4.0),
+              child: TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  hintText: "Type a message...",
+                  border: OutlineInputBorder(),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: () {
-                    final text = _controller.text.trim();
-                    if (text.isNotEmpty) {
-                      chatProvider.sendMessage(text);
-                      _controller.clear();
-                    }
-                  },
-                )
-              ],
+                onSubmitted: (text) {
+                  _sendMessage(context, text);
+                },
+              ),
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.send),
+            onPressed: () {
+              _sendMessage(context, controller.text);
+            },
           )
         ],
       ),
     );
+  }
+
+  void _sendMessage(BuildContext context, String text) {
+    final trimmed = text.trim();
+    if (trimmed.isNotEmpty) {
+      final chatProvider = context.read<ChatProvider>();
+      chatProvider.sendMessage(trimmed);
+      controller.clear();
+
+      // Scroll to bottom after sending
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (scrollController.hasClients) {
+          scrollController.animateTo(
+            scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
   }
 }

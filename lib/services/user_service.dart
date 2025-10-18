@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:projectbrain/authentication/auth_service.dart';
+import 'package:projectbrain/services/auth/auth_service.dart';
 import 'package:projectbrain/services/http_service.dart';
 
 class UserService extends HttpService {

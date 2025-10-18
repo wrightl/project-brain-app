@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:projectbrain/authentication/auth_service.dart';
+import 'package:projectbrain/services/auth/auth_service.dart';
 import 'package:projectbrain/core/config/app_config.dart';
 
 /// Base HTTP service for making authenticated API requests
