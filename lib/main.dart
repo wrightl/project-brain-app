@@ -7,6 +7,7 @@ import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/core/network/http_overrides.dart';
 import 'package:projectbrain/core/routing/app_router.dart';
 import 'package:projectbrain/helpers/theme.dart';
+import 'package:projectbrain/core/logging/app_logger.dart';
 
 /// Main entry point for the application
 ///
@@ -27,7 +28,7 @@ Future<void> main() async {
   await AppConfig.init();
 
   // Log current environment
-  debugPrint('[App] Running in ${AppConfig.environmentName} environment');
+  logInfo('[App] Running in ${AppConfig.environmentName} environment');
 
   // Initialize HTTP overrides for local development
   initializeHttpOverrides();

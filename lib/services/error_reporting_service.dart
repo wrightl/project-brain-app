@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:projectbrain/core/logging/app_logger.dart';
 
 /// Centralized error reporting and analytics service
 class ErrorReportingService {
@@ -33,16 +34,16 @@ class ErrorReportingService {
         };
 
         _initialized = true;
-        debugPrint('[ErrorReporting] Crashlytics initialized');
+        logDebug('[ErrorReporting] Crashlytics initialized');
       }
 
       // Initialize Analytics
       if (_analytics != null) {
         await _analytics!.setAnalyticsCollectionEnabled(!kDebugMode);
-        debugPrint('[ErrorReporting] Analytics initialized');
+        logDebug('[ErrorReporting] Analytics initialized');
       }
     } catch (e) {
-      debugPrint('[ErrorReporting] Initialization error: $e');
+      logDebug('[ErrorReporting] Initialization error: $e');
     }
   }
 
@@ -55,7 +56,7 @@ class ErrorReportingService {
     bool fatal = false,
   }) async {
     if (!_initialized || _crashlytics == null) {
-      debugPrint('[ErrorReporting] Not initialized, logging error: $error');
+      logDebug('[ErrorReporting] Not initialized, logging error: $error');
       return;
     }
 
@@ -75,9 +76,9 @@ class ErrorReportingService {
         fatal: fatal,
       );
 
-      debugPrint('[ErrorReporting] Reported error: $error');
+      logDebug('[ErrorReporting] Reported error: $error');
     } catch (e) {
-      debugPrint('[ErrorReporting] Failed to report error: $e');
+      logDebug('[ErrorReporting] Failed to report error: $e');
     }
   }
 
@@ -88,7 +89,7 @@ class ErrorReportingService {
     try {
       _crashlytics!.log(message);
     } catch (e) {
-      debugPrint('[ErrorReporting] Failed to log message: $e');
+      logDebug('[ErrorReporting] Failed to log message: $e');
     }
   }
 
@@ -103,9 +104,9 @@ class ErrorReportingService {
       if (_analytics != null) {
         await _analytics!.setUserId(id: userId);
       }
-      debugPrint('[ErrorReporting] Set user ID: $userId');
+      logDebug('[ErrorReporting] Set user ID: $userId');
     } catch (e) {
-      debugPrint('[ErrorReporting] Failed to set user ID: $e');
+      logDebug('[ErrorReporting] Failed to set user ID: $e');
     }
   }
 
@@ -116,7 +117,7 @@ class ErrorReportingService {
     try {
       await _crashlytics!.setCustomKey(key, value);
     } catch (e) {
-      debugPrint('[ErrorReporting] Failed to set custom key: $e');
+      logDebug('[ErrorReporting] Failed to set custom key: $e');
     }
   }
 
@@ -132,9 +133,9 @@ class ErrorReportingService {
         name: name,
         parameters: parameters,
       );
-      debugPrint('[ErrorReporting] Logged event: $name');
+      logDebug('[ErrorReporting] Logged event: $name');
     } catch (e) {
-      debugPrint('[ErrorReporting] Failed to log event: $e');
+      logDebug('[ErrorReporting] Failed to log event: $e');
     }
   }
 
@@ -144,9 +145,9 @@ class ErrorReportingService {
 
     try {
       await _analytics!.logScreenView(screenName: screenName);
-      debugPrint('[ErrorReporting] Logged screen: $screenName');
+      logDebug('[ErrorReporting] Logged screen: $screenName');
     } catch (e) {
-      debugPrint('[ErrorReporting] Failed to log screen view: $e');
+      logDebug('[ErrorReporting] Failed to log screen view: $e');
     }
   }
 
@@ -157,7 +158,7 @@ class ErrorReportingService {
     try {
       return await _crashlytics!.isCrashlyticsCollectionEnabled;
     } catch (e) {
-      debugPrint('[ErrorReporting] Failed to check collection status: $e');
+      logDebug('[ErrorReporting] Failed to check collection status: $e');
       return false;
     }
   }
@@ -168,9 +169,9 @@ class ErrorReportingService {
 
     try {
       await _crashlytics!.setCrashlyticsCollectionEnabled(enabled);
-      debugPrint('[ErrorReporting] Crashlytics collection: $enabled');
+      logDebug('[ErrorReporting] Crashlytics collection: $enabled');
     } catch (e) {
-      debugPrint('[ErrorReporting] Failed to set collection status: $e');
+      logDebug('[ErrorReporting] Failed to set collection status: $e');
     }
   }
 
@@ -178,7 +179,7 @@ class ErrorReportingService {
   void testCrash() {
     if (!_initialized || _crashlytics == null) return;
 
-    debugPrint('[ErrorReporting] Triggering test crash');
+    logDebug('[ErrorReporting] Triggering test crash');
     // Trigger a test crash
     throw Exception('Test crash from ErrorReportingService');
   }

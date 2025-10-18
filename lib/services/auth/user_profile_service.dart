@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:http/http.dart' as http;
 import 'package:projectbrain/core/config/app_config.dart';
 import 'package:projectbrain/models/auth0_user.dart';
@@ -16,7 +16,7 @@ class UserProfileService {
   /// Fetch user profile information from Auth0
   Future<Auth0User> getUserProfile(String accessToken) async {
     try {
-      debugPrint('[UserProfileService] Fetching user profile');
+      logDebug('[UserProfileService] Fetching user profile');
       final url = Uri.https(AppConfig.authDomain, '/userinfo');
 
       final response = await _httpClient.get(
@@ -25,7 +25,7 @@ class UserProfileService {
       );
 
       if (response.statusCode == 200) {
-        debugPrint('[UserProfileService] User profile fetched successfully');
+        logDebug('[UserProfileService] User profile fetched successfully');
         return Auth0User.fromJson(jsonDecode(response.body));
       } else if (response.statusCode == 401) {
         throw AuthException('Unauthorized - invalid access token');
@@ -36,7 +36,7 @@ class UserProfileService {
       }
     } catch (e) {
       if (e is AuthException) rethrow;
-      debugPrint('[UserProfileService] Error fetching user profile: $e');
+      logDebug('[UserProfileService] Error fetching user profile: $e');
       throw AuthException('Failed to fetch user details', e);
     }
   }

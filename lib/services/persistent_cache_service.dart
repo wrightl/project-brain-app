@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:projectbrain/core/logging/app_logger.dart';
 
 /// Persistent cache service using Hive for offline support
 class PersistentCacheService {
@@ -14,7 +14,7 @@ class PersistentCacheService {
     await Hive.initFlutter();
     _cacheBox = await Hive.openBox<String>(_cacheBoxName);
     _metadataBox = await Hive.openBox<Map>(_metadataBoxName);
-    debugPrint('[PersistentCache] Initialized with ${_cacheBox!.length} cached items');
+    logDebug('[PersistentCache] Initialized with ${_cacheBox!.length} cached items');
   }
 
   /// Save response to persistent cache
@@ -24,7 +24,7 @@ class PersistentCacheService {
     Duration cacheDuration,
   ) async {
     if (_cacheBox == null) {
-      debugPrint('[PersistentCache] Not initialized, skipping save');
+      logDebug('[PersistentCache] Not initialized, skipping save');
       return;
     }
 
@@ -37,9 +37,9 @@ class PersistentCacheService {
         'cachedAt': DateTime.now().millisecondsSinceEpoch,
       });
 
-      debugPrint('[PersistentCache] Saved $key, expires at $expiresAt');
+      logDebug('[PersistentCache] Saved $key, expires at $expiresAt');
     } catch (e) {
-      debugPrint('[PersistentCache] Error saving $key: $e');
+      logDebug('[PersistentCache] Error saving $key: $e');
     }
   }
 
@@ -63,15 +63,15 @@ class PersistentCacheService {
       );
 
       if (DateTime.now().isAfter(expiresAt)) {
-        debugPrint('[PersistentCache] Cache expired for $key');
+        logDebug('[PersistentCache] Cache expired for $key');
         await delete(key);
         return null;
       }
 
-      debugPrint('[PersistentCache] Cache hit for $key');
+      logDebug('[PersistentCache] Cache hit for $key');
       return _cacheBox!.get(key);
     } catch (e) {
-      debugPrint('[PersistentCache] Error getting $key: $e');
+      logDebug('[PersistentCache] Error getting $key: $e');
       return null;
     }
   }
@@ -83,9 +83,9 @@ class PersistentCacheService {
     try {
       await _cacheBox!.delete(key);
       await _metadataBox!.delete(key);
-      debugPrint('[PersistentCache] Deleted $key');
+      logDebug('[PersistentCache] Deleted $key');
     } catch (e) {
-      debugPrint('[PersistentCache] Error deleting $key: $e');
+      logDebug('[PersistentCache] Error deleting $key: $e');
     }
   }
 
@@ -96,9 +96,9 @@ class PersistentCacheService {
     try {
       await _cacheBox!.clear();
       await _metadataBox!.clear();
-      debugPrint('[PersistentCache] Cleared all cache');
+      logDebug('[PersistentCache] Cleared all cache');
     } catch (e) {
-      debugPrint('[PersistentCache] Error clearing cache: $e');
+      logDebug('[PersistentCache] Error clearing cache: $e');
     }
   }
 
@@ -159,9 +159,9 @@ class PersistentCacheService {
         await delete(key);
       }
 
-      debugPrint('[PersistentCache] Cleaned ${keysToDelete.length} expired items');
+      logDebug('[PersistentCache] Cleaned ${keysToDelete.length} expired items');
     } catch (e) {
-      debugPrint('[PersistentCache] Error cleaning expired items: $e');
+      logDebug('[PersistentCache] Error cleaning expired items: $e');
     }
   }
 }

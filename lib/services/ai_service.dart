@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:projectbrain/services/http_service.dart';
 
 /// Response object for chat streaming
@@ -19,14 +19,14 @@ class AIService extends HttpService {
     String text, {
     String? conversationId,
   }) async {
-    debugPrint('[AIService] Sending chat message (conversation: $conversationId)');
+    logDebug('[AIService] Sending chat message (conversation: $conversationId)');
 
     final response = await send(
       '/chat/stream',
       jsonEncode({'content': text, 'conversationId': conversationId}),
     );
 
-    debugPrint('[AIService] Received response with status: ${response.statusCode}');
+    logDebug('[AIService] Received response with status: ${response.statusCode}');
 
     if (response.statusCode == 200) {
       final convId = response.headers['x-conversation-id'];
@@ -40,7 +40,7 @@ class AIService extends HttpService {
                 final data = jsonDecode(jsonStr);
                 return data['value'] ?? '';
               } catch (e) {
-                debugPrint('[AIService] Error parsing stream chunk: $e');
+                logDebug('[AIService] Error parsing stream chunk: $e');
                 return '';
               }
             }
@@ -51,9 +51,7 @@ class AIService extends HttpService {
 
       return ChatStreamResponse(stream: stream, conversationId: convId);
     } else {
-      debugPrint(
-        '[AIService] Error streaming chat response: ${response.statusCode} ${response.reasonPhrase}',
-      );
+      logError('[AIService] Error streaming chat response: ${response.statusCode} ${response.reasonPhrase}');
       throw Exception(
         'Failed to stream chat response: ${response.statusCode} ${response.reasonPhrase}',
       );

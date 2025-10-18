@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:auth0_flutter/auth0_flutter.dart';
-import 'package:flutter/foundation.dart';
+import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:projectbrain/core/config/app_config.dart';
 import 'package:projectbrain/models/auth0_id_token.dart';
 import 'package:projectbrain/services/auth/auth_exception.dart';
@@ -47,14 +47,14 @@ class TokenManager {
   void setAccessToken(String token) {
     _accessToken = token;
     _tokenExpiry = _extractTokenExpiry(token);
-    debugPrint('[TokenManager] Access token stored');
+    logDebug('[TokenManager] Access token stored');
   }
 
   /// Clear the stored access token
   void clearAccessToken() {
     _accessToken = null;
     _tokenExpiry = null;
-    debugPrint('[TokenManager] Access token cleared');
+    logDebug('[TokenManager] Access token cleared');
   }
 
   /// Check if the current token is expired
@@ -80,11 +80,11 @@ class TokenManager {
     }
 
     // Token expired or expiring soon - refresh it
-    debugPrint('[TokenManager] Access token expired or expiring soon, refreshing');
+    logDebug('[TokenManager] Access token expired or expiring soon, refreshing');
     try {
       final storedRefreshToken = await _tokenStorage.getRefreshToken();
       if (storedRefreshToken == null) {
-        debugPrint('[TokenManager] No refresh token available');
+        logDebug('[TokenManager] No refresh token available');
         return false;
       }
 
@@ -101,7 +101,7 @@ class TokenManager {
 
       return true;
     } catch (e) {
-      debugPrint('[TokenManager] Failed to refresh token: $e');
+      logDebug('[TokenManager] Failed to refresh token: $e');
       clearAccessToken();
       return false;
     }
@@ -126,7 +126,7 @@ class TokenManager {
 
       return DateTime.fromMillisecondsSinceEpoch(exp * 1000);
     } catch (e) {
-      debugPrint('[TokenManager] Error extracting token expiry: $e');
+      logDebug('[TokenManager] Error extracting token expiry: $e');
       return null;
     }
   }
@@ -161,7 +161,7 @@ class TokenManager {
       // Refresh tokens may not always be JWTs in Auth0
       // If it's not a JWT (3 parts), we'll skip validation and let the API handle it
       if (parts.length != 3) {
-        debugPrint('[TokenManager] Token is not a JWT, skipping audience validation');
+        logDebug('[TokenManager] Token is not a JWT, skipping audience validation');
         return true;
       }
 
@@ -177,7 +177,7 @@ class TokenManager {
 
       // If no audience claim exists, skip validation
       if (aud == null) {
-        debugPrint('[TokenManager] No audience claim in token');
+        logDebug('[TokenManager] No audience claim in token');
         return true;
       }
 
@@ -185,21 +185,21 @@ class TokenManager {
       if (aud is String) {
         final isValid = aud == AppConfig.authAudience;
         if (!isValid) {
-          debugPrint('[TokenManager] Audience mismatch: expected ${AppConfig.authAudience}, got $aud');
+          logDebug('[TokenManager] Audience mismatch: expected ${AppConfig.authAudience}, got $aud');
         }
         return isValid;
       } else if (aud is List) {
         final isValid = aud.contains(AppConfig.authAudience);
         if (!isValid) {
-          debugPrint('[TokenManager] Audience mismatch: expected ${AppConfig.authAudience} in $aud');
+          logDebug('[TokenManager] Audience mismatch: expected ${AppConfig.authAudience} in $aud');
         }
         return isValid;
       }
 
-      debugPrint('[TokenManager] Unexpected audience type: ${aud.runtimeType}');
+      logDebug('[TokenManager] Unexpected audience type: ${aud.runtimeType}');
       return false;
     } catch (e) {
-      debugPrint('[TokenManager] Error validating token audience: $e');
+      logDebug('[TokenManager] Error validating token audience: $e');
       // On error, fail safely by rejecting the token
       return false;
     }

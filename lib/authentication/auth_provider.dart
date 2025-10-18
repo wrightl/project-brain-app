@@ -3,6 +3,7 @@ import 'package:projectbrain/services/auth/auth_service.dart';
 import 'package:projectbrain/models/auth0_user.dart';
 import 'package:projectbrain/models/user.dart';
 import 'package:projectbrain/services/user_service.dart';
+import 'package:projectbrain/core/logging/app_logger.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService authService;
@@ -36,7 +37,7 @@ class AuthProvider extends ChangeNotifier {
         await _fetchUserData();
       }
     } catch (e) {
-      debugPrint('[AuthProvider] Error during init: $e');
+      logError('[AuthProvider] Error during init', e);
       _errorMessage = 'Failed to initialize authentication';
     } finally {
       _isLoading = false;
@@ -53,7 +54,7 @@ class AuthProvider extends ChangeNotifier {
       await authService.login();
       await _fetchUserData();
     } catch (e) {
-      debugPrint('[AuthProvider] Error during login: $e');
+      logError('[AuthProvider] Error during login', e);
       _errorMessage = e.toString().replaceAll('AuthException: ', '');
     } finally {
       _isLoading = false;
@@ -68,7 +69,7 @@ class AuthProvider extends ChangeNotifier {
       _user = null;
       _onboardingComplete = false;
     } catch (e) {
-      debugPrint('[AuthProvider] Error during logout: $e');
+      logError('[AuthProvider] Error during logout', e);
       _errorMessage = 'Failed to logout';
     } finally {
       notifyListeners();
@@ -81,7 +82,7 @@ class AuthProvider extends ChangeNotifier {
       await userService.completeOnboarding(formData);
       await _fetchUserData();
     } catch (e) {
-      debugPrint('[AuthProvider] Error during onboarding: $e');
+      logError('[AuthProvider] Error during onboarding', e);
       _errorMessage = 'Failed to complete onboarding';
     } finally {
       notifyListeners();
@@ -94,7 +95,7 @@ class AuthProvider extends ChangeNotifier {
       _user = User.fromJson(data);
       _onboardingComplete = _user?.isOnboarded ?? false;
     } catch (e) {
-      debugPrint('[AuthProvider] Error fetching user data: $e');
+      logError('[AuthProvider] Error fetching user data', e);
       _user = null;
       _onboardingComplete = false;
       _errorMessage = 'Failed to fetch user data';
@@ -107,7 +108,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       await _fetchUserData();
     } catch (e) {
-      debugPrint('[AuthProvider] Error refreshing user data: $e');
+      logError('[AuthProvider] Error refreshing user data', e);
       _errorMessage = 'Failed to refresh user data';
     } finally {
       notifyListeners();

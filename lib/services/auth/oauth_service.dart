@@ -1,5 +1,5 @@
 import 'package:auth0_flutter/auth0_flutter.dart';
-import 'package:flutter/foundation.dart';
+import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:flutter/services.dart';
 import 'package:projectbrain/core/config/app_config.dart';
 import 'package:projectbrain/services/auth/auth_exception.dart';
@@ -17,7 +17,7 @@ class OAuthService {
   /// Throws [AuthException] if login fails
   Future<Credentials> login() async {
     try {
-      debugPrint('[OAuthService] Starting login flow');
+      logDebug('[OAuthService] Starting login flow');
       final credentials = await _auth0.webAuthentication().login(
             useHTTPS: true,
             audience: AppConfig.authAudience,
@@ -25,20 +25,20 @@ class OAuthService {
             redirectUrl: AppConfig.authRedirectUri,
           );
 
-      debugPrint('[OAuthService] Login successful');
+      logDebug('[OAuthService] Login successful');
       return credentials;
     } on WebAuthenticationException catch (e) {
       if (e.code == 'USER_CANCELLED') {
-        debugPrint('[OAuthService] User cancelled login');
+        logDebug('[OAuthService] User cancelled login');
         throw AuthException('Login cancelled by user', e);
       }
-      debugPrint('[OAuthService] Web authentication error: ${e.message}');
+      logDebug('[OAuthService] Web authentication error: ${e.message}');
       throw AuthException('Authentication failed: ${e.message}', e);
     } on PlatformException catch (e) {
-      debugPrint('[OAuthService] Platform error during login: ${e.message}');
+      logDebug('[OAuthService] Platform error during login: ${e.message}');
       throw AuthException('Platform error: ${e.message ?? "Unknown error"}', e);
     } catch (e, stackTrace) {
-      debugPrint('[OAuthService] Unexpected error during login: $e');
+      logDebug('[OAuthService] Unexpected error during login: $e');
       throw AuthException('Unexpected error during login', e, stackTrace);
     }
   }
@@ -46,13 +46,13 @@ class OAuthService {
   /// Log out the current user from Auth0 (clears SSO session)
   Future<void> logout() async {
     try {
-      debugPrint('[OAuthService] Logging out');
+      logDebug('[OAuthService] Logging out');
       await _auth0.webAuthentication().logout(
             returnTo: AppConfig.authRedirectUri,
           );
-      debugPrint('[OAuthService] Logout complete');
+      logDebug('[OAuthService] Logout complete');
     } catch (e, stackTrace) {
-      debugPrint('[OAuthService] Error during logout: $e');
+      logDebug('[OAuthService] Error during logout: $e');
       throw AuthException('Error during logout', e, stackTrace);
     }
   }
@@ -62,7 +62,7 @@ class OAuthService {
   /// Returns new [Credentials]
   /// Throws [ApiException] if refresh fails
   Future<Credentials> refreshCredentials(String refreshToken) async {
-    debugPrint('[OAuthService] Refreshing credentials');
+    logDebug('[OAuthService] Refreshing credentials');
     return await _auth0.api.renewCredentials(refreshToken: refreshToken);
   }
 }

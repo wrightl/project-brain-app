@@ -11,8 +11,8 @@ import 'package:projectbrain/chat/chat_provider.dart';
 import 'package:projectbrain/core/storage/preferences_service.dart';
 import 'package:projectbrain/services/ai_service.dart';
 import 'package:projectbrain/services/conversation_service.dart';
-import 'package:projectbrain/services/log_service.dart';
 import 'package:projectbrain/core/routing/app_router.dart';
+import 'package:projectbrain/core/logging/app_logger.dart';
 
 /// Service Locator instance
 final sl = GetIt.instance;
@@ -24,12 +24,9 @@ Future<void> initializeDependencies() async {
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerSingleton<SharedPreferences>(sharedPreferences);
 
-  // Logger
+  // Logger - environment-aware logging that works in all build modes
   sl.registerLazySingleton<Logger>(
-    () => Logger(
-      printer: PrettyPrinter(),
-      output: LogService(),
-    ),
+    () => AppLogger.instance,
   );
 
   // ===== Core Services =====

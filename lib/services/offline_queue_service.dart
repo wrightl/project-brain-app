@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:projectbrain/core/logging/app_logger.dart';
 
 /// Request that failed and needs to be retried
 class QueuedRequest {
@@ -65,12 +65,12 @@ class OfflineQueueService {
   /// Initialize the offline queue
   Future<void> init() async {
     _queueBox = await Hive.openBox<String>(_queueBoxName);
-    debugPrint('[OfflineQueue] Initialized with ${_queueBox!.length} queued items');
+    logDebug('[OfflineQueue] Initialized with ${_queueBox!.length} queued items');
 
     // Listen for connectivity changes
     _connectivity.onConnectivityChanged.listen((result) {
       if (result.isNotEmpty && result.first != ConnectivityResult.none) {
-        debugPrint('[OfflineQueue] Connectivity restored, processing queue');
+        logDebug('[OfflineQueue] Connectivity restored, processing queue');
         processQueue();
       }
     });
@@ -82,15 +82,15 @@ class OfflineQueueService {
   /// Add a failed request to the queue
   Future<void> enqueue(QueuedRequest request) async {
     if (_queueBox == null) {
-      debugPrint('[OfflineQueue] Not initialized, skipping enqueue');
+      logDebug('[OfflineQueue] Not initialized, skipping enqueue');
       return;
     }
 
     try {
       await _queueBox!.put(request.id, jsonEncode(request.toJson()));
-      debugPrint('[OfflineQueue] Queued ${request.method} ${request.path}');
+      logDebug('[OfflineQueue] Queued ${request.method} ${request.path}');
     } catch (e) {
-      debugPrint('[OfflineQueue] Error enqueuing request: $e');
+      logDebug('[OfflineQueue] Error enqueuing request: $e');
     }
   }
 
@@ -101,13 +101,13 @@ class OfflineQueueService {
     }
 
     _isProcessing = true;
-    debugPrint('[OfflineQueue] Processing queue with ${_queueBox!.length} items');
+    logDebug('[OfflineQueue] Processing queue with ${_queueBox!.length} items');
 
     try {
       // Check connectivity
       final connectivity = await _connectivity.checkConnectivity();
       if (connectivity.isEmpty || connectivity.first == ConnectivityResult.none) {
-        debugPrint('[OfflineQueue] No connectivity, skipping process');
+        logDebug('[OfflineQueue] No connectivity, skipping process');
         _isProcessing = false;
         return;
       }
@@ -126,14 +126,14 @@ class OfflineQueueService {
 
           // Check if too old
           if (DateTime.now().difference(request.queuedAt) > maxQueueAge) {
-            debugPrint('[OfflineQueue] Request too old, removing: ${request.id}');
+            logDebug('[OfflineQueue] Request too old, removing: ${request.id}');
             keysToRemove.add(key as String);
             continue;
           }
 
           // Check if max retries reached
           if (request.retryCount >= maxRetries) {
-            debugPrint('[OfflineQueue] Max retries reached, removing: ${request.id}');
+            logDebug('[OfflineQueue] Max retries reached, removing: ${request.id}');
             keysToRemove.add(key as String);
             continue;
           }
@@ -142,16 +142,16 @@ class OfflineQueueService {
           final success = await onProcessRequest!(request);
 
           if (success) {
-            debugPrint('[OfflineQueue] Successfully processed: ${request.id}');
+            logDebug('[OfflineQueue] Successfully processed: ${request.id}');
             keysToRemove.add(key as String);
           } else {
-            debugPrint('[OfflineQueue] Failed to process: ${request.id}');
+            logDebug('[OfflineQueue] Failed to process: ${request.id}');
             keysToRetry[key as String] = request.copyWith(
               retryCount: request.retryCount + 1,
             );
           }
         } catch (e) {
-          debugPrint('[OfflineQueue] Error processing ${key}: $e');
+          logDebug('[OfflineQueue] Error processing ${key}: $e');
         }
       }
 
@@ -168,9 +168,9 @@ class OfflineQueueService {
         );
       }
 
-      debugPrint('[OfflineQueue] Processed queue: ${keysToRemove.length} succeeded, ${keysToRetry.length} retried');
+      logDebug('[OfflineQueue] Processed queue: ${keysToRemove.length} succeeded, ${keysToRetry.length} retried');
     } catch (e) {
-      debugPrint('[OfflineQueue] Error processing queue: $e');
+      logDebug('[OfflineQueue] Error processing queue: $e');
     } finally {
       _isProcessing = false;
     }
@@ -223,9 +223,9 @@ class OfflineQueueService {
 
     try {
       await _queueBox!.clear();
-      debugPrint('[OfflineQueue] Cleared queue');
+      logDebug('[OfflineQueue] Cleared queue');
     } catch (e) {
-      debugPrint('[OfflineQueue] Error clearing queue: $e');
+      logDebug('[OfflineQueue] Error clearing queue: $e');
     }
   }
 
@@ -260,10 +260,10 @@ class OfflineQueueService {
       }
 
       if (keysToRemove.isNotEmpty) {
-        debugPrint('[OfflineQueue] Cleaned ${keysToRemove.length} old items');
+        logDebug('[OfflineQueue] Cleaned ${keysToRemove.length} old items');
       }
     } catch (e) {
-      debugPrint('[OfflineQueue] Error cleaning old items: $e');
+      logDebug('[OfflineQueue] Error cleaning old items: $e');
     }
   }
 }

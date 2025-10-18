@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:projectbrain/models/chatmessage.dart';
 import 'package:projectbrain/models/conversation.dart';
@@ -54,7 +54,7 @@ class ChatProvider extends ChangeNotifier {
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
-        debugPrint('[ChatProvider] Created new conversation: $conversationId');
+        logDebug('[ChatProvider] Created new conversation: $conversationId');
       }
 
       await for (final chunk in stream) {
@@ -65,10 +65,10 @@ class ChatProvider extends ChangeNotifier {
         notifyListeners();
       }
 
-      debugPrint('[ChatProvider] Message streaming completed');
+      logDebug('[ChatProvider] Message streaming completed');
     } catch (e, stackTrace) {
-      debugPrint('[ChatProvider] Error streaming: $e');
-      debugPrint('[ChatProvider] Stack trace: $stackTrace');
+      logDebug('[ChatProvider] Error streaming: $e');
+      logDebug('[ChatProvider] Stack trace: $stackTrace');
 
       _errorMessage = 'Failed to get response. Please try again.';
       // Update the message to show error
@@ -86,11 +86,11 @@ class ChatProvider extends ChangeNotifier {
   /// Use FutureBuilder or call it in initState/didChangeDependencies.
   Future<List<Conversation>> fetchConversations() async {
     try {
-      debugPrint('[ChatProvider] Fetching conversations...');
+      logDebug('[ChatProvider] Fetching conversations...');
       final conversations = await conversationService.getConversations();
       return conversations;
     } catch (e) {
-      debugPrint('[ChatProvider] Error fetching conversations: $e');
+      logDebug('[ChatProvider] Error fetching conversations: $e');
       _errorMessage = 'Failed to load conversations';
       rethrow;
     }
@@ -103,14 +103,14 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('[ChatProvider] Loading conversation: $id');
+      logDebug('[ChatProvider] Loading conversation: $id');
       final conversation = await conversationService.getConversationWithMessagesById(id);
       _messages.clear();
       _messages.addAll(conversation.messages);
       _conversation = conversation;
       return conversation;
     } catch (e) {
-      debugPrint('[ChatProvider] Error loading conversation: $e');
+      logDebug('[ChatProvider] Error loading conversation: $e');
       _errorMessage = 'Failed to load conversation';
       rethrow;
     } finally {
@@ -125,7 +125,7 @@ class ChatProvider extends ChangeNotifier {
     _conversation = null;
     _errorMessage = null;
     notifyListeners();
-    debugPrint('[ChatProvider] Conversation cleared');
+    logDebug('[ChatProvider] Conversation cleared');
   }
 
   /// Clear the current error message

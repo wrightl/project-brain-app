@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:http/http.dart' as http;
 import 'package:projectbrain/services/auth/auth_service.dart';
 import 'package:projectbrain/core/config/app_config.dart';
@@ -38,7 +38,7 @@ class _CircuitBreaker {
     if (failureCount >= failureThreshold) {
       state = _CircuitState.open;
       openedAt = DateTime.now();
-      debugPrint('[CircuitBreaker] Circuit opened after $failureCount failures');
+      logDebug('[CircuitBreaker] Circuit opened after $failureCount failures');
     }
   }
 
@@ -47,7 +47,7 @@ class _CircuitBreaker {
     if (state == _CircuitState.open && openedAt != null) {
       if (DateTime.now().difference(openedAt!) > openDuration) {
         state = _CircuitState.halfOpen;
-        debugPrint('[CircuitBreaker] Circuit half-open, allowing test request');
+        logDebug('[CircuitBreaker] Circuit half-open, allowing test request');
         return true;
       }
       return false;
@@ -89,7 +89,7 @@ class HttpService {
     if (useCache && _cache.containsKey(path)) {
       final cached = _cache[path]!;
       if (!cached.isExpired) {
-        debugPrint('[HttpService] Cache hit for GET $path');
+        logDebug('[HttpService] Cache hit for GET $path');
         return cached.response;
       } else {
         _cache.remove(path);
@@ -98,7 +98,7 @@ class HttpService {
 
     // Check for pending identical request (deduplication)
     if (_pendingRequests.containsKey(path)) {
-      debugPrint('[HttpService] Deduplicating GET request to $path');
+      logDebug('[HttpService] Deduplicating GET request to $path');
       return await _pendingRequests[path]!;
     }
 
@@ -129,7 +129,7 @@ class HttpService {
           response,
           cacheDuration ?? defaultCacheDuration,
         );
-        debugPrint('[HttpService] Cached GET $path for ${cacheDuration ?? defaultCacheDuration}');
+        logDebug('[HttpService] Cached GET $path for ${cacheDuration ?? defaultCacheDuration}');
       }
 
       return response;
@@ -142,13 +142,13 @@ class HttpService {
   /// Clear the cache
   void clearCache() {
     _cache.clear();
-    debugPrint('[HttpService] Cache cleared');
+    logDebug('[HttpService] Cache cleared');
   }
 
   /// Clear cache for a specific path
   void clearCacheForPath(String path) {
     _cache.remove(path);
-    debugPrint('[HttpService] Cache cleared for $path');
+    logDebug('[HttpService] Cache cleared for $path');
   }
 
   /// Make a streaming POST request (no retry for streaming)
@@ -161,8 +161,8 @@ class HttpService {
     try {
       return await request.send().timeout(timeout ?? defaultTimeout);
     } catch (error, stackTrace) {
-      debugPrint('[HttpService] Error in streaming POST request: $error');
-      debugPrint('[HttpService] Stack trace: $stackTrace');
+      logDebug('[HttpService] Error in streaming POST request: $error');
+      logDebug('[HttpService] Stack trace: $stackTrace');
       throw Exception('Failed to send data to $path: $error');
     }
   }
@@ -234,7 +234,7 @@ class HttpService {
 
     // Check circuit breaker
     if (!circuitBreaker.canAttempt()) {
-      debugPrint('[HttpService] Circuit breaker is open for $method $path');
+      logDebug('[HttpService] Circuit breaker is open for $method $path');
       throw Exception('Circuit breaker is open for $method $path - too many recent failures');
     }
 
@@ -249,7 +249,7 @@ class HttpService {
         // Check for server errors that should be retried
         if (response.statusCode >= 500 && attempt < maxRetries) {
           circuitBreaker.recordFailure();
-          debugPrint('[HttpService] $method $path failed with ${response.statusCode}, retrying (attempt $attempt/$maxRetries)');
+          logDebug('[HttpService] $method $path failed with ${response.statusCode}, retrying (attempt $attempt/$maxRetries)');
           await Future.delayed(retryDelay * attempt);
           continue;
         }
@@ -263,14 +263,14 @@ class HttpService {
       } on Exception catch (error, stackTrace) {
         lastException = error;
         circuitBreaker.recordFailure();
-        debugPrint('[HttpService] $method $path failed (attempt $attempt/$maxRetries): $error');
+        logDebug('[HttpService] $method $path failed (attempt $attempt/$maxRetries): $error');
 
         if (attempt < maxRetries) {
-          debugPrint('[HttpService] Retrying in ${retryDelay.inSeconds * attempt}s...');
+          logDebug('[HttpService] Retrying in ${retryDelay.inSeconds * attempt}s...');
           await Future.delayed(retryDelay * attempt);
         } else {
-          debugPrint('[HttpService] Max retries reached for $method $path');
-          debugPrint('[HttpService] Stack trace: $stackTrace');
+          logDebug('[HttpService] Max retries reached for $method $path');
+          logDebug('[HttpService] Stack trace: $stackTrace');
         }
       }
     }

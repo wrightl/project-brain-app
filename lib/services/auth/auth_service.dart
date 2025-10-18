@@ -1,11 +1,11 @@
 import 'package:auth0_flutter/auth0_flutter.dart';
-import 'package:flutter/foundation.dart';
 import 'package:projectbrain/models/auth0_user.dart';
 import 'package:projectbrain/services/auth/auth_exception.dart';
 import 'package:projectbrain/services/auth/oauth_service.dart';
 import 'package:projectbrain/services/auth/token_manager.dart';
 import 'package:projectbrain/services/auth/token_storage.dart';
 import 'package:projectbrain/services/auth/user_profile_service.dart';
+import 'package:projectbrain/core/logging/app_logger.dart';
 
 /// Unified authentication service that orchestrates OAuth, token management, and user profile operations
 ///
@@ -39,36 +39,35 @@ class AuthService {
   ///
   /// Returns true if a valid session was restored, false otherwise
   Future<bool> init() async {
-    debugPrint('[AuthService] Initializing...');
+    logInfo('[AuthService] Initializing...');
 
     try {
       final storedRefreshToken = await _tokenStorage.getRefreshToken();
       if (storedRefreshToken == null) {
-        debugPrint('[AuthService] No stored refresh token found');
+        logDebug('[AuthService] No stored refresh token found');
         return false;
       }
 
-      debugPrint('[AuthService] Attempting to refresh session');
+      logDebug('[AuthService] Attempting to refresh session');
       final credentials = await _oauthService.refreshCredentials(storedRefreshToken);
 
       // Validate the audience of the new access token
       final isValidAudience = await _tokenManager.validateTokenAudience(credentials.accessToken);
       if (!isValidAudience) {
-        debugPrint('[AuthService] Invalid token audience, clearing session');
+        logWarning('[AuthService] Invalid token audience, clearing session');
         await _clearSession();
         return false;
       }
 
       await _setLocalVariables(credentials);
-      debugPrint('[AuthService] Session restored successfully');
+      logInfo('[AuthService] Session restored successfully');
       return true;
     } on ApiException catch (e) {
-      debugPrint('[AuthService] API error during init: ${e.message}');
+      logError('[AuthService] API error during init: ${e.message}', e);
       await _clearSession();
       return false;
     } catch (e, stackTrace) {
-      debugPrint('[AuthService] Unexpected error during init: $e');
-      debugPrint('[AuthService] Stack trace: $stackTrace');
+      logError('[AuthService] Unexpected error during init', e, stackTrace);
       await _clearSession();
       return false;
     }
@@ -78,26 +77,26 @@ class AuthService {
   ///
   /// Throws [AuthException] if login fails
   Future<void> login() async {
-    debugPrint('[AuthService] Starting login');
+    logInfo('[AuthService] Starting login');
     final credentials = await _oauthService.login();
     await _setLocalVariables(credentials);
-    debugPrint('[AuthService] Login complete');
+    logInfo('[AuthService] Login complete');
   }
 
   /// Log out the current user and clear all stored credentials
   Future<void> logout() async {
-    debugPrint('[AuthService] Logging out');
+    logInfo('[AuthService] Logging out');
 
     // Perform Auth0 logout to clear SSO session
     try {
       await _oauthService.logout();
     } catch (e) {
       // Log but don't fail - we still want to clear local session
-      debugPrint('[AuthService] Error during remote logout: $e');
+      logWarning('[AuthService] Error during remote logout', e);
     }
 
     await _clearSession();
-    debugPrint('[AuthService] Logout complete');
+    logInfo('[AuthService] Logout complete');
   }
 
   /// Get a valid access token, refreshing if necessary

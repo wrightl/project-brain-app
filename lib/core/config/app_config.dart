@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:projectbrain/core/logging/app_logger.dart';
 
 /// Available environment modes
 enum Environment {
@@ -41,9 +42,9 @@ class AppConfig {
     final envFile = '.env.${_environment.name}';
     try {
       await dotenv.load(fileName: envFile);
-      debugPrint('[AppConfig] Loaded $envFile successfully');
+      logInfo('[AppConfig] Loaded $envFile successfully');
     } catch (e) {
-      debugPrint('[AppConfig] Failed to load $envFile: $e');
+      logError('[AppConfig] Failed to load $envFile', e);
       // Fallback to .env.dev for development
       if (_environment == Environment.dev) {
         await dotenv.load(fileName: '.env.dev');
@@ -68,7 +69,7 @@ class AppConfig {
       case 'prod':
         return Environment.production;
       default:
-        debugPrint('[AppConfig] Unknown ENVIRONMENT value: $envString, using default');
+        logWarning('[AppConfig] Unknown ENVIRONMENT value: $envString, using default');
         return null;
     }
   }
