@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:projectbrain/authentication/auth_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart'; // Add for clipboard
+import 'package:flutter/services.dart';
+import 'package:projectbrain/core/config/app_config.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -22,6 +23,39 @@ class ProfilePage extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // Environment indicator (only for dev and staging)
+              if (!AppConfig.isProduction) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppConfig.isDev ? Colors.orange : Colors.blue,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        AppConfig.isDev ? Icons.code : Icons.science,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        AppConfig.environmentName.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               CircleAvatar(
                 radius: 50,
                 backgroundImage:
@@ -100,8 +134,8 @@ class ProfilePage extends StatelessWidget {
                     vertical: 12,
                   ),
                 ),
-                onPressed: () async {
-                  await authProvider.logout();
+                onPressed: () {
+                  authProvider.logout();
                 },
               ),
             ],

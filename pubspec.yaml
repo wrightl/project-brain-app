@@ -55,6 +55,15 @@ dependencies:
   freezed_annotation: ^2.4.4
   injectable: ^2.5.0
 
+  # Phase 5: Advanced features
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  connectivity_plus: ^6.0.0
+  firebase_core: ^3.3.0
+  firebase_crashlytics: ^4.0.4
+  firebase_analytics: ^11.2.1
+  cached_network_image: ^3.3.1
+
 dev_dependencies:
   flutter_launcher_icons: ^0.14.3
   flutter_test:
@@ -98,6 +107,7 @@ flutter:
   assets:
     - .env.dev
     - .env.staging
+    - .env.production
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 

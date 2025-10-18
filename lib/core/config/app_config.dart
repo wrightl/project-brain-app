@@ -1,25 +1,86 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+/// Available environment modes
+enum Environment {
+  /// Local development environment
+  dev,
+
+  /// Staging environment
+  staging,
+
+  /// Production environment
+  production,
+}
+
 /// Application configuration and environment management
 class AppConfig {
   // Private constructor to prevent instantiation
   AppConfig._();
 
+  /// Current environment mode
+  static Environment _environment = Environment.dev;
+
+  /// Get current environment
+  static Environment get environment => _environment;
+
+  /// Get environment name as string
+  static String get environmentName => _environment.name;
+
   /// Initialize configuration by loading environment variables
-  static Future<void> init() async {
+  ///
+  /// The environment can be set in three ways (in order of precedence):
+  /// 1. Passing [env] parameter directly
+  /// 2. Setting --dart-define=ENVIRONMENT=dev|staging|production
+  /// 3. Defaulting based on build mode (dev for debug, production for release)
+  static Future<void> init({Environment? env}) async {
+    // Determine environment
+    _environment = env ?? _getEnvironmentFromDefine() ?? _getDefaultEnvironment();
+
     // Load environment-specific config
-    final envFile = kReleaseMode ? '.env.production' : '.env.dev';
+    final envFile = '.env.${_environment.name}';
     try {
       await dotenv.load(fileName: envFile);
+      debugPrint('[AppConfig] Loaded $envFile successfully');
     } catch (e) {
       debugPrint('[AppConfig] Failed to load $envFile: $e');
       // Fallback to .env.dev for development
-      if (!kReleaseMode) {
+      if (_environment == Environment.dev) {
         await dotenv.load(fileName: '.env.dev');
       } else {
-        throw Exception('Failed to load production environment configuration');
+        throw Exception('Failed to load $_environment environment configuration');
       }
+    }
+  }
+
+  /// Get environment from dart-define
+  static Environment? _getEnvironmentFromDefine() {
+    const envString = String.fromEnvironment('ENVIRONMENT');
+    if (envString.isEmpty) return null;
+
+    switch (envString.toLowerCase()) {
+      case 'dev':
+      case 'development':
+        return Environment.dev;
+      case 'staging':
+        return Environment.staging;
+      case 'production':
+      case 'prod':
+        return Environment.production;
+      default:
+        debugPrint('[AppConfig] Unknown ENVIRONMENT value: $envString, using default');
+        return null;
+    }
+  }
+
+  /// Get default environment based on build mode
+  static Environment _getDefaultEnvironment() {
+    if (kReleaseMode) {
+      return Environment.production;
+    } else if (kProfileMode) {
+      return Environment.staging;
+    } else {
+      return Environment.dev;
     }
   }
 
@@ -43,8 +104,17 @@ class AppConfig {
   /// Only allow SSL bypass in this mode
   static bool get isLocalDevelopment {
     final audience = dotenv.env['AUTH_AUDIENCE'] ?? '';
-    return kDebugMode && audience.contains('localhost');
+    return _environment == Environment.dev && audience.contains('localhost');
   }
+
+  /// Check if running in development environment
+  static bool get isDev => _environment == Environment.dev;
+
+  /// Check if running in staging environment
+  static bool get isStaging => _environment == Environment.staging;
+
+  /// Check if running in production environment
+  static bool get isProduction => _environment == Environment.production;
 
   // API Configuration
   static String get apiBaseUrl => authAudience;
