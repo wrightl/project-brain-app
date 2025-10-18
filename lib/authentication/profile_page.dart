@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:projectbrain/core/config/app_config.dart';
+import 'package:projectbrain/helpers/theme.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -11,6 +12,9 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final appColors = theme.extension<AppThemeExtension>();
 
     return Scaffold(
       appBar: AppBar(
@@ -31,7 +35,9 @@ class ProfilePage extends StatelessWidget {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: AppConfig.isDev ? Colors.orange : Colors.blue,
+                    color: AppConfig.isDev
+                        ? appColors?.devBadgeColor ?? Colors.orange
+                        : appColors?.stagingBadgeColor ?? Colors.blue,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -39,14 +45,14 @@ class ProfilePage extends StatelessWidget {
                     children: [
                       Icon(
                         AppConfig.isDev ? Icons.code : Icons.science,
-                        color: Colors.white,
+                        color: colorScheme.onPrimary,
                         size: 16,
                       ),
                       const SizedBox(width: 8),
                       Text(
                         AppConfig.environmentName.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: colorScheme.onPrimary,
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
                         ),
@@ -72,7 +78,9 @@ class ProfilePage extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 authProvider.profile?.email ?? '',
-                style: const TextStyle(fontSize: 16, color: Colors.grey),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 32),
               if (kDebugMode)
@@ -94,29 +102,30 @@ class ProfilePage extends StatelessWidget {
                       children: [
                         SelectableText(
                           'Access Token:\n$truncated',
-                          style:
-                              const TextStyle(fontSize: 12, color: Colors.red),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: appColors?.debugTextColor ?? colorScheme.error,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         ElevatedButton.icon(
                           icon: const Icon(Icons.copy),
                           label: const Text('Copy Full Token'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey[800],
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
+                            backgroundColor: colorScheme.surfaceContainerHighest,
+                            foregroundColor: colorScheme.onSurface,
                           ),
                           onPressed: token.isEmpty
                               ? null
                               : () async {
                                   await Clipboard.setData(
                                       ClipboardData(text: token));
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content:
-                                            Text('Token copied to clipboard')),
-                                  );
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content:
+                                              Text('Token copied to clipboard')),
+                                    );
+                                  }
                                 },
                         ),
                       ],
@@ -127,12 +136,8 @@ class ProfilePage extends StatelessWidget {
                 icon: const Icon(Icons.logout),
                 label: const Text('Logout'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
+                  backgroundColor: colorScheme.error,
+                  foregroundColor: colorScheme.onError,
                 ),
                 onPressed: () {
                   authProvider.logout();

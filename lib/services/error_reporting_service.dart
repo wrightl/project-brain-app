@@ -24,12 +24,12 @@ class ErrorReportingService {
       if (_crashlytics != null) {
         // Pass all uncaught errors to Crashlytics
         FlutterError.onError = (details) {
-          _crashlytics!.recordFlutterFatalError(details);
+          _crashlytics.recordFlutterFatalError(details);
         };
 
         // Pass all uncaught asynchronous errors to Crashlytics
         PlatformDispatcher.instance.onError = (error, stack) {
-          _crashlytics!.recordError(error, stack, fatal: true);
+          _crashlytics.recordError(error, stack, fatal: true);
           return true;
         };
 
@@ -39,7 +39,7 @@ class ErrorReportingService {
 
       // Initialize Analytics
       if (_analytics != null) {
-        await _analytics!.setAnalyticsCollectionEnabled(!kDebugMode);
+        await _analytics.setAnalyticsCollectionEnabled(!kDebugMode);
         logDebug('[ErrorReporting] Analytics initialized');
       }
     } catch (e) {
@@ -64,12 +64,12 @@ class ErrorReportingService {
       // Add context information
       if (context != null) {
         for (final entry in context.entries) {
-          await _crashlytics!.setCustomKey(entry.key, entry.value);
+          await _crashlytics.setCustomKey(entry.key, entry.value);
         }
       }
 
       // Record the error
-      await _crashlytics!.recordError(
+      await _crashlytics.recordError(
         error,
         stackTrace,
         reason: reason,
@@ -87,7 +87,7 @@ class ErrorReportingService {
     if (!_initialized || _crashlytics == null) return;
 
     try {
-      _crashlytics!.log(message);
+      _crashlytics.log(message);
     } catch (e) {
       logDebug('[ErrorReporting] Failed to log message: $e');
     }
@@ -99,10 +99,10 @@ class ErrorReportingService {
 
     try {
       if (_crashlytics != null) {
-        await _crashlytics!.setUserIdentifier(userId ?? '');
+        await _crashlytics.setUserIdentifier(userId ?? '');
       }
       if (_analytics != null) {
-        await _analytics!.setUserId(id: userId);
+        await _analytics.setUserId(id: userId);
       }
       logDebug('[ErrorReporting] Set user ID: $userId');
     } catch (e) {
@@ -115,7 +115,7 @@ class ErrorReportingService {
     if (!_initialized || _crashlytics == null) return;
 
     try {
-      await _crashlytics!.setCustomKey(key, value);
+      await _crashlytics.setCustomKey(key, value);
     } catch (e) {
       logDebug('[ErrorReporting] Failed to set custom key: $e');
     }
@@ -129,7 +129,7 @@ class ErrorReportingService {
     if (!_initialized || _analytics == null) return;
 
     try {
-      await _analytics!.logEvent(
+      await _analytics.logEvent(
         name: name,
         parameters: parameters,
       );
@@ -144,7 +144,7 @@ class ErrorReportingService {
     if (!_initialized || _analytics == null) return;
 
     try {
-      await _analytics!.logScreenView(screenName: screenName);
+      await _analytics.logScreenView(screenName: screenName);
       logDebug('[ErrorReporting] Logged screen: $screenName');
     } catch (e) {
       logDebug('[ErrorReporting] Failed to log screen view: $e');
@@ -156,7 +156,7 @@ class ErrorReportingService {
     if (!_initialized || _crashlytics == null) return false;
 
     try {
-      return await _crashlytics!.isCrashlyticsCollectionEnabled;
+      return await _crashlytics.isCrashlyticsCollectionEnabled;
     } catch (e) {
       logDebug('[ErrorReporting] Failed to check collection status: $e');
       return false;
@@ -168,7 +168,7 @@ class ErrorReportingService {
     if (!_initialized || _crashlytics == null) return;
 
     try {
-      await _crashlytics!.setCrashlyticsCollectionEnabled(enabled);
+      await _crashlytics.setCrashlyticsCollectionEnabled(enabled);
       logDebug('[ErrorReporting] Crashlytics collection: $enabled');
     } catch (e) {
       logDebug('[ErrorReporting] Failed to set collection status: $e');

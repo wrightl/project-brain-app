@@ -6,6 +6,7 @@ import 'package:projectbrain/models/conversation.dart';
 import 'package:projectbrain/widgets/chat/message_bubble.dart';
 import 'package:projectbrain/widgets/chat/chat_input_field.dart';
 import 'package:projectbrain/widgets/chat/conversation_list_item.dart';
+import 'package:projectbrain/widgets/chat/typing_indicator.dart';
 import 'package:provider/provider.dart';
 
 class ChatPage extends StatefulWidget {
@@ -82,7 +83,7 @@ class _ChatPageState extends State<ChatPage> {
               future: _conversationsFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(child: TypingIndicator());
                 } else if (snapshot.hasError) {
                   return Center(child: Text('Error: ${snapshot.error}'));
                 } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
@@ -92,8 +93,9 @@ class _ChatPageState extends State<ChatPage> {
                         itemCount: snapshot.data!.length,
                         itemBuilder: (context, index) {
                           final conversation = snapshot.data![index];
-                          final isActive = chatProvider.activeConversation?.id ==
-                              conversation.id;
+                          final isActive =
+                              chatProvider.activeConversation?.id ==
+                                  conversation.id;
                           return ConversationListItem(
                             conversation: conversation,
                             isActive: isActive,
@@ -122,7 +124,8 @@ class _ChatPageState extends State<ChatPage> {
                   itemCount: chatProvider.messages.length,
                   // Performance optimizations
                   cacheExtent: 500, // Cache 500px above/below viewport
-                  addAutomaticKeepAlives: true, // Keep widgets alive when scrolling
+                  addAutomaticKeepAlives:
+                      true, // Keep widgets alive when scrolling
                   addRepaintBoundaries: true, // Reduce repaint overhead
                   itemBuilder: (context, index) {
                     final message = chatProvider.messages[index];
