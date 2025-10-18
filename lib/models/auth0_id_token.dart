@@ -1,8 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
 
-import 'auth0_permissions.dart';
-import 'auth0_roles.dart';
-
 part 'auth0_id_token.g.dart';
 
 @JsonSerializable()

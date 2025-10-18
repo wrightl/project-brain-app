@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:projectbrain/authentication/auth_provider.dart';
 import 'package:projectbrain/chat/chat_provider.dart';
 import 'package:projectbrain/models/conversation.dart';
+import 'package:projectbrain/widgets/chat/message_bubble.dart';
+import 'package:projectbrain/widgets/chat/chat_input_field.dart';
+import 'package:projectbrain/widgets/chat/conversation_list_item.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
@@ -92,17 +94,9 @@ class _ChatPageState extends State<ChatPage> {
                           final conversation = snapshot.data![index];
                           final isActive = chatProvider.activeConversation?.id ==
                               conversation.id;
-                          return ListTile(
-                            title: Text(
-                              conversation.title,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            tileColor: isActive
-                                ? Theme.of(context)
-                                    .colorScheme
-                                    .primary
-                                    .withValues(alpha: 0.1)
-                                : null,
+                          return ConversationListItem(
+                            conversation: conversation,
+                            isActive: isActive,
                             onTap: () {
                               chatProvider.loadConversation(conversation.id);
                               Navigator.pop(context); // Close the drawer
@@ -128,123 +122,18 @@ class _ChatPageState extends State<ChatPage> {
                   itemCount: chatProvider.messages.length,
                   itemBuilder: (context, index) {
                     final message = chatProvider.messages[index];
-                if (message.content.isEmpty && message.role != 'user') {
-                  return Container(
-                    alignment: Alignment.centerLeft,
-                    padding: const EdgeInsets.all(8),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                  );
-                }
-                return Container(
-                  alignment: message.role == 'user'
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  padding: const EdgeInsets.all(8),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: message.role == 'user'
-                          ? Colors.blueAccent
-                          : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: MarkdownBody(
-                      data: message.content,
-                      styleSheet: MarkdownStyleSheet(
-                        p: TextStyle(
-                          color: message.role == 'user'
-                              ? Colors.white
-                              : Colors.black,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
+                    return MessageBubble(message: message);
                   },
                 );
               },
             ),
           ),
-          _ChatInputField(
+          ChatInputField(
             controller: _controller,
             scrollController: _scrollController,
           ),
         ],
       ),
     );
-  }
-}
-
-/// Separate widget for the input field to prevent rebuilds
-class _ChatInputField extends StatelessWidget {
-  final TextEditingController controller;
-  final ScrollController scrollController;
-
-  const _ChatInputField({
-    required this.controller,
-    required this.scrollController,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Row(
-        children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 8.0, vertical: 4.0),
-              child: TextField(
-                controller: controller,
-                decoration: const InputDecoration(
-                  hintText: "Type a message...",
-                  border: OutlineInputBorder(),
-                ),
-                onSubmitted: (text) {
-                  _sendMessage(context, text);
-                },
-              ),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.send),
-            onPressed: () {
-              _sendMessage(context, controller.text);
-            },
-          )
-        ],
-      ),
-    );
-  }
-
-  void _sendMessage(BuildContext context, String text) {
-    final trimmed = text.trim();
-    if (trimmed.isNotEmpty) {
-      final chatProvider = context.read<ChatProvider>();
-      chatProvider.sendMessage(trimmed);
-      controller.clear();
-
-      // Scroll to bottom after sending
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (scrollController.hasClients) {
-          scrollController.animateTo(
-            scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
-    }
   }
 }
