@@ -4,6 +4,7 @@ import 'package:projectbrain/services/auth/token_manager.dart';
 import 'package:projectbrain/services/auth/token_storage.dart';
 import 'package:projectbrain/services/auth/auth_exception.dart';
 import 'dart:convert';
+import '../../helpers/test_helpers.dart';
 
 // Mock classes
 class MockTokenStorage extends Mock implements TokenStorage {}
@@ -12,9 +13,18 @@ void main() {
   late TokenManager tokenManager;
   late MockTokenStorage mockTokenStorage;
 
+  setUpAll(() async {
+    // Initialize test environment once for all tests
+    await initializeTestEnvironment();
+  });
+
   setUp(() {
     mockTokenStorage = MockTokenStorage();
     tokenManager = TokenManager(tokenStorage: mockTokenStorage);
+  });
+
+  tearDownAll(() {
+    resetTestEnvironment();
   });
 
   // Helper function to create a JWT token with specific expiry

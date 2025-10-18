@@ -50,6 +50,8 @@ app.*.map.json
 *.env
 *.env.*
 
+/coverage/**
+
 # Unused files
 *.unused
 *.notused

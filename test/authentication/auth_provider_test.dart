@@ -4,6 +4,7 @@ import 'package:projectbrain/authentication/auth_provider.dart';
 import 'package:projectbrain/services/auth/auth_service.dart';
 import 'package:projectbrain/models/auth0_user.dart';
 import 'package:projectbrain/services/auth/auth_exception.dart';
+import '../helpers/test_helpers.dart';
 
 // Mock classes
 class MockAuthService extends Mock implements AuthService {}
@@ -14,9 +15,18 @@ void main() {
   late AuthProvider authProvider;
   late MockAuthService mockAuthService;
 
+  setUpAll(() async {
+    // Initialize test environment once for all tests
+    await initializeTestEnvironment();
+  });
+
   setUp(() {
     mockAuthService = MockAuthService();
     authProvider = AuthProvider(authService: mockAuthService);
+  });
+
+  tearDownAll(() {
+    resetTestEnvironment();
   });
 
   group('AuthProvider - Initialization', () {

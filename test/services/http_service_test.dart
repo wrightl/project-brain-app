@@ -3,6 +3,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:http/http.dart' as http;
 import 'package:projectbrain/services/http_service.dart';
 import 'package:projectbrain/services/auth/auth_service.dart';
+import '../helpers/test_helpers.dart';
 
 // Mock classes
 class MockAuthService extends Mock implements AuthService {}
@@ -15,9 +16,15 @@ void main() {
   late HttpService httpService;
   late MockAuthService mockAuthService;
 
-  setUpAll(() {
+  setUpAll(() async {
+    // Initialize test environment
+    await initializeTestEnvironment();
     // Register fallback values for mocktail
     registerFallbackValue(FakeUri());
+  });
+
+  tearDownAll(() {
+    resetTestEnvironment();
   });
 
   setUp(() {

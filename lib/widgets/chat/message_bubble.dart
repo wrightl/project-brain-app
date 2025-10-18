@@ -38,7 +38,9 @@ class MessageBubble extends StatelessWidget {
 
     return Container(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      padding: const EdgeInsets.all(8),
+      padding: isUser
+          ? const EdgeInsets.all(8).add(const EdgeInsets.only(left: 20))
+          : const EdgeInsets.all(8).add(const EdgeInsets.only(right: 20)),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(

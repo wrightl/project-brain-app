@@ -1,12 +1,10 @@
 import 'dart:convert';
-import 'package:projectbrain/services/auth/auth_service.dart';
 import 'package:projectbrain/models/chatmessage.dart';
 import 'package:projectbrain/services/http_service.dart';
 import 'package:projectbrain/models/conversation.dart';
 
 class ConversationService extends HttpService {
-  ConversationService({required AuthService authService})
-      : super(authService: authService);
+  ConversationService({required super.authService});
 
   Future<List<Conversation>> getConversations() async {
     final response = await get(
