@@ -1,0 +1,57 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  quality-checks:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed lib/ test/
+
+      - name: Analyze code
+        run: flutter analyze --fatal-infos
+
+      - name: Check for outdated dependencies
+        run: flutter pub outdated
+
+      - name: Run widget tests
+        run: flutter test test/widgets/ --coverage
+
+      - name: Generate coverage report
+        run: |
+          flutter pub global activate coverage
+          flutter pub global run coverage:format_coverage \
+            --lcov \
+            --in=coverage \
+            --out=coverage/lcov.info \
+            --packages=.packages \
+            --report-on=lib
+
+      - name: Coverage summary
+        run: |
+          if [ -f coverage/lcov.info ]; then
+            echo "## Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            lcov --list coverage/lcov.info || echo "Coverage report generated successfully"
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi

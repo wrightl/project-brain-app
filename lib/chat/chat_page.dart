@@ -120,9 +120,17 @@ class _ChatPageState extends State<ChatPage> {
                 return ListView.builder(
                   controller: _scrollController,
                   itemCount: chatProvider.messages.length,
+                  // Performance optimizations
+                  cacheExtent: 500, // Cache 500px above/below viewport
+                  addAutomaticKeepAlives: true, // Keep widgets alive when scrolling
+                  addRepaintBoundaries: true, // Reduce repaint overhead
                   itemBuilder: (context, index) {
                     final message = chatProvider.messages[index];
-                    return MessageBubble(message: message);
+                    // Use ValueKey for better widget reuse
+                    return MessageBubble(
+                      key: ValueKey('${message.role}_$index'),
+                      message: message,
+                    );
                   },
                 );
               },
