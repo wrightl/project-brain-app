@@ -3,9 +3,9 @@ import 'package:json_annotation/json_annotation.dart';
 part 'auth0_roles.g.dart';
 
 enum Role {
-  Employee,
-  Admin,
-  Customer,
+  employee,
+  admin,
+  customer,
 }
 
 @JsonSerializable()

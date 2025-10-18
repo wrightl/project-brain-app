@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:projectbrain/utils/Colors.dart';
+import 'package:projectbrain/utils/colors.dart';
 
 /// Light theme configuration
 ThemeData getTheme() {

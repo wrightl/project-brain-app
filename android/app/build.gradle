@@ -30,7 +30,9 @@ android {
         versionName = flutter.versionName
         multiDexEnabled = true
         manifestPlaceholders = [
-            "appAuthRedirectScheme": "com.dotdash.projectbrain"
+            "appAuthRedirectScheme": "com.dotdash.projectbrain",
+            "auth0Domain": "dev-cpd6arma80386i5r.us.auth0.com",
+            "auth0Scheme": "https"
         ]
     }
 

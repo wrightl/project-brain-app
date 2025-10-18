@@ -19,7 +19,7 @@ Map<String, dynamic> _$Auth0RoleToJson(Auth0Role instance) => <String, dynamic>{
     };
 
 const _$RoleEnumMap = {
-  Role.Employee: 'Employee',
-  Role.Admin: 'Admin',
-  Role.Customer: 'Customer',
+  Role.employee: 'employee',
+  Role.admin: 'admin',
+  Role.customer: 'customer',
 };

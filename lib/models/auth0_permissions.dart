@@ -36,7 +36,7 @@ class Auth0Permission {
 
   @override
   String toString() {
-    return '''$permissionName''';
+    return permissionName;
   }
 }
 

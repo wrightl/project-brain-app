@@ -156,7 +156,7 @@ class ErrorReportingService {
     if (!_initialized || _crashlytics == null) return false;
 
     try {
-      return await _crashlytics.isCrashlyticsCollectionEnabled;
+      return _crashlytics.isCrashlyticsCollectionEnabled;
     } catch (e) {
       logDebug('[ErrorReporting] Failed to check collection status: $e');
       return false;

@@ -105,11 +105,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       'doB': _dobController.text,
                       'favoriteColor': _favoriteColor,
                     }).then((_) {
+                      if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Onboarding complete!')),
                       );
                       Navigator.pop(context);
                     }).catchError((error) {
+                      if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Error: $error')),
                       );

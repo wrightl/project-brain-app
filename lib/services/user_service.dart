@@ -1,10 +1,8 @@
 import 'dart:convert';
-import 'package:projectbrain/services/auth/auth_service.dart';
 import 'package:projectbrain/services/http_service.dart';
 
 class UserService extends HttpService {
-  UserService({required AuthService authService})
-      : super(authService: authService);
+  UserService({required super.authService});
 
   Future<Map<String, dynamic>> getCurrentUser() async {
     final res = await get('/users/me');

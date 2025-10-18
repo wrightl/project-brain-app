@@ -151,7 +151,7 @@ class OfflineQueueService {
             );
           }
         } catch (e) {
-          logDebug('[OfflineQueue] Error processing ${key}: $e');
+          logDebug('[OfflineQueue] Error processing $key: $e');
         }
       }
 

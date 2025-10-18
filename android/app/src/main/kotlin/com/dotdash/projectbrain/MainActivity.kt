@@ -1,4 +1,4 @@
-package com.example.projectbrain
+package com.dotdash.projectbrain
 
 import io.flutter.embedding.android.FlutterActivity
 
