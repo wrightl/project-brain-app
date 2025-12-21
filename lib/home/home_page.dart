@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:projectbrain/authentication/auth_provider.dart';
+import 'package:projectbrain/ios_widget/shared_preferences_storage.dart';
 import 'package:projectbrain/widgets/link_list.dart';
 import 'package:provider/provider.dart';
 
@@ -42,6 +43,8 @@ class HomePage extends StatelessWidget {
       ),
     ];
 
+    var completed = false;
+
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -64,6 +67,20 @@ class HomePage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
+              FloatingActionButton(
+                onPressed: () async {
+                  SharedPreferencesStorage.setValue('egg_0', 'Menu Planning');
+                  final newCompleted = !completed;
+                  debugPrint('newCompleted: $newCompleted');
+                  SharedPreferencesStorage.setValue(
+                      'egg_0_completed', newCompleted);
+                  completed = newCompleted;
+                  SharedPreferencesStorage.setValue('egg_1', 'Shopping list');
+                  SharedPreferencesStorage.setValue('egg_2', 'Go shopping');
+                },
+                tooltip: 'Increment',
+                child: const Icon(Icons.add),
+              ),
 
               // Quick links section using reusable component
               LinkList(
