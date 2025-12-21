@@ -20,7 +20,7 @@ class LoginPage extends StatelessWidget {
       body: Center(
         child: ElevatedButton(
           onPressed: () => authProvider.login(),
-          child: const Text('Login with Auth0'),
+          child: const Text('Login / Sign Up'),
         ),
       ),
     );

@@ -7,6 +7,7 @@ import 'package:projectbrain/widgets/chat/message_bubble.dart';
 import 'package:projectbrain/widgets/chat/chat_input_field.dart';
 import 'package:projectbrain/widgets/chat/conversation_list_item.dart';
 import 'package:projectbrain/widgets/chat/typing_indicator.dart';
+import 'package:projectbrain/widgets/chat/citations_popout.dart';
 import 'package:provider/provider.dart';
 
 class ChatPage extends StatefulWidget {
@@ -138,6 +139,24 @@ class _ChatPageState extends State<ChatPage> {
                 );
               },
             ),
+          ),
+          // Citations popout - shows citations from the last assistant message
+          Consumer<ChatProvider>(
+            builder: (context, chatProvider, child) {
+              // Find the last assistant message with citations
+              final assistantMessages = chatProvider.messages
+                  .where((m) => m.role == 'assistant' && m.citations.isNotEmpty)
+                  .toList();
+
+              if (assistantMessages.isEmpty) {
+                return const SizedBox.shrink();
+              }
+
+              final lastMessageWithCitations = assistantMessages.last;
+              return CitationsPopout(
+                citations: lastMessageWithCitations.citations,
+              );
+            },
           ),
           ChatInputField(
             controller: _controller,

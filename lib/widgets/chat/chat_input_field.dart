@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:projectbrain/chat/chat_provider.dart';
+import 'package:projectbrain/subscription/subscription_provider.dart';
+import 'package:projectbrain/subscription/widgets/upgrade_prompt.dart';
+import 'package:projectbrain/models/subscription.dart';
 import 'package:provider/provider.dart';
 
 /// Reusable chat input field with send button
@@ -22,6 +25,43 @@ class ChatInputField extends StatelessWidget {
     return SafeArea(
       child: Row(
         children: [
+          // Microphone button (gated by subscription)
+          Consumer<SubscriptionProvider>(
+            builder: (context, subscriptionProvider, _) {
+              final canUseSpeech = subscriptionProvider.canUseSpeechInput();
+              
+              return IconButton(
+                icon: Icon(
+                  Icons.mic,
+                  color: canUseSpeech
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                onPressed: canUseSpeech
+                    ? () {
+                        // TODO: Implement speech input functionality
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Speech input coming soon'),
+                          ),
+                        );
+                      }
+                    : () {
+                        // Show upgrade prompt
+                        showDialog(
+                          context: context,
+                          builder: (context) => UpgradePromptDialog(
+                            requiredTier: SubscriptionTier.pro,
+                            featureName: 'Speech input',
+                          ),
+                        );
+                      },
+                tooltip: canUseSpeech
+                    ? 'Speech input'
+                    : 'Speech input requires Pro tier',
+              );
+            },
+          ),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(

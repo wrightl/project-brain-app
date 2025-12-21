@@ -3,10 +3,12 @@ import 'package:projectbrain/services/auth/auth_service.dart';
 import 'package:projectbrain/models/auth0_user.dart';
 import 'package:projectbrain/models/user.dart';
 import 'package:projectbrain/services/user_service.dart';
+import 'package:projectbrain/services/feature_flag_service.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService authService;
+  final FeatureFlagService? featureFlagService;
   late final UserService userService;
 
   bool _isLoading = false;
@@ -14,7 +16,10 @@ class AuthProvider extends ChangeNotifier {
   User? _user;
   String? _errorMessage;
 
-  AuthProvider({required this.authService}) {
+  AuthProvider({
+    required this.authService,
+    this.featureFlagService,
+  }) {
     userService = UserService(authService: authService);
   }
 
@@ -68,6 +73,11 @@ class AuthProvider extends ChangeNotifier {
       await authService.logout();
       _user = null;
       _onboardingComplete = false;
+
+      // Reset feature flags to anonymous context
+      if (featureFlagService != null) {
+        await featureFlagService!.logout();
+      }
     } catch (e) {
       logError('[AuthProvider] Error during logout', e);
       _errorMessage = 'Failed to logout';
@@ -94,6 +104,14 @@ class AuthProvider extends ChangeNotifier {
       final data = await userService.getCurrentUser();
       _user = User.fromJson(data);
       _onboardingComplete = _user?.isOnboarded ?? false;
+
+      // Update feature flags with user context
+      if (_user != null && featureFlagService != null) {
+        await featureFlagService!.identifyUser(
+          user: _user!,
+          auth0Profile: profile,
+        );
+      }
     } catch (e) {
       logError('[AuthProvider] Error fetching user data', e);
       _user = null;
@@ -111,6 +129,28 @@ class AuthProvider extends ChangeNotifier {
       logError('[AuthProvider] Error refreshing user data', e);
       _errorMessage = 'Failed to refresh user data';
     } finally {
+      notifyListeners();
+    }
+  }
+
+  /// Update user profile
+  Future<void> updateUser(Map<String, dynamic> userData) async {
+    if (_user == null) {
+      throw Exception('No user logged in');
+    }
+
+    _errorMessage = null;
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await userService.updateUser(_user!.id, userData);
+    } catch (e) {
+      logError('[AuthProvider] Error updating user', e);
+      _errorMessage = 'Failed to update user profile';
+      rethrow;
+    } finally {
+      _isLoading = false;
       notifyListeners();
     }
   }

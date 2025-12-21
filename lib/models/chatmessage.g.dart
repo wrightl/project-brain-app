@@ -6,14 +6,18 @@ part of 'chatmessage.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$ChatMessageImpl _$$ChatMessageImplFromJson(Map<String, dynamic> json) =>
-    _$ChatMessageImpl(
+_ChatMessage _$ChatMessageFromJson(Map<String, dynamic> json) => _ChatMessage(
       role: json['role'] as String,
       content: json['content'] as String,
+      citations: (json['citations'] as List<dynamic>?)
+              ?.map((e) => Citation.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
     );
 
-Map<String, dynamic> _$$ChatMessageImplToJson(_$ChatMessageImpl instance) =>
+Map<String, dynamic> _$ChatMessageToJson(_ChatMessage instance) =>
     <String, dynamic>{
       'role': instance.role,
       'content': instance.content,
+      'citations': instance.citations,
     };

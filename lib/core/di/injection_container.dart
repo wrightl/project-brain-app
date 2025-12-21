@@ -11,6 +11,13 @@ import 'package:projectbrain/chat/chat_provider.dart';
 import 'package:projectbrain/core/storage/preferences_service.dart';
 import 'package:projectbrain/services/ai_service.dart';
 import 'package:projectbrain/services/conversation_service.dart';
+import 'package:projectbrain/services/resource_service.dart';
+import 'package:projectbrain/services/voice_note_service.dart';
+import 'package:projectbrain/services/quiz_service.dart';
+import 'package:projectbrain/services/coach_service.dart';
+import 'package:projectbrain/services/subscription_service.dart';
+import 'package:projectbrain/subscription/subscription_provider.dart';
+import 'package:projectbrain/services/feature_flag_service.dart';
 import 'package:projectbrain/core/routing/app_router.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
 
@@ -66,9 +73,17 @@ Future<void> initializeDependencies() async {
     ),
   );
 
+  // Feature Flag Service - manages feature flags with LaunchDarkly
+  sl.registerLazySingleton<FeatureFlagService>(
+    () => FeatureFlagService(),
+  );
+
   // Auth Provider - manages authentication UI state
   sl.registerLazySingleton<AuthProvider>(
-    () => AuthProvider(authService: sl<AuthService>()),
+    () => AuthProvider(
+      authService: sl<AuthService>(),
+      featureFlagService: sl<FeatureFlagService>(),
+    ),
   );
 
   // ===== API Services =====
@@ -82,12 +97,45 @@ Future<void> initializeDependencies() async {
     () => ConversationService(authService: sl<AuthService>()),
   );
 
+  // Resource Service
+  sl.registerLazySingleton<ResourceService>(
+    () => ResourceService(authService: sl<AuthService>()),
+  );
+
+  // Voice Note Service
+  sl.registerLazySingleton<VoiceNoteService>(
+    () => VoiceNoteService(authService: sl<AuthService>()),
+  );
+
+  // Quiz Service
+  sl.registerLazySingleton<QuizService>(
+    () => QuizService(authService: sl<AuthService>()),
+  );
+
+  // Coach Service
+  sl.registerLazySingleton<CoachService>(
+    () => CoachService(authService: sl<AuthService>()),
+  );
+
+  // Subscription Service
+  sl.registerLazySingleton<SubscriptionService>(
+    () => SubscriptionService(authService: sl<AuthService>()),
+  );
+
   // ===== Providers =====
   // Chat Provider - factory to create new instances when needed
   sl.registerFactory<ChatProvider>(
     () => ChatProvider(
       aiService: sl<AIService>(),
       conversationService: sl<ConversationService>(),
+    ),
+  );
+
+  // Subscription Provider - manages subscription UI state
+  sl.registerLazySingleton<SubscriptionProvider>(
+    () => SubscriptionProvider(
+      subscriptionService: sl<SubscriptionService>(),
+      sharedPreferences: sl<SharedPreferences>(),
     ),
   );
 

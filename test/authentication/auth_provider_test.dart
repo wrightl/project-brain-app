@@ -22,7 +22,10 @@ void main() {
 
   setUp(() {
     mockAuthService = MockAuthService();
-    authProvider = AuthProvider(authService: mockAuthService);
+    authProvider = AuthProvider(
+      authService: mockAuthService,
+      featureFlagService: null, // Not testing feature flags in these tests
+    );
   });
 
   tearDownAll(() {

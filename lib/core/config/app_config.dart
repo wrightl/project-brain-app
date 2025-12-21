@@ -36,7 +36,8 @@ class AppConfig {
   /// 3. Defaulting based on build mode (dev for debug, production for release)
   static Future<void> init({Environment? env}) async {
     // Determine environment
-    _environment = env ?? _getEnvironmentFromDefine() ?? _getDefaultEnvironment();
+    _environment =
+        env ?? _getEnvironmentFromDefine() ?? _getDefaultEnvironment();
 
     // Load environment-specific config
     final envFile = '.env.${_environment.name}';
@@ -49,7 +50,8 @@ class AppConfig {
       if (_environment == Environment.dev) {
         await dotenv.load(fileName: '.env.dev');
       } else {
-        throw Exception('Failed to load $_environment environment configuration');
+        throw Exception(
+            'Failed to load $_environment environment configuration');
       }
     }
   }
@@ -69,7 +71,8 @@ class AppConfig {
       case 'prod':
         return Environment.production;
       default:
-        logWarning('[AppConfig] Unknown ENVIRONMENT value: $envString, using default');
+        logWarning(
+            '[AppConfig] Unknown ENVIRONMENT value: $envString, using default');
         return null;
     }
   }
@@ -90,6 +93,11 @@ class AppConfig {
   static String get authClientId => _getEnv('AUTH_CLIENT_ID');
   static String get authAudience => _getEnv('AUTH_AUDIENCE');
   static String get authIssuer => 'https://$authDomain';
+
+  // LaunchDarkly Configuration
+  static String get launchDarklyClientSideId =>
+      _getEnv('LAUNCHDARKLY_CLIENT_SIDE_ID');
+  static String get launchDarklyMobileKey => _getEnv('LAUNCHDARKLY_MOBILE_KEY');
 
   // App Configuration
   static const String bundleIdentifier = 'com.dotdash.projectbrain';

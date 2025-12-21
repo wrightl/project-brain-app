@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:flutter/material.dart';
+import 'package:projectbrain/models/citation.dart';
 import 'package:projectbrain/models/chatmessage.dart';
 import 'package:projectbrain/models/conversation.dart';
 import 'package:projectbrain/services/ai_service.dart';
@@ -28,7 +30,8 @@ class ChatProvider extends ChangeNotifier {
   /// Send a message and stream the response
   Future<void> sendMessage(String text) async {
     _errorMessage = null;
-    _messages.add(const ChatMessage(role: 'user', content: '').copyWith(content: text));
+    _messages.add(
+        const ChatMessage(role: 'user', content: '').copyWith(content: text));
     notifyListeners();
 
     // Add placeholder assistant message
@@ -42,6 +45,7 @@ class ChatProvider extends ChangeNotifier {
         conversationId: _conversation?.id,
       );
       final stream = response.stream;
+      final citationsStream = response.citationsStream;
       final conversationId = response.conversationId;
 
       // If this is a new conversation, create and store it locally
@@ -57,6 +61,19 @@ class ChatProvider extends ChangeNotifier {
         logDebug('[ChatProvider] Created new conversation: $conversationId');
       }
 
+      // Collect citations from stream
+      final List<Citation> collectedCitations = [];
+      final citationsSubscription = citationsStream.listen((citations) {
+        collectedCitations.clear();
+        collectedCitations.addAll(citations);
+        // Update message with current citations
+        final currentMessage = _messages[assistantMessageIndex];
+        _messages[assistantMessageIndex] = currentMessage.copyWith(
+          citations: List.from(collectedCitations),
+        );
+        notifyListeners();
+      });
+
       await for (final chunk in stream) {
         final currentMessage = _messages[assistantMessageIndex];
         _messages[assistantMessageIndex] = currentMessage.copyWith(
@@ -64,6 +81,16 @@ class ChatProvider extends ChangeNotifier {
         );
         notifyListeners();
       }
+
+      // Cancel citations subscription
+      await citationsSubscription.cancel();
+
+      // Final update: ensure citations are set on the message
+      final finalMessage = _messages[assistantMessageIndex];
+      _messages[assistantMessageIndex] = finalMessage.copyWith(
+        citations: List.from(collectedCitations),
+      );
+      notifyListeners();
 
       logDebug('[ChatProvider] Message streaming completed');
     } catch (e, stackTrace) {
@@ -104,7 +131,8 @@ class ChatProvider extends ChangeNotifier {
 
     try {
       logDebug('[ChatProvider] Loading conversation: $id');
-      final conversation = await conversationService.getConversationWithMessagesById(id);
+      final conversation =
+          await conversationService.getConversationWithMessagesById(id);
       _messages.clear();
       _messages.addAll(conversation.messages);
       _conversation = conversation;

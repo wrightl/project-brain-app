@@ -22,4 +22,17 @@ class UserService extends HttpService {
       throw Exception('Failed to complete onboarding');
     }
   }
+
+  Future<Map<String, dynamic>> updateUser(
+      String userId, Map<String, dynamic> userData) async {
+    final res = await put(
+      '/users/me/$userId',
+      body: jsonEncode(userData),
+    );
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body);
+    } else {
+      throw Exception('Failed to update user profile');
+    }
+  }
 }

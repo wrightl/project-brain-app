@@ -8,6 +8,12 @@ class User {
   final String? bio;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  
+  // Onboarding fields
+  final String? fullName;
+  final String? preferredPronoun;
+  final String? doB; // Date of birth as ISO string
+  final List<String>? neurodiverseTraits;
 
   User({
     required this.id,
@@ -19,6 +25,10 @@ class User {
     this.bio,
     this.createdAt,
     this.updatedAt,
+    this.fullName,
+    this.preferredPronoun,
+    this.doB,
+    this.neurodiverseTraits,
   });
 
   bool get hasImage => picture != null && picture!.isNotEmpty;
@@ -38,6 +48,12 @@ class User {
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'])
           : null,
+      fullName: json['fullName'],
+      preferredPronoun: json['preferredPronoun'],
+      doB: json['doB'],
+      neurodiverseTraits: json['neurodiverseTraits'] != null
+          ? List<String>.from(json['neurodiverseTraits'])
+          : null,
     );
   }
 
@@ -52,6 +68,10 @@ class User {
       'bio': bio,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'fullName': fullName,
+      'preferredPronoun': preferredPronoun,
+      'doB': doB,
+      'neurodiverseTraits': neurodiverseTraits,
     };
   }
 
@@ -65,6 +85,10 @@ class User {
     String? bio,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? fullName,
+    String? preferredPronoun,
+    String? doB,
+    List<String>? neurodiverseTraits,
   }) {
     return User(
       id: id ?? this.id,
@@ -76,6 +100,10 @@ class User {
       bio: bio ?? this.bio,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      fullName: fullName ?? this.fullName,
+      preferredPronoun: preferredPronoun ?? this.preferredPronoun,
+      doB: doB ?? this.doB,
+      neurodiverseTraits: neurodiverseTraits ?? this.neurodiverseTraits,
     );
   }
 }
