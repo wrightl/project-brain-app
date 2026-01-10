@@ -151,6 +151,28 @@ class ErrorReportingService {
     }
   }
 
+  /// Set user property
+  /// 
+  /// User properties are attributes that describe segments of your user base,
+  /// such as language preference or geographic location.
+  /// 
+  /// Property names must be 24 characters or fewer, contain alphanumeric
+  /// characters and underscores only, and must start with an alphabetic character.
+  /// Property values must be 36 characters or fewer.
+  Future<void> setUserProperty({
+    required String name,
+    required String? value,
+  }) async {
+    if (!_initialized || _analytics == null) return;
+
+    try {
+      await _analytics.setUserProperty(name: name, value: value);
+      logDebug('[ErrorReporting] Set user property: $name = $value');
+    } catch (e) {
+      logDebug('[ErrorReporting] Failed to set user property: $e');
+    }
+  }
+
   /// Check if Crashlytics is collecting reports
   Future<bool> isCrashlyticsCollectionEnabled() async {
     if (!_initialized || _crashlytics == null) return false;

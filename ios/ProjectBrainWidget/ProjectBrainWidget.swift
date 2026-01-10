@@ -43,7 +43,9 @@ struct Provider: AppIntentTimelineProvider {
         }
         
         let entry = SimpleEntry(date: Date(), eggs: eggs)
-        return Timeline(entries: [entry], policy: .never)
+        // Refresh every 15 minutes, but also responds to manual reloads
+        let nextUpdate = Date().addingTimeInterval(15 * 60)
+        return Timeline(entries: [entry], policy: .after(nextUpdate))
     }
 }
 

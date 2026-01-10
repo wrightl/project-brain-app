@@ -52,6 +52,8 @@ app.*.map.json
 
 /coverage/**
 
+.secrets
+
 # Unused files
 *.unused
 *.notused

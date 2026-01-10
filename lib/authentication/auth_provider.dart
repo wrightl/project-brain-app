@@ -4,6 +4,9 @@ import 'package:projectbrain/models/auth0_user.dart';
 import 'package:projectbrain/models/user.dart';
 import 'package:projectbrain/services/user_service.dart';
 import 'package:projectbrain/services/feature_flag_service.dart';
+import 'package:projectbrain/services/push_notification_service.dart';
+import 'package:projectbrain/services/error_reporting_service.dart';
+import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -58,6 +61,25 @@ class AuthProvider extends ChangeNotifier {
     try {
       await authService.login();
       await _fetchUserData();
+
+      // Set user ID in analytics after successful login
+      try {
+        final userId = profile?.sub ?? _user?.id;
+        if (userId != null) {
+          await sl<ErrorReportingService>().setUserId(userId);
+        }
+      } catch (e) {
+        logError('[AuthProvider] Error setting analytics user ID', e);
+        // Don't fail login if analytics user ID setting fails
+      }
+
+      // Register push notification token after successful login
+      try {
+        await sl<PushNotificationService>().registerToken();
+      } catch (e) {
+        logError('[AuthProvider] Error registering push token after login', e);
+        // Don't fail login if push token registration fails
+      }
     } catch (e) {
       logError('[AuthProvider] Error during login', e);
       _errorMessage = e.toString().replaceAll('AuthException: ', '');
@@ -70,14 +92,31 @@ class AuthProvider extends ChangeNotifier {
   Future<void> logout() async {
     _errorMessage = null;
     try {
+      // Unregister push notification token before logout
+      try {
+        await sl<PushNotificationService>().unregisterToken();
+      } catch (e) {
+        logError(
+            '[AuthProvider] Error unregistering push token during logout', e);
+        // Continue with logout even if unregister fails
+      }
+
       await authService.logout();
       _user = null;
       _onboardingComplete = false;
 
-      // Reset feature flags to anonymous context
-      if (featureFlagService != null) {
-        await featureFlagService!.logout();
+      // Clear user ID in analytics after logout
+      try {
+        await sl<ErrorReportingService>().setUserId(null);
+      } catch (e) {
+        logError('[AuthProvider] Error clearing analytics user ID', e);
+        // Don't fail logout if analytics user ID clearing fails
       }
+
+      // // Reset feature flags to anonymous context
+      // if (featureFlagService != null) {
+      //   await featureFlagService!.logout();
+      // }
     } catch (e) {
       logError('[AuthProvider] Error during logout', e);
       _errorMessage = 'Failed to logout';
@@ -104,6 +143,17 @@ class AuthProvider extends ChangeNotifier {
       final data = await userService.getCurrentUser();
       _user = User.fromJson(data);
       _onboardingComplete = _user?.isOnboarded ?? false;
+
+      // Set user ID in analytics if not already set
+      try {
+        final userId = profile?.sub ?? _user?.id;
+        if (userId != null) {
+          await sl<ErrorReportingService>().setUserId(userId);
+        }
+      } catch (e) {
+        logError('[AuthProvider] Error setting analytics user ID', e);
+        // Don't fail user data fetch if analytics user ID setting fails
+      }
 
       // Update feature flags with user context
       if (_user != null && featureFlagService != null) {

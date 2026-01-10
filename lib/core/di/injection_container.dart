@@ -1,6 +1,8 @@
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:projectbrain/authentication/auth_provider.dart';
 import 'package:projectbrain/services/auth/auth_service.dart';
 import 'package:projectbrain/services/auth/token_storage.dart';
@@ -16,8 +18,13 @@ import 'package:projectbrain/services/voice_note_service.dart';
 import 'package:projectbrain/services/quiz_service.dart';
 import 'package:projectbrain/services/coach_service.dart';
 import 'package:projectbrain/services/subscription_service.dart';
+import 'package:projectbrain/services/egg_goals_service.dart';
+import 'package:projectbrain/services/push_notification_service.dart';
+import 'package:projectbrain/services/error_reporting_service.dart';
 import 'package:projectbrain/subscription/subscription_provider.dart';
+import 'package:projectbrain/goals/egg_goals_provider.dart';
 import 'package:projectbrain/services/feature_flag_service.dart';
+import 'package:projectbrain/services/http_service.dart';
 import 'package:projectbrain/core/routing/app_router.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
 
@@ -73,9 +80,14 @@ Future<void> initializeDependencies() async {
     ),
   );
 
-  // Feature Flag Service - manages feature flags with LaunchDarkly
+  // HTTP Service - base service for making authenticated API requests
+  sl.registerLazySingleton<HttpService>(
+    () => HttpService(authService: sl<AuthService>()),
+  );
+
+  // Feature Flag Service - manages feature flags from backend API
   sl.registerLazySingleton<FeatureFlagService>(
-    () => FeatureFlagService(),
+    () => FeatureFlagService(httpService: sl<HttpService>()),
   );
 
   // Auth Provider - manages authentication UI state
@@ -122,6 +134,39 @@ Future<void> initializeDependencies() async {
     () => SubscriptionService(authService: sl<AuthService>()),
   );
 
+  // Egg Goals Service
+  sl.registerLazySingleton<EggGoalsService>(
+    () => EggGoalsService(authService: sl<AuthService>()),
+  );
+
+  // Push Notification Service
+  sl.registerLazySingleton<PushNotificationService>(
+    () => PushNotificationService(
+      httpService: sl<HttpService>(),
+      authService: sl<AuthService>(),
+      sharedPreferences: sl<SharedPreferences>(),
+    ),
+  );
+
+  // ===== Firebase Services =====
+  // Firebase Analytics - singleton instance
+  sl.registerLazySingleton<FirebaseAnalytics>(
+    () => FirebaseAnalytics.instance,
+  );
+
+  // Firebase Crashlytics - singleton instance
+  sl.registerLazySingleton<FirebaseCrashlytics>(
+    () => FirebaseCrashlytics.instance,
+  );
+
+  // Error Reporting Service - combines Crashlytics and Analytics
+  sl.registerLazySingleton<ErrorReportingService>(
+    () => ErrorReportingService(
+      crashlytics: sl<FirebaseCrashlytics>(),
+      analytics: sl<FirebaseAnalytics>(),
+    ),
+  );
+
   // ===== Providers =====
   // Chat Provider - factory to create new instances when needed
   sl.registerFactory<ChatProvider>(
@@ -139,12 +184,21 @@ Future<void> initializeDependencies() async {
     ),
   );
 
+  // Egg Goals Provider - manages daily goals UI state
+  sl.registerLazySingleton<EggGoalsProvider>(
+    () => EggGoalsProvider(
+      eggGoalsService: sl<EggGoalsService>(),
+      preferencesService: sl<PreferencesService>(),
+    ),
+  );
+
   // ===== Routing =====
-  // App Router - depends on auth provider and preferences service
+  // App Router - depends on auth provider, preferences service, and error reporting service
   sl.registerLazySingleton<AppRouter>(
     () => AppRouter(
       authProvider: sl<AuthProvider>(),
       preferencesService: sl<PreferencesService>(),
+      errorReportingService: sl<ErrorReportingService>(),
     ),
   );
 }

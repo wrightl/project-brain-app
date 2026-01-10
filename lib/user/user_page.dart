@@ -13,6 +13,12 @@ class UserPage extends StatelessWidget {
     // Define the list of navigation links
     final links = [
       NavigationLink(
+        icon: Icons.check_circle,
+        title: 'Daily Goals',
+        subtitle: 'Set and track your 3 daily goals',
+        onTap: () => context.go('/goals'),
+      ),
+      NavigationLink(
         icon: Icons.person,
         title: 'Profile',
         subtitle: 'View and manage your profile settings',

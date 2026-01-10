@@ -1,295 +1,170 @@
-import 'dart:async';
+import 'dart:convert';
 
-import 'package:launchdarkly_flutter_client_sdk/launchdarkly_flutter_client_sdk.dart';
-import 'package:projectbrain/core/config/app_config.dart';
 import 'package:projectbrain/models/user.dart';
 import 'package:projectbrain/models/auth0_user.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
+import 'package:projectbrain/services/http_service.dart';
 
-/// Service for managing feature flags using LaunchDarkly
-/// Integrates with user authentication to provide user-specific feature flags
+/// Service for managing feature flags using backend API
+/// Fetches feature flags from the backend and caches them in memory
 class FeatureFlagService {
-  LDClient? _client;
+  final HttpService _httpService;
+  Map<String, dynamic> _flags = {};
   bool _isInitialized = false;
-  StreamSubscription<List<String>>? _flagChangesSubscription;
+  bool _isLoading = false;
 
-  /// Get the LaunchDarkly client instance
-  LDClient? get client => _client;
+  /// Feature flags API endpoint
+  static const String _flagsEndpoint = '/feature-flags';
+
+  FeatureFlagService({required HttpService httpService})
+      : _httpService = httpService;
 
   /// Check if the service is initialized
   bool get isInitialized => _isInitialized;
 
-  /// Initialize the feature flag service with an anonymous user context
+  /// Initialize the feature flag service
+  /// Fetches feature flags from the backend API
   Future<void> init() async {
+    if (_isLoading) {
+      logDebug('[FeatureFlagService] Already loading flags, skipping');
+      return;
+    }
+
     try {
-      logInfo('[FeatureFlagService] Initializing with anonymous context');
+      logInfo('[FeatureFlagService] Initializing and fetching feature flags');
+      _isLoading = true;
 
-      final config = LDConfig(
-        AppConfig.launchDarklyMobileKey,
-        AutoEnvAttributes.enabled,
-      );
-      final context = _buildAnonymousContext();
+      await _fetchFlags();
 
-      _client = LDClient(config, context);
-      await _client?.start();
       _isInitialized = true;
-
-      logInfo('[FeatureFlagService] Initialized successfully');
+      logInfo(
+          '[FeatureFlagService] Initialized successfully with ${_flags.length} flags');
     } catch (e) {
       logError('[FeatureFlagService] Failed to initialize', e);
       _isInitialized = false;
+      // Initialize with empty flags to allow app to continue
+      _flags = {};
+    } finally {
+      _isLoading = false;
     }
   }
 
-  /// Update the context with authenticated user details
+  /// Refresh feature flags when user is identified
+  /// This allows the backend to return user-specific feature flags
   Future<void> identifyUser({
     required User user,
     Auth0User? auth0Profile,
   }) async {
-    if (!_isInitialized || _client == null) {
-      logWarning(
-          '[FeatureFlagService] Cannot identify user - service not initialized');
-      return;
-    }
-
     try {
-      logInfo('[FeatureFlagService] Identifying user: ${user.email}');
-
-      final context = _buildUserContext(user: user, auth0Profile: auth0Profile);
-      await _client?.identify(context);
-
-      logInfo('[FeatureFlagService] User identified successfully');
+      logInfo('[FeatureFlagService] Refreshing flags for user: ${user.email}');
+      await _fetchFlags();
+      logInfo('[FeatureFlagService] Flags refreshed successfully');
     } catch (e) {
-      logError('[FeatureFlagService] Failed to identify user', e);
+      logError('[FeatureFlagService] Failed to refresh flags for user', e);
     }
   }
 
-  /// Update the context to anonymous when user logs out
-  Future<void> logout() async {
-    if (!_isInitialized || _client == null) {
-      logWarning(
-          '[FeatureFlagService] Cannot logout - service not initialized');
-      return;
-    }
+  /// Feature flag key constants
+  static const String _coachFeatureKey = 'CoachFeatureEnabled';
+  static const String _emailFeatureKey = 'EmailFeatureEnabled';
 
-    try {
-      logInfo('[FeatureFlagService] Switching to anonymous context');
+  /// Get the CoachFeatureEnabled flag value
+  /// Returns true if the coach section feature is enabled, false otherwise
+  bool get coachFeatureEnabled =>
+      _getBoolFlag(_coachFeatureKey, defaultValue: false);
 
-      final context = _buildAnonymousContext();
-      await _client?.identify(context);
+  /// Get the EmailFeatureEnabled flag value
+  /// Returns true if email features are enabled, false otherwise
+  bool get emailFeatureEnabled =>
+      _getBoolFlag(_emailFeatureKey, defaultValue: false);
 
-      logInfo(
-          '[FeatureFlagService] Switched to anonymous context successfully');
-    } catch (e) {
-      logError('[FeatureFlagService] Failed to switch to anonymous context', e);
-    }
-  }
-
-  /// Get a boolean feature flag value
-  Future<bool> getBoolFlag(String flagKey, {bool defaultValue = false}) async {
-    if (!_isInitialized || _client == null) {
+  /// Internal helper to get a boolean feature flag value
+  bool _getBoolFlag(String flagKey, {bool defaultValue = false}) {
+    if (!_isInitialized) {
       logWarning(
           '[FeatureFlagService] Getting default value for $flagKey - service not initialized');
       return defaultValue;
     }
 
     try {
-      final value =
-          _client?.boolVariation(flagKey, defaultValue) ?? defaultValue;
-      logDebug('[FeatureFlagService] Flag $flagKey = $value');
-      return value;
-    } catch (e) {
-      logError('[FeatureFlagService] Failed to get flag $flagKey', e);
-      return defaultValue;
-    }
-  }
-
-  /// Get a string feature flag value
-  Future<String> getStringFlag(String flagKey,
-      {String defaultValue = ''}) async {
-    if (!_isInitialized || _client == null) {
-      logWarning(
-          '[FeatureFlagService] Getting default value for $flagKey - service not initialized');
-      return defaultValue;
-    }
-
-    try {
-      final value =
-          _client?.stringVariation(flagKey, defaultValue) ?? defaultValue;
-      logDebug('[FeatureFlagService] Flag $flagKey = $value');
-      return value;
-    } catch (e) {
-      logError('[FeatureFlagService] Failed to get flag $flagKey', e);
-      return defaultValue;
-    }
-  }
-
-  /// Get an integer feature flag value
-  Future<int> getIntFlag(String flagKey, {int defaultValue = 0}) async {
-    if (!_isInitialized || _client == null) {
-      logWarning(
-          '[FeatureFlagService] Getting default value for $flagKey - service not initialized');
-      return defaultValue;
-    }
-
-    try {
-      final value =
-          _client?.intVariation(flagKey, defaultValue) ?? defaultValue;
-      logDebug('[FeatureFlagService] Flag $flagKey = $value');
-      return value;
-    } catch (e) {
-      logError('[FeatureFlagService] Failed to get flag $flagKey', e);
-      return defaultValue;
-    }
-  }
-
-  /// Get a double feature flag value
-  Future<double> getDoubleFlag(String flagKey,
-      {double defaultValue = 0.0}) async {
-    if (!_isInitialized || _client == null) {
-      logWarning(
-          '[FeatureFlagService] Getting default value for $flagKey - service not initialized');
-      return defaultValue;
-    }
-
-    try {
-      final value =
-          _client?.doubleVariation(flagKey, defaultValue) ?? defaultValue;
-      logDebug('[FeatureFlagService] Flag $flagKey = $value');
-      return value;
-    } catch (e) {
-      logError('[FeatureFlagService] Failed to get flag $flagKey', e);
-      return defaultValue;
-    }
-  }
-
-  /// Get a JSON feature flag value
-  Future<LDValue> getJsonFlag(String flagKey,
-      {required LDValue defaultValue}) async {
-    if (!_isInitialized || _client == null) {
-      logWarning(
-          '[FeatureFlagService] Getting default value for $flagKey - service not initialized');
-      return defaultValue;
-    }
-
-    try {
-      final value =
-          _client?.jsonVariation(flagKey, defaultValue) ?? defaultValue;
-      logDebug('[FeatureFlagService] Flag $flagKey = $value');
-      return value;
-    } catch (e) {
-      logError('[FeatureFlagService] Failed to get flag $flagKey', e);
-      return defaultValue;
-    }
-  }
-
-  /// Listen to flag changes
-  /// Returns a stream that emits the flag key whenever it changes
-  Stream<String> listenToFlag(String flagKey) {
-    if (!_isInitialized || _client == null) {
-      logWarning(
-          '[FeatureFlagService] Cannot listen to flag - service not initialized');
-      return Stream.empty();
-    }
-
-    return _client!.flagChanges.where((changedFlags) {
-      return changedFlags.keys.contains(flagKey);
-    }).map((_) => flagKey);
-  }
-
-  /// Listen to all flag changes
-  Stream<FlagsChangedEvent> get allFlagChanges {
-    if (!_isInitialized || _client == null) {
-      return Stream.empty();
-    }
-    return _client!.flagChanges;
-  }
-
-  // /// Register a listener for flag changes
-  // void registerFlagListener(String flagKey, void Function(String) listener) {
-  //   if (!_isInitialized || _client == null) {
-  //     logWarning('[FeatureFlagService] Cannot register listener - service not initialized');
-  //     return;
-  //   }
-  //   try {
-  //     _client?.flagChanges(flagKey, listener);
-  //     logDebug('[FeatureFlagService] Registered listener for $flagKey');
-  //   } catch (e) {
-  //     logError('[FeatureFlagService] Failed to register listener for $flagKey', e);
-  //   }
-  // }
-
-  // /// Unregister a listener for flag changes
-  // void unregisterFlagListener(String flagKey, void Function(String) listener) {
-  //   if (!_isInitialized || _client == null) {
-  //     logWarning('[FeatureFlagService] Cannot unregister listener - service not initialized');
-  //     return;
-  //   }
-
-  //   try {
-  //     _client?.unregisterFeatureFlagListener(flagKey, listener);
-  //     logDebug('[FeatureFlagService] Unregistered listener for $flagKey');
-  //   } catch (e) {
-  //     logError('[FeatureFlagService] Failed to unregister listener for $flagKey', e);
-  //   }
-  // }
-
-  /// Build an anonymous context for unauthenticated users
-  LDContext _buildAnonymousContext() {
-    return LDContextBuilder().kind('user', 'anonymous').anonymous(true).build();
-  }
-
-  /// Build a user context with all available user details
-  LDContext _buildUserContext({
-    required User user,
-    Auth0User? auth0Profile,
-  }) {
-    final builder = LDContextBuilder()
-        .kind('user', user.id)
-        .setString('email', user.email)
-        .setString('name', user.name);
-
-    // Add optional attributes
-    if (user.nickname != null && user.nickname!.isNotEmpty) {
-      builder.setString('nickname', user.nickname!);
-    }
-
-    if (user.bio != null && user.bio!.isNotEmpty) {
-      builder.setString('bio', user.bio!);
-    }
-
-    // Add onboarding status
-    builder.setBool('isOnboarded', user.isOnboarded);
-
-    // Add timestamps
-    if (user.createdAt != null) {
-      builder.setString('createdAt', user.createdAt!.toIso8601String());
-    }
-
-    if (user.updatedAt != null) {
-      builder.setString('updatedAt', user.updatedAt!.toIso8601String());
-    }
-
-    // Add Auth0 profile details if available
-    if (auth0Profile != null) {
-      builder.setString('auth0Sub', auth0Profile.sub);
-
-      if (auth0Profile.picture.isNotEmpty) {
-        builder.setString('avatar', auth0Profile.picture);
+      final value = _flags[flagKey];
+      if (value == null) {
+        logDebug(
+            '[FeatureFlagService] Flag $flagKey not found, using default: $defaultValue');
+        return defaultValue;
       }
+
+      // Handle boolean values
+      if (value is bool) {
+        logDebug('[FeatureFlagService] Flag $flagKey = $value');
+        return value;
+      }
+
+      // Try to convert string "true"/"false" to boolean
+      if (value is String) {
+        final boolValue = value.toLowerCase() == 'true';
+        logDebug(
+            '[FeatureFlagService] Flag $flagKey = $boolValue (converted from string)');
+        return boolValue;
+      }
+
+      logWarning(
+          '[FeatureFlagService] Flag $flagKey has unexpected type, using default: $defaultValue');
+      return defaultValue;
+    } catch (e) {
+      logError('[FeatureFlagService] Failed to get flag $flagKey', e);
+      return defaultValue;
     }
+  }
 
-    // Add environment
-    builder.setString('environment', AppConfig.environmentName);
+  /// Fetch feature flags from the backend API
+  Future<void> _fetchFlags() async {
+    try {
+      logDebug('[FeatureFlagService] Fetching flags from $_flagsEndpoint');
+      final response = await _httpService.get(
+        _flagsEndpoint,
+        cacheDuration: const Duration(minutes: 5),
+      );
 
-    return builder.build();
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> decoded = jsonDecode(response.body);
+        _flags = decoded;
+        logInfo(
+            '[FeatureFlagService] Successfully fetched ${_flags.length} feature flags');
+      } else {
+        logWarning(
+            '[FeatureFlagService] Failed to fetch flags: HTTP ${response.statusCode}');
+        // Keep existing flags if fetch fails
+        if (_flags.isEmpty) {
+          _flags = {};
+        }
+      }
+    } catch (e) {
+      logError('[FeatureFlagService] Error fetching flags', e);
+      // Keep existing flags if fetch fails
+      if (_flags.isEmpty) {
+        _flags = {};
+      }
+      rethrow;
+    }
+  }
+
+  /// Manually refresh feature flags from the backend
+  Future<void> refreshFlags() async {
+    try {
+      logInfo('[FeatureFlagService] Manually refreshing feature flags');
+      await _fetchFlags();
+      logInfo('[FeatureFlagService] Flags refreshed successfully');
+    } catch (e) {
+      logError('[FeatureFlagService] Failed to refresh flags', e);
+    }
   }
 
   /// Dispose of the service
   void dispose() {
-    _flagChangesSubscription?.cancel();
-    _client = null;
+    _flags.clear();
     _isInitialized = false;
+    _isLoading = false;
     logInfo('[FeatureFlagService] Disposed');
   }
 }

@@ -21,34 +21,111 @@ import 'package:projectbrain/subscription/pricing_page.dart';
 import 'package:projectbrain/subscription/usage_dashboard_page.dart';
 import 'package:projectbrain/core/storage/preferences_service.dart';
 import 'package:projectbrain/widgets/custom_bottom_nav_bar.dart';
+import 'package:projectbrain/goals/goals_page.dart';
+import 'package:projectbrain/goals/getting_started_page.dart';
+import 'package:projectbrain/goals/goal_entry_page.dart';
+import 'package:projectbrain/goals/goals_list_page.dart';
+import 'package:projectbrain/goals/single_goal_celebration_page.dart';
+import 'package:projectbrain/goals/all_goals_celebration_page.dart';
+import 'package:projectbrain/core/routing/page_transitions.dart';
+import 'package:projectbrain/core/di/injection_container.dart';
+import 'package:projectbrain/services/push_notification_service.dart';
+import 'package:projectbrain/services/error_reporting_service.dart';
+import 'package:projectbrain/core/logging/app_logger.dart';
 
 /// Application router configuration
 class AppRouter {
   final AuthProvider authProvider;
   final PreferencesService preferencesService;
+  final ErrorReportingService errorReportingService;
+  GoRouter? _router;
 
   AppRouter({
     required this.authProvider,
     required this.preferencesService,
+    required this.errorReportingService,
   });
 
   /// Create and configure the GoRouter instance
   GoRouter createRouter() {
-    final router = GoRouter(
+    _router = GoRouter(
       refreshListenable: authProvider,
       redirect: _handleRedirect,
       routes: _routes,
       initialLocation: '/',
     );
 
-    // Save route changes to preferences
-    router.routerDelegate.addListener(() {
+    // Save route changes to preferences and track screen views
+    _router!.routerDelegate.addListener(() {
       final currentRoute =
-          router.routerDelegate.currentConfiguration.uri.toString();
+          _router!.routerDelegate.currentConfiguration.uri.toString();
       preferencesService.setLastRoute(currentRoute);
+      
+      // Log screen view to analytics
+      _logScreenView(currentRoute);
     });
 
-    return router;
+    // Check for pending notification after router is ready
+    _checkPendingNotification();
+
+    return _router!;
+  }
+
+  /// Check for pending notification and navigate if needed
+  void _checkPendingNotification() {
+    // Use a post-frame callback to ensure router is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final pendingNotification =
+          sl<PushNotificationService>().getPendingNotification();
+      if (pendingNotification != null && _router != null) {
+        _navigateFromNotification(pendingNotification);
+      }
+    });
+  }
+
+  /// Navigate to appropriate screen based on notification data
+  void _navigateFromNotification(Map<String, dynamic> data) {
+    if (_router == null) return;
+
+    try {
+      final type = data['type'] as String?;
+      logInfo('[AppRouter] Navigating from notification: type=$type');
+
+      switch (type) {
+        case 'coach_message':
+          final coachId = data['coachId'] as String?;
+          if (coachId != null) {
+            _router!.go('/network/chat/$coachId');
+          } else {
+            _router!.go('/network');
+          }
+          break;
+        case 'message':
+          final messageId = data['messageId'] as String?;
+          if (messageId != null) {
+            // Navigate to chat or specific message
+            _router!.go('/ai');
+          }
+          break;
+        case 'coach_request':
+          _router!.go('/network');
+          break;
+        case 'goal_reminder':
+          _router!.go('/goals');
+          break;
+        default:
+          // Navigate to home for unknown types
+          _router!.go('/');
+          break;
+      }
+    } catch (e, stackTrace) {
+      logError('[AppRouter] Error navigating from notification', e, stackTrace);
+    }
+  }
+
+  /// Public method to navigate from notification (called by push notification service)
+  void navigateFromNotification(Map<String, dynamic> data) {
+    _navigateFromNotification(data);
   }
 
   /// Handle authentication-based redirects
@@ -166,7 +243,47 @@ class AppRouter {
                 return CoachDetailsPage(coachId: coachId);
               },
             ),
+            GoRoute(
+              path: '/goals',
+              builder: (context, state) => const GoalsPage(),
+            ),
+            GoRoute(
+              path: '/goals/getting-started',
+              builder: (context, state) => const GettingStartedPage(),
+            ),
+            GoRoute(
+              path: '/goals/entry',
+              builder: (context, state) => const GoalEntryPage(),
+            ),
+            GoRoute(
+              path: '/goals/list',
+              builder: (context, state) => const GoalsListPage(),
+            ),
           ],
+        ),
+
+        // Goals celebration routes (outside shell to avoid bottom nav)
+        GoRoute(
+          path: '/goals/celebration/single',
+          pageBuilder: (context, state) {
+            // Use slide-right transition (slides in from left)
+            // When popped, reverse will slide goals list in from right (slide-left effect)
+            return PageTransitions.slideLeft(
+              key: state.pageKey,
+              child: const SingleGoalCelebrationPage(),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/goals/celebration/all',
+          pageBuilder: (context, state) {
+            // Use slide-right transition (slides in from left)
+            // When popped, reverse will slide goals list in from right (slide-left effect)
+            return PageTransitions.slideLeft(
+              key: state.pageKey,
+              child: const AllGoalsCelebrationPage(),
+            );
+          },
         ),
 
         // Subscription Routes (outside shell to avoid bottom nav)
@@ -214,5 +331,43 @@ class AppRouter {
       case 3:
         context.go('/user');
     }
+  }
+
+  /// Log screen view to analytics
+  void _logScreenView(String route) {
+    try {
+      // Convert route to a readable screen name
+      final screenName = _getScreenName(route);
+      errorReportingService.logScreenView(screenName);
+    } catch (e) {
+      logError('[AppRouter] Error logging screen view', e);
+    }
+  }
+
+  /// Convert route path to a readable screen name
+  String _getScreenName(String route) {
+    // Remove leading slash and replace with readable format
+    if (route == '/' || route.isEmpty) {
+      return 'home';
+    }
+    
+    // Remove query parameters and fragments
+    final cleanRoute = route.split('?').first.split('#').first;
+    
+    // Convert path segments to readable format
+    // e.g., /network/chat/123 -> network_chat
+    // e.g., /goals/list -> goals_list
+    final segments = cleanRoute.split('/').where((s) => s.isNotEmpty).toList();
+    
+    // Replace parameter placeholders with descriptive names
+    final readableSegments = segments.map((segment) {
+      // Handle parameterized routes
+      if (segment.startsWith(':')) {
+        return segment.substring(1); // Remove ':' prefix
+      }
+      return segment;
+    }).toList();
+    
+    return readableSegments.join('_');
   }
 }

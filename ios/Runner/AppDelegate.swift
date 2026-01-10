@@ -10,8 +10,21 @@ public class StorageHelper {
         storage?.set(value, forKey: key)
     }
     
+    public static func setBool(key: String, value: Bool) {
+        storage?.set(value, forKey: key)
+    }
+    
     public static func getString(key: String) -> String? {
         return storage?.string(forKey: key)
+    }
+    
+    public static func getBool(key: String) -> Bool? {
+        return storage?.bool(forKey: key)
+    }
+    
+    /// Reload widget timeline after storage updates
+    public static func reloadWidgetTimeline() {
+        WidgetCenter.shared.reloadTimelines(ofKind: "ProjectBrainWidget")
     }
 }
 
@@ -31,43 +44,85 @@ public class StorageHelper {
       storageChannel.setMethodCallHandler(
         {
             (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
-            guard call.method == "savePreferences" else {
-                result(
-                    FlutterMethodNotImplemented
-                )
-                return
-            }
-            
-            guard let args = call.arguments as? [String: Any] else {
-                result(
-                    FlutterError(
-                        code: "UNAVAILABLE",
-                        message: "It's required send arguments",
-                        details: nil
+            if call.method == "savePreferences" {
+                guard let args = call.arguments as? [String: Any] else {
+                    result(
+                        FlutterError(
+                            code: "UNAVAILABLE",
+                            message: "It's required send arguments",
+                            details: nil
+                        )
                     )
-                )
-                return
-            }
-            
-            guard let key = args["key"] as? String else {
-                result(
-                    FlutterError(
-                        code: "UNAVAILABLE",
-                        message: "Its required send a key",
-                        details: nil
+                    return
+                }
+                
+                guard let key = args["key"] as? String else {
+                    result(
+                        FlutterError(
+                            code: "UNAVAILABLE",
+                            message: "Its required send a key",
+                            details: nil
+                        )
                     )
-                )
-                return
-            };
-            
-            StorageHelper.setValue(key: key, value: args["value"] as Any)
-            
-            WidgetCenter.shared.reloadTimelines(ofKind: "ProjectBrainWidget")
-            
-            result(StorageHelper.getString(key: key))
+                    return
+                };
+                
+                // Handle bool values separately
+                if let boolValue = args["value"] as? Bool {
+                    StorageHelper.setBool(key: key, value: boolValue)
+                    StorageHelper.reloadWidgetTimeline()
+                    result(StorageHelper.getBool(key: key)?.description)
+                } else {
+                    StorageHelper.setValue(key: key, value: args["value"] as Any)
+                    StorageHelper.reloadWidgetTimeline()
+                    result(StorageHelper.getString(key: key))
+                }
+            } else if call.method == "getPreferences" {
+                guard let args = call.arguments as? [String: Any],
+                      let key = args["key"] as? String,
+                      let type = args["type"] as? String else {
+                    result(
+                        FlutterError(
+                            code: "UNAVAILABLE",
+                            message: "It's required send key and type",
+                            details: nil
+                        )
+                    )
+                    return
+                }
+                
+                if type == "bool" {
+                    result(StorageHelper.getBool(key: key)?.description)
+                } else {
+                    result(StorageHelper.getString(key: key))
+                }
+            } else {
+                result(FlutterMethodNotImplemented)
+            }
         })
 
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  // Handle remote notifications for goal completion updates
+  override func application(
+    _ application: UIApplication,
+    didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+    fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+  ) {
+    // Check if notification is for goal completion
+    if let goalData = userInfo["goal"] as? [String: Any],
+       let index = goalData["index"] as? Int,
+       let completed = goalData["completed"] as? Bool {
+      
+      // Update shared storage
+      StorageHelper.setBool(key: "egg_\(index)_completed", value: completed)
+      StorageHelper.reloadWidgetTimeline()
+      
+      completionHandler(.newData)
+    } else {
+      completionHandler(.noData)
+    }
   }
 }
