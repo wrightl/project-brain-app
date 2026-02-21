@@ -168,20 +168,21 @@ class EggGoalsProvider extends ChangeNotifier {
       logDebug('[EggGoalsProvider] Syncing goals from API');
       final apiGoals = await eggGoalsService!.syncEggGoals();
       logDebug('[EggGoalsProvider] Synced goals from API: $apiGoals');
-      if (apiGoals.isNotEmpty) {
-        // Update shared storage with API data
-        for (int i = 0; i < 3; i++) {
-          if (i < apiGoals.length) {
-            final goal = apiGoals[i];
-            await SharedPreferencesStorage.setValue(
-              'egg_$i',
-              goal['message'] ?? goal['text'] ?? 'No Egg Goal Set',
-            );
-            await SharedPreferencesStorage.setBool(
-              'egg_${i}_completed',
-              goal['completed'] ?? false,
-            );
-          }
+      // Always update all 3 slots from API so empty response clears stale local data
+      for (int i = 0; i < 3; i++) {
+        if (i < apiGoals.length) {
+          final goal = apiGoals[i];
+          await SharedPreferencesStorage.setValue(
+            'egg_$i',
+            goal['message'] ?? goal['text'] ?? 'No Egg Goal Set',
+          );
+          await SharedPreferencesStorage.setBool(
+            'egg_${i}_completed',
+            goal['completed'] ?? false,
+          );
+        } else {
+          await SharedPreferencesStorage.setValue('egg_$i', 'No Egg Goal Set');
+          await SharedPreferencesStorage.setBool('egg_${i}_completed', false);
         }
       }
 

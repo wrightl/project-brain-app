@@ -28,18 +28,24 @@ class GoalsListPage extends StatelessWidget {
         child: Column(
           children: [
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16.0),
-                itemCount: goalsProvider.goals.length,
-                itemBuilder: (context, index) {
-                  final goal = goalsProvider.goals[index];
-                  if (goal.message.isEmpty ||
-                      goal.message == 'No Egg Goal Set') {
-                    return const SizedBox.shrink();
-                  }
+              child: RefreshIndicator(
+                onRefresh: () =>
+                    context.read<EggGoalsProvider>().syncFromAPI(),
+                child: ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16.0),
+                  itemCount: goalsProvider.goals.length,
+                  itemBuilder: (context, index) {
+                    final goal = goalsProvider.goals[index];
+                    if (goal.message.isEmpty ||
+                        goal.message == 'No Egg Goal Set') {
+                      return const SizedBox.shrink();
+                    }
 
-                  return _buildGoalItem(context, goal, index, goalsProvider);
-                },
+                    return _buildGoalItem(
+                        context, goal, index, goalsProvider);
+                  },
+                ),
               ),
             ),
 

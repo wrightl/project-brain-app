@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:projectbrain/authentication/auth_provider.dart';
 import 'package:projectbrain/goals/egg_goals_provider.dart';
 import 'package:projectbrain/goals/getting_started_page.dart';
 import 'package:projectbrain/goals/goal_entry_page.dart';
@@ -14,7 +15,7 @@ class GoalsPage extends StatelessWidget {
     final goalsProvider = Provider.of<EggGoalsProvider>(context, listen: false);
 
     return FutureBuilder<bool>(
-      future: _determineRoute(goalsProvider),
+      future: _determineRoute(context, goalsProvider),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -50,8 +51,14 @@ class GoalsPage extends StatelessWidget {
     );
   }
 
-  Future<bool> _determineRoute(EggGoalsProvider provider) async {
+  Future<bool> _determineRoute(
+      BuildContext context, EggGoalsProvider provider) async {
     await provider.init();
+    final isLoggedIn =
+        Provider.of<AuthProvider>(context, listen: false).isLoggedIn;
+    if (isLoggedIn) {
+      await provider.syncFromAPI();
+    }
     return await provider.hasEverSetGoals();
   }
 }

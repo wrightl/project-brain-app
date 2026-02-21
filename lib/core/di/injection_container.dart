@@ -19,6 +19,7 @@ import 'package:projectbrain/services/quiz_service.dart';
 import 'package:projectbrain/services/coach_service.dart';
 import 'package:projectbrain/services/subscription_service.dart';
 import 'package:projectbrain/services/egg_goals_service.dart';
+import 'package:projectbrain/services/goals_realtime_service.dart';
 import 'package:projectbrain/services/journal_service.dart';
 import 'package:projectbrain/services/strategy_service.dart';
 import 'package:projectbrain/services/tag_service.dart';
@@ -144,6 +145,11 @@ Future<void> initializeDependencies() async {
   // Egg Goals Service
   sl.registerLazySingleton<EggGoalsService>(
     () => EggGoalsService(authService: sl<AuthService>()),
+  );
+
+  // Goals Realtime (SSE) Service
+  sl.registerLazySingleton<GoalsRealtimeService>(
+    () => GoalsRealtimeService(authService: sl<AuthService>()),
   );
 
   // Journal Service

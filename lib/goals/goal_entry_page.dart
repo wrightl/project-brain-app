@@ -36,9 +36,23 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
         title: const Text('Set Your Daily Goals'),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
+        child: RefreshIndicator(
+          onRefresh: () async {
+            final provider = context.read<EggGoalsProvider>();
+            await provider.syncFromAPI();
+            if (!mounted) return;
+            final goals = await provider.getTodaysGoals();
+            for (int i = 0; i < 3 && i < goals.length; i++) {
+              _controllers[i].text = goals[i].message == 'No Egg Goal Set'
+                  ? ''
+                  : goals[i].message;
+            }
+            setState(() {});
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
@@ -123,6 +137,7 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );

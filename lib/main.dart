@@ -13,6 +13,7 @@ import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/core/network/http_overrides.dart';
 import 'package:projectbrain/core/routing/app_router.dart';
 import 'package:projectbrain/services/feature_flag_service.dart';
+import 'package:projectbrain/services/goals_realtime_service.dart';
 import 'package:projectbrain/services/push_notification_service.dart';
 import 'package:projectbrain/services/error_reporting_service.dart';
 import 'package:projectbrain/helpers/theme.dart';
@@ -95,6 +96,11 @@ Future<void> main() async {
   // Initialize egg goals provider
   await sl<EggGoalsProvider>().init();
 
+  // Sync goals from API when logged in so web-created goals appear (fire-and-forget)
+  if (authProvider.isLoggedIn) {
+    sl<EggGoalsProvider>().syncFromAPI();
+  }
+
   runApp(const MyApp());
 }
 
@@ -121,9 +127,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    // Sync goals when app comes to foreground
     if (state == AppLifecycleState.resumed) {
       sl<EggGoalsProvider>().syncFromAPI();
+      if (sl<AuthProvider>().isLoggedIn) {
+        sl<GoalsRealtimeService>().start(
+            () => sl<EggGoalsProvider>().syncFromAPI());
+      }
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      sl<GoalsRealtimeService>().stop();
     }
   }
 

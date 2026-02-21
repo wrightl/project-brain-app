@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:projectbrain/authentication/auth_provider.dart';
+import 'package:projectbrain/goals/egg_goals_provider.dart';
 import 'package:projectbrain/journal/journal_localizations.dart';
 import 'package:projectbrain/journal/journal_provider.dart';
 import 'package:projectbrain/strategies/strategies_localizations.dart';
@@ -93,29 +94,81 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              // Welcome message
-              Text(
-                'Welcome, $name!',
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+        child: RefreshIndicator(
+          onRefresh: () async {
+            if (authProvider.isLoggedIn) {
+              await context.read<EggGoalsProvider>().syncFromAPI();
+            }
+            final journalProvider = context.read<JournalProvider>();
+            journalProvider.loadStreakSummary();
+            journalProvider.loadEntryCount();
+            journalProvider.loadRecentEntries(count: 3);
+            context.read<StrategiesProvider>().loadLibrary();
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                // Welcome message
+                Text(
+                  'Welcome, $name!',
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Get started by exploring the different areas of the app.',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                const SizedBox(height: 8),
+                Text(
+                  'Get started by exploring the different areas of the app.',
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 32),
+                const SizedBox(height: 32),
 
-              // Journal streak and summary
-              Consumer<JournalProvider>(
+                // Today's goals (updates via real-time sync)
+                Consumer<EggGoalsProvider>(
+                  builder: (context, goalsProvider, _) {
+                    final progress = goalsProvider.getCompletionProgress();
+                    final completed = progress['completed'] ?? 0;
+                    final total = progress['total'] ?? 3;
+                    final hasGoals = goalsProvider.goals.any((g) =>
+                        g.message.isNotEmpty &&
+                        g.message != 'No Egg Goal Set');
+                    if (!hasGoals && total == 0) return const SizedBox.shrink();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Today's goals",
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          hasGoals
+                              ? '$completed / $total goals completed'
+                              : 'No goals set for today',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.8),
+                          ),
+                        ),
+                        if (hasGoals)
+                          TextButton(
+                            onPressed: () => context.go('/goals'),
+                            child: const Text('View goals'),
+                          ),
+                        const SizedBox(height: 24),
+                      ],
+                    );
+                  },
+                ),
+
+                // Journal streak and summary
+                Consumer<JournalProvider>(
                 builder: (context, journalProvider, _) {
                   final streak = journalProvider.streakSummary;
                   final count = journalProvider.entryCount;
@@ -180,14 +233,15 @@ class _HomePageState extends State<HomePage> {
                     ],
                   );
                 },
-              ),
+                ),
 
-              // Quick links section using reusable component
-              LinkList(
-                links: links,
-                sectionTitle: 'Quick Links',
-              ),
-            ],
+                // Quick links section using reusable component
+                LinkList(
+                  links: links,
+                  sectionTitle: 'Quick Links',
+                ),
+              ],
+            ),
           ),
         ),
       ),

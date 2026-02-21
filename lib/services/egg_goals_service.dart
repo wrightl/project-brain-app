@@ -9,7 +9,7 @@ class EggGoalsService extends HttpService {
   /// Fetch egg goals from the API
   Future<List<Map<String, dynamic>>> fetchEggGoals() async {
     try {
-      final res = await get('/eggs');
+      final res = await get('/eggs', useCache: false);
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         if (data is List) {

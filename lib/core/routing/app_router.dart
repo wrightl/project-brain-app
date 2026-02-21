@@ -34,6 +34,7 @@ import 'package:projectbrain/strategies/strategies_library_page.dart';
 import 'package:projectbrain/strategies/strategies_chat_page.dart';
 import 'package:projectbrain/core/routing/page_transitions.dart';
 import 'package:projectbrain/core/di/injection_container.dart';
+import 'package:projectbrain/goals/egg_goals_provider.dart';
 import 'package:projectbrain/services/push_notification_service.dart';
 import 'package:projectbrain/services/error_reporting_service.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
@@ -114,6 +115,11 @@ class AppRouter {
           _router!.go('/network');
         case 'goal_reminder':
           _router!.go('/goals');
+        case 'goals_updated':
+          sl<EggGoalsProvider>().syncFromAPI().then((_) {
+            _router?.go('/goals');
+          });
+          break;
         default:
           // Navigate to home for unknown types
           _router!.go('/');

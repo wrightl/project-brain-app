@@ -5,6 +5,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/core/routing/app_router.dart';
+import 'package:projectbrain/goals/egg_goals_provider.dart';
 import 'package:projectbrain/models/push_notification_data.dart';
 import 'package:projectbrain/services/http_service.dart';
 import 'package:projectbrain/services/auth/auth_service.dart';
@@ -185,6 +186,12 @@ class PushNotificationService {
   /// Handle foreground messages by showing local notification
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
     try {
+      // Data-only goals sync: no notification, just refresh goals
+      if (message.data['type'] == 'goals_updated') {
+        sl<EggGoalsProvider>().syncFromAPI();
+        return;
+      }
+
       final notification = message.notification;
       if (notification == null) return;
 
