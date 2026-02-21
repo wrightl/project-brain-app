@@ -2,6 +2,9 @@ class VoiceNote {
   final String id;
   final String fileName;
   final String? description;
+  final String? audioUrl;
+  final double? duration;
+  final int? fileSize;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -9,20 +12,26 @@ class VoiceNote {
     required this.id,
     required this.fileName,
     this.description,
+    this.audioUrl,
+    this.duration,
+    this.fileSize,
     this.createdAt,
     this.updatedAt,
   });
 
   factory VoiceNote.fromJson(Map<String, dynamic> json) {
     return VoiceNote(
-      id: json['id'] ?? json['Id'] ?? '',
-      fileName: json['fileName'] ?? json['FileName'] ?? '',
-      description: json['description'] ?? json['Description'],
+      id: json['id']?.toString() ?? json['Id']?.toString() ?? '',
+      fileName: json['fileName']?.toString() ?? json['FileName']?.toString() ?? '',
+      description: json['description']?.toString(),
+      audioUrl: json['audioUrl']?.toString(),
+      duration: (json['duration'] as num?)?.toDouble(),
+      fileSize: (json['fileSize'] as num?)?.toInt(),
       createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
+          ? DateTime.tryParse(json['createdAt'].toString())
           : null,
       updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'])
+          ? DateTime.tryParse(json['updatedAt'].toString())
           : null,
     );
   }
@@ -31,9 +40,12 @@ class VoiceNote {
     return {
       'id': id,
       'fileName': fileName,
-      'description': description,
-      'createdAt': createdAt?.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
+      if (description != null) 'description': description,
+      if (audioUrl != null) 'audioUrl': audioUrl,
+      if (duration != null) 'duration': duration,
+      if (fileSize != null) 'fileSize': fileSize,
+      if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
+      if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
     };
   }
 
@@ -41,6 +53,9 @@ class VoiceNote {
     String? id,
     String? fileName,
     String? description,
+    String? audioUrl,
+    double? duration,
+    int? fileSize,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -48,6 +63,9 @@ class VoiceNote {
       id: id ?? this.id,
       fileName: fileName ?? this.fileName,
       description: description ?? this.description,
+      audioUrl: audioUrl ?? this.audioUrl,
+      duration: duration ?? this.duration,
+      fileSize: fileSize ?? this.fileSize,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

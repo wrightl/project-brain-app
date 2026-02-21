@@ -20,8 +20,13 @@ class ResourceService extends HttpService {
 
     if (response.statusCode == 200) {
       final body = response.body;
-      final List<dynamic> data = jsonDecode(body);
-      final resources = data.map((json) => Resource.fromJson(json)).toList();
+      final data = jsonDecode(body);
+      final List<dynamic> items = data is Map && data.containsKey('items')
+          ? (data['items'] as List<dynamic>)
+          : (data is List ? data : <dynamic>[]);
+      final resources = items
+          .map((json) => Resource.fromJson(json as Map<String, dynamic>))
+          .toList();
       logDebug('[ResourceService] Fetched ${resources.length} resources');
       return resources;
     } else {

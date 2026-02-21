@@ -13,8 +13,13 @@ class ConversationService extends HttpService {
 
     if (response.statusCode == 200) {
       final body = response.body;
-      final List<dynamic> data = jsonDecode(body);
-      return data.map((json) => Conversation.fromJson(json)).toList();
+      final data = jsonDecode(body);
+      final List<dynamic> items = data is Map && data.containsKey('items')
+          ? (data['items'] as List<dynamic>)
+          : (data is List ? data : <dynamic>[]);
+      return items
+          .map((json) => Conversation.fromJson(json as Map<String, dynamic>))
+          .toList();
     } else {
       throw Exception(
           'Failed to fetch conversations: ${response.statusCode} ${response.reasonPhrase}');
@@ -49,10 +54,12 @@ class ConversationService extends HttpService {
         messagesResponse.statusCode == 200) {
       final body = conversationResponse.body;
       final dynamic data = jsonDecode(body);
-      var conv = Conversation.fromJson(data);
-      final List<dynamic> messagesData = jsonDecode(messagesResponse.body);
-      conv.messages.addAll(
-          messagesData.map((json) => ChatMessage.fromJson(json)).toList());
+      final conv = Conversation.fromJson(data);
+      if (conv.messages.isEmpty) {
+        final List<dynamic> messagesData = jsonDecode(messagesResponse.body);
+        conv.messages.addAll(
+            messagesData.map((json) => ChatMessage.fromJson(json as Map<String, dynamic>)).toList());
+      }
       return conv;
     } else {
       throw Exception(

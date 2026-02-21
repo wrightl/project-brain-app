@@ -9,12 +9,12 @@ import 'package:projectbrain/services/http_service.dart';
 class CoachService extends HttpService {
   CoachService({required super.authService});
 
-  /// Get all coaches
+  /// Get all coaches (uses search endpoint per API; no filters = all coaches)
   Future<List<Coach>> getCoaches() async {
     logDebug('[CoachService] Fetching coaches');
 
     final response = await get(
-      '/coaches',
+      '/coaches/search',
       useCache: false,
     );
 

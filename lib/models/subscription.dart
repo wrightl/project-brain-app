@@ -83,8 +83,8 @@ class Subscription {
     required this.tier,
     required this.status,
     this.trialEndsAt,
-    required this.currentPeriodStart,
-    required this.currentPeriodEnd,
+    this.currentPeriodStart,
+    this.currentPeriodEnd,
     this.canceledAt,
     required this.userType,
   });
@@ -105,7 +105,7 @@ class Subscription {
               (json['trialEndsAt'] ?? json['TrialEndsAt']).toString())
           : null,
       currentPeriodStart: json['currentPeriodStart'] != null ||
-              json['currentPeriodStart'] != null
+              json['CurrentPeriodStart'] != null
           ? DateTime.parse(
               (json['currentPeriodStart'] ?? json['CurrentPeriodStart'])
                   .toString())
@@ -150,12 +150,16 @@ class UsageStats {
   final CoachMessagesUsage coachMessages;
   final FileStorageUsage fileStorage;
   final ResearchReportsUsage researchReports;
+  final ClientMessagesUsage clientMessages;
+  final FilesUsage files;
 
   UsageStats({
     required this.aiQueries,
     required this.coachMessages,
     required this.fileStorage,
     required this.researchReports,
+    required this.clientMessages,
+    required this.files,
   });
 
   factory UsageStats.fromJson(Map<String, dynamic> json) {
@@ -174,6 +178,12 @@ class UsageStats {
       researchReports: ResearchReportsUsage.fromJson(
         json['researchReports'] ?? json['ResearchReports'] ?? {},
       ),
+      clientMessages: ClientMessagesUsage.fromJson(
+        json['clientMessages'] ?? json['ClientMessages'] ?? {},
+      ),
+      files: FilesUsage.fromJson(
+        json['files'] ?? json['Files'] ?? {},
+      ),
     );
   }
 
@@ -183,6 +193,49 @@ class UsageStats {
       'coachMessages': coachMessages.toJson(),
       'fileStorage': fileStorage.toJson(),
       'researchReports': researchReports.toJson(),
+      'clientMessages': clientMessages.toJson(),
+      'files': files.toJson(),
+    };
+  }
+}
+
+class ClientMessagesUsage {
+  final int monthly;
+
+  ClientMessagesUsage({
+    required this.monthly,
+  });
+
+  factory ClientMessagesUsage.fromJson(Map<String, dynamic> json) {
+    return ClientMessagesUsage(
+      monthly: json['monthly'] ?? json['Monthly'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'monthly': monthly,
+    };
+  }
+}
+
+class FilesUsage {
+  final int totalCount;
+
+  FilesUsage({
+    required this.totalCount,
+  });
+
+  factory FilesUsage.fromJson(Map<String, dynamic> json) {
+    final v = json['totalCount'] ?? json['TotalCount'];
+    return FilesUsage(
+      totalCount: (v is num) ? v.toInt() : 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'totalCount': totalCount,
     };
   }
 }

@@ -22,9 +22,11 @@ class Conversation {
       id: json['id'] as String,
       userId: json['userId'] as String,
       title: json['title'] as String,
-      messages: (json['messages'] as List<dynamic>)
-          .map((m) => ChatMessage.fromJson(m as Map<String, dynamic>))
-          .toList(),
+      messages: json['messages'] != null
+          ? (json['messages'] as List<dynamic>)
+              .map((m) => ChatMessage.fromJson(m as Map<String, dynamic>))
+              .toList()
+          : [],
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );

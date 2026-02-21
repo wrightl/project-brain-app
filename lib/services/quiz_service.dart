@@ -18,8 +18,12 @@ class QuizService extends HttpService {
 
     if (response.statusCode == 200) {
       final body = response.body;
-      final List<dynamic> data = jsonDecode(body);
-      final quizzes = data.map((json) => Quiz.fromJson(json)).toList();
+      final data = jsonDecode(body);
+      final List<dynamic> items = data is Map && data.containsKey('items')
+          ? (data['items'] as List<dynamic>)
+          : (data is List ? data : <dynamic>[]);
+      final quizzes =
+          items.map((json) => Quiz.fromJson(json as Map<String, dynamic>)).toList();
       logDebug('[QuizService] Fetched ${quizzes.length} quizzes');
       return quizzes;
     } else {
@@ -178,9 +182,13 @@ class QuizService extends HttpService {
 
     if (response.statusCode == 200) {
       final body = response.body;
-      final List<dynamic> data = jsonDecode(body);
-      final responses =
-          data.map((json) => QuizResponse.fromJson(json)).toList();
+      final data = jsonDecode(body);
+      final List<dynamic> items = data is Map && data.containsKey('items')
+          ? (data['items'] as List<dynamic>)
+          : (data is List ? data : <dynamic>[]);
+      final responses = items
+          .map((json) => QuizResponse.fromJson(json as Map<String, dynamic>))
+          .toList();
       logDebug('[QuizService] Fetched ${responses.length} quiz responses');
       return responses;
     } else {

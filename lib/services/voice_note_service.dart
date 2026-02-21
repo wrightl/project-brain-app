@@ -21,8 +21,13 @@ class VoiceNoteService extends HttpService {
 
     if (response.statusCode == 200) {
       final body = response.body;
-      final List<dynamic> data = jsonDecode(body);
-      final voiceNotes = data.map((json) => VoiceNote.fromJson(json)).toList();
+      final data = jsonDecode(body);
+      final List<dynamic> items = data is Map && data.containsKey('items')
+          ? (data['items'] as List<dynamic>)
+          : (data is List ? data : <dynamic>[]);
+      final voiceNotes = items
+          .map((json) => VoiceNote.fromJson(json as Map<String, dynamic>))
+          .toList();
       logDebug('[VoiceNoteService] Fetched ${voiceNotes.length} voice notes');
       return voiceNotes;
     } else {

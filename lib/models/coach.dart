@@ -16,6 +16,9 @@ class Coach {
   final List<String>? ageGroups;
   final bool? isOnline;
   final ConnectionStatus? connectionStatus;
+  final DateTime? requestedAt;
+  final String? requestedBy;
+  final String? message;
 
   Coach({
     required this.id,
@@ -33,6 +36,9 @@ class Coach {
     this.ageGroups,
     this.isOnline,
     this.connectionStatus,
+    this.requestedAt,
+    this.requestedBy,
+    this.message,
   });
 
   factory Coach.fromJson(Map<String, dynamic> json) {
@@ -66,6 +72,11 @@ class Coach {
           ? ConnectionStatus.fromString(
               (json['connectionStatus'] ?? json['ConnectionStatus']).toString())
           : null,
+      requestedAt: json['requestedAt'] != null
+          ? DateTime.tryParse(json['requestedAt'].toString())
+          : null,
+      requestedBy: json['requestedBy']?.toString(),
+      message: json['message']?.toString(),
     );
   }
 
@@ -86,6 +97,9 @@ class Coach {
       'ageGroups': ageGroups,
       'isOnline': isOnline,
       'connectionStatus': connectionStatus?.displayName,
+      if (requestedAt != null) 'requestedAt': requestedAt!.toIso8601String(),
+      if (requestedBy != null) 'requestedBy': requestedBy,
+      if (message != null) 'message': message,
     };
   }
 }
@@ -100,6 +114,10 @@ class CoachMessage {
   final String messageType; // 'text', 'audio', 'file', 'image'
   final bool isFromCoach;
   final DateTime createdAt;
+  final String? status;
+  final DateTime? deliveredAt;
+  final DateTime? readAt;
+  final String? voiceNoteFileName;
 
   CoachMessage({
     required this.id,
@@ -111,21 +129,34 @@ class CoachMessage {
     required this.messageType,
     required this.isFromCoach,
     required this.createdAt,
+    this.status,
+    this.deliveredAt,
+    this.readAt,
+    this.voiceNoteFileName,
   });
 
   factory CoachMessage.fromJson(Map<String, dynamic> json) {
+    final connectionId = json['connectionId']?.toString() ?? json['ConnectionId']?.toString();
     return CoachMessage(
-      id: json['id'] ?? json['Id'] ?? '',
-      coachId: json['coachId'] ?? json['CoachId'] ?? '',
-      text: json['text'] ?? json['Text'],
-      audioUrl: json['audioUrl'] ?? json['AudioUrl'],
-      fileUrl: json['fileUrl'] ?? json['FileUrl'],
-      imageUrl: json['imageUrl'] ?? json['ImageUrl'],
-      messageType: json['messageType'] ?? json['MessageType'] ?? 'text',
-      isFromCoach: json['isFromCoach'] ?? json['IsFromCoach'] ?? false,
+      id: json['id']?.toString() ?? json['Id']?.toString() ?? '',
+      coachId: json['coachId']?.toString() ?? json['CoachId']?.toString() ?? connectionId ?? '',
+      text: json['content']?.toString() ?? json['text']?.toString() ?? json['Text']?.toString(),
+      audioUrl: json['voiceNoteUrl']?.toString() ?? json['audioUrl']?.toString() ?? json['AudioUrl']?.toString(),
+      fileUrl: json['fileUrl']?.toString() ?? json['FileUrl']?.toString(),
+      imageUrl: json['imageUrl']?.toString() ?? json['ImageUrl']?.toString(),
+      messageType: json['messageType']?.toString() ?? json['MessageType']?.toString() ?? 'text',
+      isFromCoach: json['isFromCoach'] == true || json['IsFromCoach'] == true,
       createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
+          ? (DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now())
           : DateTime.now(),
+      status: json['status']?.toString(),
+      deliveredAt: json['deliveredAt'] != null
+          ? DateTime.tryParse(json['deliveredAt'].toString())
+          : null,
+      readAt: json['readAt'] != null
+          ? DateTime.tryParse(json['readAt'].toString())
+          : null,
+      voiceNoteFileName: json['voiceNoteFileName']?.toString() ?? json['VoiceNoteFileName']?.toString(),
     );
   }
 
@@ -140,6 +171,10 @@ class CoachMessage {
       'messageType': messageType,
       'isFromCoach': isFromCoach,
       'createdAt': createdAt.toIso8601String(),
+      if (status != null) 'status': status,
+      if (deliveredAt != null) 'deliveredAt': deliveredAt!.toIso8601String(),
+      if (readAt != null) 'readAt': readAt!.toIso8601String(),
+      if (voiceNoteFileName != null) 'voiceNoteFileName': voiceNoteFileName,
     };
   }
 }

@@ -19,7 +19,7 @@ class Quiz {
     return Quiz(
       id: json['id'] ?? json['Id'] ?? '',
       title: json['title'] ?? json['Title'] ?? '',
-      description: json['description'] ?? json['Description'] ?? '',
+      description: json['description']?.toString() ?? json['Description']?.toString() ?? '',
       questions: json['questions'] != null
           ? (json['questions'] as List<dynamic>)
               .map((q) => QuizQuestion.fromJson(q as Map<String, dynamic>))

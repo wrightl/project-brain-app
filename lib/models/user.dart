@@ -35,24 +35,24 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'] ?? json['_id'] ?? '',
-      email: json['email'] ?? '',
-      name: json['name'] ?? '',
-      nickname: json['nickname'],
-      picture: json['picture'],
-      isOnboarded: json['isOnboarded'] ?? false,
-      bio: json['bio'],
+      id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      name: json['name']?.toString() ?? json['fullName']?.toString() ?? '',
+      nickname: json['nickname']?.toString(),
+      picture: json['picture']?.toString(),
+      isOnboarded: json['isOnboarded'] == true,
+      bio: json['bio']?.toString(),
       createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
+          ? DateTime.tryParse(json['createdAt'].toString())
           : null,
       updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'])
+          ? DateTime.tryParse(json['updatedAt'].toString())
           : null,
-      fullName: json['fullName'],
-      preferredPronoun: json['preferredPronoun'],
-      doB: json['doB'],
-      neurodiverseTraits: json['neurodiverseTraits'] != null
-          ? List<String>.from(json['neurodiverseTraits'])
+      fullName: json['fullName']?.toString(),
+      preferredPronoun: json['preferredPronoun']?.toString(),
+      doB: json['doB']?.toString(),
+      neurodiverseTraits: json['neurodiverseTraits'] is List
+          ? List<String>.from(json['neurodiverseTraits'] as List)
           : null,
     );
   }
