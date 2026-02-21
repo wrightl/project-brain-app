@@ -143,7 +143,8 @@ class QuizService extends HttpService {
       final body = response.body;
       final data = jsonDecode(body);
       final quizResponse = QuizResponse.fromJson(data);
-      logDebug('[QuizService] Successfully submitted quiz response: ${quizResponse.id}');
+      logDebug(
+          '[QuizService] Successfully submitted quiz response: ${quizResponse.id}');
       // Clear cache for insights since they may have changed
       clearCacheForPath('/quizes/insights');
       return quizResponse;
@@ -178,7 +179,8 @@ class QuizService extends HttpService {
     if (response.statusCode == 200) {
       final body = response.body;
       final List<dynamic> data = jsonDecode(body);
-      final responses = data.map((json) => QuizResponse.fromJson(json)).toList();
+      final responses =
+          data.map((json) => QuizResponse.fromJson(json)).toList();
       logDebug('[QuizService] Fetched ${responses.length} quiz responses');
       return responses;
     } else {
@@ -190,4 +192,3 @@ class QuizService extends HttpService {
     }
   }
 }
-

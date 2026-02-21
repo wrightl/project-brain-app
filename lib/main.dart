@@ -5,6 +5,9 @@ import 'package:projectbrain/authentication/auth_provider.dart';
 import 'package:projectbrain/chat/chat_provider.dart';
 import 'package:projectbrain/subscription/subscription_provider.dart';
 import 'package:projectbrain/goals/egg_goals_provider.dart';
+import 'package:projectbrain/journal/journal_provider.dart';
+import 'package:projectbrain/strategies/strategies_provider.dart';
+import 'package:projectbrain/strategies/strategies_chat_provider.dart';
 import 'package:projectbrain/core/config/app_config.dart';
 import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/core/network/http_overrides.dart';
@@ -142,6 +145,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ),
         ChangeNotifierProvider.value(
           value: sl<EggGoalsProvider>(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => sl<JournalProvider>(),
+        ),
+        ChangeNotifierProvider.value(
+          value: sl<StrategiesProvider>(),
+        ),
+        ChangeNotifierProvider.value(
+          value: sl<StrategiesChatProvider>(),
         ),
         Provider<FeatureFlagService>.value(
           value: sl<FeatureFlagService>(),

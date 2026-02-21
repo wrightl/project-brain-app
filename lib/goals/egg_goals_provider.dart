@@ -46,11 +46,11 @@ class EggGoalsProvider extends ChangeNotifier {
         logError(
             '[EggGoalsProvider] Error checking has ever set goals from API', e);
         // Fallback to local preference if API fails
-        return await preferencesService.getBool('has_ever_set_goals') ?? false;
+        return preferencesService.getBool('has_ever_set_goals') ?? false;
       }
     }
     // Fallback to local preference if service not available
-    return await preferencesService.getBool('has_ever_set_goals') ?? false;
+    return preferencesService.getBool('has_ever_set_goals') ?? false;
   }
 
   /// Check if goals exist for today

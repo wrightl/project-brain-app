@@ -151,11 +151,19 @@ class HttpService {
     logDebug('[HttpService] Cache cleared for $path');
   }
 
-  /// Make a streaming POST request (no retry for streaming)
-  Future<http.StreamedResponse> send(String path, String body, {Duration? timeout}) async {
+  /// Make a streaming POST request (no retry for streaming).
+  /// [extraHeaders] e.g. {'Accept': 'text/event-stream'} for SSE.
+  Future<http.StreamedResponse> send(
+    String path,
+    String body, {
+    Duration? timeout,
+    Map<String, String>? extraHeaders,
+  }) async {
     final token = await _getToken();
+    final headers = Map<String, String>.from(_authHeaders(token));
+    if (extraHeaders != null) headers.addAll(extraHeaders);
     final request = http.Request('POST', Uri.parse('$baseUrl$path'))
-      ..headers.addAll(_authHeaders(token))
+      ..headers.addAll(headers)
       ..body = body;
 
     try {

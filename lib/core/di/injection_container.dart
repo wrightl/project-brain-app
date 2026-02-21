@@ -19,7 +19,14 @@ import 'package:projectbrain/services/quiz_service.dart';
 import 'package:projectbrain/services/coach_service.dart';
 import 'package:projectbrain/services/subscription_service.dart';
 import 'package:projectbrain/services/egg_goals_service.dart';
+import 'package:projectbrain/services/journal_service.dart';
+import 'package:projectbrain/services/strategy_service.dart';
+import 'package:projectbrain/services/tag_service.dart';
+import 'package:projectbrain/services/user_service.dart';
 import 'package:projectbrain/services/push_notification_service.dart';
+import 'package:projectbrain/journal/journal_provider.dart';
+import 'package:projectbrain/strategies/strategies_provider.dart';
+import 'package:projectbrain/strategies/strategies_chat_provider.dart';
 import 'package:projectbrain/services/error_reporting_service.dart';
 import 'package:projectbrain/subscription/subscription_provider.dart';
 import 'package:projectbrain/goals/egg_goals_provider.dart';
@@ -139,6 +146,26 @@ Future<void> initializeDependencies() async {
     () => EggGoalsService(authService: sl<AuthService>()),
   );
 
+  // Journal Service
+  sl.registerLazySingleton<JournalService>(
+    () => JournalService(authService: sl<AuthService>()),
+  );
+
+  // Strategy Service
+  sl.registerLazySingleton<StrategyService>(
+    () => StrategyService(authService: sl<AuthService>()),
+  );
+
+  // Tag Service
+  sl.registerLazySingleton<TagService>(
+    () => TagService(authService: sl<AuthService>()),
+  );
+
+  // User Service (used by auth and journal timezone)
+  sl.registerLazySingleton<UserService>(
+    () => UserService(authService: sl<AuthService>()),
+  );
+
   // Push Notification Service
   sl.registerLazySingleton<PushNotificationService>(
     () => PushNotificationService(
@@ -189,6 +216,28 @@ Future<void> initializeDependencies() async {
     () => EggGoalsProvider(
       eggGoalsService: sl<EggGoalsService>(),
       preferencesService: sl<PreferencesService>(),
+    ),
+  );
+
+  // Journal Provider - factory so each consumer can get a fresh instance if needed
+  sl.registerFactory<JournalProvider>(
+    () => JournalProvider(
+      journalService: sl<JournalService>(),
+      tagService: sl<TagService>(),
+      userService: sl<UserService>(),
+    ),
+  );
+
+  // Strategies Provider - library (list, save, delete, rating); shared across home and library
+  sl.registerLazySingleton<StrategiesProvider>(
+    () => StrategiesProvider(strategyService: sl<StrategyService>()),
+  );
+
+  // Strategies Chat Provider - strategies-mode chat flow; single instance for conversation state
+  sl.registerLazySingleton<StrategiesChatProvider>(
+    () => StrategiesChatProvider(
+      aiService: sl<AIService>(),
+      strategyService: sl<StrategyService>(),
     ),
   );
 

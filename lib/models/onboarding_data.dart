@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 /// Main onboarding data structure
 class UserOnboardingData {
   final String email;
@@ -53,7 +51,8 @@ class OnboardingData {
   final ProfileSection? profile;
   final CoachingBuddySection? coachingBuddy;
   final ClosingSection? closing;
-  final Map<String, dynamic>? followOnQuestions; // Dynamic structure based on categories shown
+  final Map<String, dynamic>?
+      followOnQuestions; // Dynamic structure based on categories shown
 
   OnboardingData({
     this.locale,
@@ -315,4 +314,3 @@ class ClosingSection {
     return map;
   }
 }
-

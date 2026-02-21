@@ -2,7 +2,27 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:projectbrain/models/citation.dart';
+import 'package:projectbrain/models/strategies/suggested_strategy.dart';
 import 'package:projectbrain/services/http_service.dart';
+
+/// One event from the strategies-mode chat stream (text or strategies list).
+class StrategiesStreamEvent {
+  final String? text;
+  final List<SuggestedStrategy>? strategies;
+
+  StrategiesStreamEvent({this.text, this.strategies});
+}
+
+/// Result of streaming a strategies-mode chat message.
+class StrategiesStreamResult {
+  final String? conversationId;
+  final Stream<StrategiesStreamEvent> stream;
+
+  StrategiesStreamResult({
+    this.conversationId,
+    required this.stream,
+  });
+}
 
 /// Response object for chat streaming
 class ChatStreamResponse {
@@ -130,6 +150,103 @@ class AIService extends HttpService {
       throw Exception(
         'Failed to stream chat response: ${response.statusCode} ${response.reasonPhrase}',
       );
+    }
+  }
+
+  /// Stream strategies-mode chat: POST /chat/stream with mode "strategies".
+  /// Parses SSE by buffering and splitting on \n\n; each event is JSON from "data:" line(s).
+  Future<StrategiesStreamResult> streamStrategiesResponse(
+    String content, {
+    String? conversationId,
+  }) async {
+    logDebug(
+        '[AIService] Sending strategies message (conversation: $conversationId)');
+
+    final body = jsonEncode({
+      'content': content,
+      'conversationId': conversationId,
+      'mode': 'strategies',
+    });
+    final response = await send(
+      '/chat/stream',
+      body,
+      extraHeaders: {'Accept': 'text/event-stream'},
+    );
+
+    logDebug(
+        '[AIService] Strategies response status: ${response.statusCode}');
+
+    if (response.statusCode != 200) {
+      logError(
+          '[AIService] Strategies stream failed: ${response.statusCode} ${response.reasonPhrase}');
+      throw Exception(
+        'Failed to stream strategies: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+
+    final convId = response.headers['x-conversation-id'];
+    final controller = StreamController<StrategiesStreamEvent>();
+    String buffer = '';
+
+    void onData(String chunk) {
+      buffer += chunk;
+      while (buffer.contains('\n\n')) {
+        final idx = buffer.indexOf('\n\n');
+        final eventBlock = buffer.substring(0, idx);
+        buffer = buffer.substring(idx + 2);
+        _parseAndEmitEvent(eventBlock, controller);
+      }
+    }
+
+    void onDone() {
+      if (buffer.trim().isNotEmpty) {
+        _parseAndEmitEvent(buffer, controller);
+      }
+      controller.close();
+    }
+
+    void onError(e, st) {
+      logError('[AIService] Strategies stream error', e, st);
+      controller.addError(e is Exception ? e : Exception(e.toString()));
+      controller.close();
+    }
+
+    response.stream
+        .transform(utf8.decoder)
+        .listen(onData, onDone: onDone, onError: onError);
+
+    return StrategiesStreamResult(
+      conversationId: convId,
+      stream: controller.stream,
+    );
+  }
+
+  static void _parseAndEmitEvent(
+      String eventBlock, StreamController<StrategiesStreamEvent> controller) {
+    final dataLines = <String>[];
+    for (final line in eventBlock.split('\n')) {
+      final trimmed = line.trim();
+      if (trimmed.startsWith('data:')) {
+        dataLines.add(trimmed.substring(5).trim());
+      }
+    }
+    if (dataLines.isEmpty) return;
+    final jsonStr = dataLines.join('\n');
+    if (jsonStr.isEmpty) return;
+    try {
+      final data = jsonDecode(jsonStr) as Map<String, dynamic>;
+      final type = data['type'] as String?;
+      final value = data['value'];
+      if (type == 'text' && value != null) {
+        controller.add(StrategiesStreamEvent(text: value is String ? value : value.toString()));
+      } else if (type == 'strategies' && value is List) {
+        final list = value
+            .map((e) => SuggestedStrategy.fromJson(e as Map<String, dynamic>))
+            .toList();
+        controller.add(StrategiesStreamEvent(strategies: list));
+      }
+    } catch (e) {
+      logDebug('[AIService] Failed to parse SSE event: $e');
     }
   }
 }

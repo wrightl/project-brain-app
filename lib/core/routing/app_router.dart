@@ -27,6 +27,11 @@ import 'package:projectbrain/goals/goal_entry_page.dart';
 import 'package:projectbrain/goals/goals_list_page.dart';
 import 'package:projectbrain/goals/single_goal_celebration_page.dart';
 import 'package:projectbrain/goals/all_goals_celebration_page.dart';
+import 'package:projectbrain/journal/journal_list_page.dart';
+import 'package:projectbrain/journal/journal_view_page.dart';
+import 'package:projectbrain/journal/journal_entry_form_page.dart';
+import 'package:projectbrain/strategies/strategies_library_page.dart';
+import 'package:projectbrain/strategies/strategies_chat_page.dart';
 import 'package:projectbrain/core/routing/page_transitions.dart';
 import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/services/push_notification_service.dart';
@@ -60,7 +65,7 @@ class AppRouter {
       final currentRoute =
           _router!.routerDelegate.currentConfiguration.uri.toString();
       preferencesService.setLastRoute(currentRoute);
-      
+
       // Log screen view to analytics
       _logScreenView(currentRoute);
     });
@@ -99,24 +104,19 @@ class AppRouter {
           } else {
             _router!.go('/network');
           }
-          break;
         case 'message':
           final messageId = data['messageId'] as String?;
           if (messageId != null) {
             // Navigate to chat or specific message
             _router!.go('/ai');
           }
-          break;
         case 'coach_request':
           _router!.go('/network');
-          break;
         case 'goal_reminder':
           _router!.go('/goals');
-          break;
         default:
           // Navigate to home for unknown types
           _router!.go('/');
-          break;
       }
     } catch (e, stackTrace) {
       logError('[AppRouter] Error navigating from notification', e, stackTrace);
@@ -259,6 +259,36 @@ class AppRouter {
               path: '/goals/list',
               builder: (context, state) => const GoalsListPage(),
             ),
+            GoRoute(
+              path: '/journal',
+              builder: (context, state) => const JournalListPage(),
+            ),
+            GoRoute(
+              path: '/journal/new',
+              builder: (context, state) => const JournalEntryFormPage(),
+            ),
+            GoRoute(
+              path: '/journal/:id',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                return JournalViewPage(entryId: id);
+              },
+            ),
+            GoRoute(
+              path: '/journal/:id/edit',
+              builder: (context, state) {
+                final id = state.pathParameters['id']!;
+                return JournalEntryFormPage(entryId: id);
+              },
+            ),
+            GoRoute(
+              path: '/strategies',
+              builder: (context, state) => const StrategiesLibraryPage(),
+            ),
+            GoRoute(
+              path: '/strategies/chat',
+              builder: (context, state) => const StrategiesChatPage(),
+            ),
           ],
         ),
 
@@ -307,6 +337,9 @@ class AppRouter {
       // Subscription pages don't have bottom nav, return -1 or handle separately
       return -1;
     }
+    if (location.startsWith('/strategies')) {
+      return 0; // Keep Home tab selected when on strategies screens
+    }
     if (location.startsWith('/user') ||
         location.startsWith('/profile') ||
         location.startsWith('/voicenotes') ||
@@ -350,15 +383,15 @@ class AppRouter {
     if (route == '/' || route.isEmpty) {
       return 'home';
     }
-    
+
     // Remove query parameters and fragments
     final cleanRoute = route.split('?').first.split('#').first;
-    
+
     // Convert path segments to readable format
     // e.g., /network/chat/123 -> network_chat
     // e.g., /goals/list -> goals_list
     final segments = cleanRoute.split('/').where((s) => s.isNotEmpty).toList();
-    
+
     // Replace parameter placeholders with descriptive names
     final readableSegments = segments.map((segment) {
       // Handle parameterized routes
@@ -367,7 +400,7 @@ class AppRouter {
       }
       return segment;
     }).toList();
-    
+
     return readableSegments.join('_');
   }
 }
