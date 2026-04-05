@@ -63,22 +63,32 @@ ThemeData getTheme() {
   );
 }
 
-/// Colorful theme (higher saturation, vibrant accents)
+/// Colorful theme — aligns with Dot+Dash logo: cobalt blue field, purple→magenta gradient accents.
 ThemeData getColorfulTheme() {
+  // Brand (from app icon): primary blue background, gradient purple / hot pink underline.
+  const brandBlue = Color(0xFF2356D4);
+  const brandPurple = Color(0xFF6B4EE6);
+  const brandPink = Color(0xFFE9307A);
+
   final colorScheme = ColorScheme.fromSeed(
-    seedColor: const Color(0xFFE65100),
+    seedColor: brandBlue,
     brightness: Brightness.light,
-    primary: const Color(0xFFE65100),
+  ).copyWith(
+    primary: brandBlue,
     onPrimary: Colors.white,
-    primaryContainer: const Color(0xFFFFCC80),
-    onPrimaryContainer: const Color(0xFF5D2100),
-    secondary: const Color(0xFF00897B),
+    primaryContainer: const Color(0xFFD8E4FF),
+    onPrimaryContainer: const Color(0xFF0C2A6E),
+    secondary: brandPurple,
     onSecondary: Colors.white,
-    secondaryContainer: const Color(0xFFB2DFDB),
-    tertiary: const Color(0xFF7B1FA2),
-    surface: const Color(0xFFFFF8E1),
+    secondaryContainer: const Color(0xFFE8DEFF),
+    onSecondaryContainer: const Color(0xFF2D1857),
+    tertiary: brandPink,
+    onTertiary: Colors.white,
+    tertiaryContainer: const Color(0xFFFFD6E7),
+    onTertiaryContainer: const Color(0xFF5C1038),
+    surface: const Color(0xFFF5F8FF),
     onSurface: const Color(0xFF1C1B1F),
-    surfaceContainerHighest: const Color(0xFFF5E6C8),
+    surfaceContainerHighest: const Color(0xFFE5ECFA),
   );
 
   return ThemeData(
@@ -95,11 +105,11 @@ ThemeData getColorfulTheme() {
     extensions: [
       AppThemeExtension(
         devBadgeColor: Colors.orange,
-        stagingBadgeColor: Colors.blue,
+        stagingBadgeColor: brandBlue,
         errorColor: colorScheme.error,
         debugTextColor: colorScheme.error,
-        streakColor: const Color(0xFF1B5E20),
-        achievementColor: const Color(0xFFFFAB00),
+        streakColor: const Color(0xFF1565C0),
+        achievementColor: brandPink,
       ),
     ],
 

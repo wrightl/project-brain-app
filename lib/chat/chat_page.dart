@@ -61,7 +61,8 @@ class _ChatPageState extends State<ChatPage> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: Text("${authProvider.profile?.name}'s AI Buddy"),
+        title:
+            Text("${authProvider.profile?.name.split(' ').first}'s AI Buddy"),
         leading: IconButton(
           icon: const Icon(Icons.menu),
           onPressed: () {

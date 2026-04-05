@@ -47,7 +47,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final name = authProvider.profile?.name ?? 'User';
+    final name = authProvider.profile?.name.split(' ').first ?? 'there';
     final theme = Theme.of(context);
     final l10n = JournalLocalizations.of(context);
     final strategiesL10n = StrategiesLocalizations.of(context);
@@ -145,7 +145,8 @@ class _HomePageState extends State<HomePage> {
                         const SizedBox(height: 12),
                         Consumer<EggGoalsProvider>(
                           builder: (context, goalsProvider, _) {
-                            final progress = goalsProvider.getCompletionProgress();
+                            final progress =
+                                goalsProvider.getCompletionProgress();
                             final completed = progress['completed'] ?? 0;
                             final total = progress['total'] ?? 3;
                             final hasGoals = goalsProvider.goals.any((g) =>

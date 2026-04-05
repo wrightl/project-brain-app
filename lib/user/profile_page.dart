@@ -217,8 +217,6 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 _buildEnvironmentBadge(colorScheme, appColors),
                 const SizedBox(height: 24),
-                _buildThemeSection(theme),
-                const SizedBox(height: 24),
                 _buildProfileAvatar(authProvider),
                 const SizedBox(height: 16),
                 _buildProfileEmail(authProvider, theme, colorScheme),
@@ -232,6 +230,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 16),
                   _buildCustomPronounField(theme),
                 ],
+                const SizedBox(height: 24),
+                _buildThemeSection(theme),
                 const SizedBox(height: 24),
                 _buildNeurodiverseTraitsSection(theme, colorScheme),
                 const SizedBox(height: 32),
@@ -324,7 +324,12 @@ class _ProfilePageState extends State<ProfilePage> {
     return Consumer<ThemeModeProvider>(
       builder: (context, themeModeProvider, _) {
         const options = ['light', 'colorful', 'dark', 'system'];
-        const labels = {'light': 'Light', 'colorful': 'Colorful', 'dark': 'Dark', 'system': 'System'};
+        const labels = {
+          'light': 'Light',
+          'colorful': 'Colorful',
+          'dark': 'Dark',
+          'system': 'System'
+        };
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -343,7 +348,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   return ListTile(
                     leading: Icon(_iconForThemeMode(value)),
                     title: Text(labels[value]!),
-                    trailing: isSelected ? Icon(Icons.check, color: theme.colorScheme.primary) : null,
+                    trailing: isSelected
+                        ? Icon(Icons.check, color: theme.colorScheme.primary)
+                        : null,
                     onTap: () => themeModeProvider.setMode(value),
                   );
                 }).toList(),
