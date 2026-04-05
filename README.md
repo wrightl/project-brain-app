@@ -12,6 +12,7 @@ A Flutter application developed by Dot+Dash Consulting, featuring AI-powered cha
 -   [Configuration](#configuration)
 -   [Running the Application](#running-the-application)
 -   [Building for Production](#building-for-production)
+-   [iOS: Build and distribute](#ios-build-and-distribute)
 -   [Testing](#testing)
 -   [Code Generation](#code-generation)
 -   [Best Practices](#best-practices)
@@ -519,27 +520,42 @@ flutter run -d <device-id>
 
 ## Building for Production
 
-### iOS Build
+### iOS: Build and distribute
 
-1. **Configure Signing in Xcode:**
+Use this flow to produce an IPA and upload it to App Store Connect (e.g. TestFlight). Ensure signing is configured in Xcode first (`open ios/Runner.xcworkspace` → **Runner** target → **Signing & Capabilities**).
 
-    ```bash
-    open ios/Runner.xcworkspace
-    ```
+1. **Update the version (if needed)**  
+   Edit `pubspec.yaml`: `version: x.y.z+build` (`+build` is the build number Apple expects to increase for each upload).
 
-    - Select your development team
-    - Configure signing certificates
-
-2. **Build IPA:**
+2. **Create the IPA**
 
     ```bash
     flutter build ipa --dart-define=ENVIRONMENT=production
     ```
 
-3. **Build for App Store:**
+    Optional: enable Dart obfuscation and write symbol files for Crashlytics (keep the symbols off-repo):
+
     ```bash
-    flutter build ipa --release --dart-define=ENVIRONMENT=production
+    flutter build ipa --dart-define=ENVIRONMENT=production \
+      --obfuscate --split-debug-info=build/symbols/ios
     ```
+
+    Output: `build/ios/ipa/*.ipa`.
+
+3. **Upload with App Store Connect API key**
+
+    Create an **App Store Connect API** key (Users and Access → Keys), download the `.p8` once, and store it in **`private_keys/`** at the project root as `AuthKey_<KEY_ID>.p8` (same `<KEY_ID>` you pass to `--apiKey`). Use your **Issuer ID** from the Keys page for `--apiIssuer`.
+
+    ```bash
+    xcrun altool --upload-app --type ios \
+      -f build/ios/ipa/*.ipa \
+      --apiKey YOUR_API_KEY_ID \
+      --apiIssuer YOUR_ISSUER_ID
+    ```
+
+    Replace `YOUR_API_KEY_ID` and `YOUR_ISSUER_ID` with the Key ID and Issuer ID from App Store Connect. The tool locates the private key under `./private_keys` (or `~/private_keys`) when the filename matches the key ID.
+
+After upload, finish processing and TestFlight/App Store steps in [App Store Connect](https://appstoreconnect.apple.com).
 
 ### Android Build
 

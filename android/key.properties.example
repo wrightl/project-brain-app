@@ -1,0 +1,11 @@
+# Copy to key.properties in this folder (android/key.properties) and fill in values.
+# key.properties is gitignored — required for Play Store release builds.
+#
+# Create a keystore once:
+#   keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+#
+storePassword=your-keystore-password
+keyPassword=your-key-password
+keyAlias=upload
+# Path relative to android/ (not android/app/)
+storeFile=upload-keystore.jks

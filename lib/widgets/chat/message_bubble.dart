@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:projectbrain/models/citation.dart';
 import 'package:projectbrain/models/chatmessage.dart';
 import 'package:projectbrain/widgets/chat/typing_indicator.dart';

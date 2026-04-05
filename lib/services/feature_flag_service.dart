@@ -58,6 +58,7 @@ class FeatureFlagService {
     try {
       logInfo('[FeatureFlagService] Refreshing flags for user: ${user.email}');
       await _fetchFlags();
+      _isInitialized = true;
       logInfo('[FeatureFlagService] Flags refreshed successfully');
     } catch (e) {
       logError('[FeatureFlagService] Failed to refresh flags for user', e);
@@ -147,6 +148,14 @@ class FeatureFlagService {
       }
       rethrow;
     }
+  }
+
+  /// Clear cached flags after logout so the next session refetches for the new user.
+  void resetForNewSession() {
+    _flags.clear();
+    _isInitialized = false;
+    _isLoading = false;
+    logDebug('[FeatureFlagService] Reset for new session');
   }
 
   /// Manually refresh feature flags from the backend

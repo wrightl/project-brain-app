@@ -1,9 +1,13 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:projectbrain/authentication/auth_provider.dart';
 import 'package:projectbrain/services/auth/auth_service.dart';
 import 'package:projectbrain/models/auth0_user.dart';
 import 'package:projectbrain/services/auth/auth_exception.dart';
+import 'package:projectbrain/services/user_service.dart';
 import '../helpers/test_helpers.dart';
 
 // Mock classes
@@ -14,22 +18,55 @@ class MockAuth0User extends Mock implements Auth0User {}
 void main() {
   late AuthProvider authProvider;
   late MockAuthService mockAuthService;
+  late HttpServer apiServer;
 
   setUpAll(() async {
-    // Initialize test environment once for all tests
+    // Do not call TestWidgetsFlutterBinding.ensureInitialized() here: it
+    // replaces HttpClient with a mock that always returns 400, breaking the
+    // loopback [HttpServer] used for GET /users/me.
+    apiServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    apiServer.listen((request) async {
+      if (request.uri.path == '/users/me' && request.method == 'GET') {
+        request.response.statusCode = 200;
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(
+          jsonEncode({
+            'id': 'user-1',
+            'email': 'a@test.com',
+            'name': 'Test',
+            'isOnboarded': true,
+          }),
+        );
+      } else {
+        request.response.statusCode = 404;
+      }
+      await request.response.close();
+    });
+
+    await initializeTestEnvironment(
+      authAudience: 'http://127.0.0.1:${apiServer.port}',
+    );
+    await registerTestGetItServices();
+  });
+
+  tearDownAll(() async {
+    await apiServer.close();
+    await resetTestGetIt();
     await initializeTestEnvironment();
+    resetTestEnvironment();
   });
 
   setUp(() {
     mockAuthService = MockAuthService();
+    when(() => mockAuthService.isLoggedIn).thenReturn(false);
+    when(() => mockAuthService.profile).thenReturn(null);
+    when(() => mockAuthService.getAccessToken())
+        .thenAnswer((_) async => 'test_jwt');
     authProvider = AuthProvider(
       authService: mockAuthService,
-      featureFlagService: null, // Not testing feature flags in these tests
+      featureFlagService: null,
+      userService: UserService(authService: mockAuthService),
     );
-  });
-
-  tearDownAll(() {
-    resetTestEnvironment();
   });
 
   group('AuthProvider - Initialization', () {
@@ -49,6 +86,7 @@ void main() {
 
       expect(authProvider.isLoggedIn, isTrue);
       expect(authProvider.profile, equals(mockUser));
+      expect(authProvider.user?.id, 'user-1');
     });
 
     test('handles initialization with no user', () async {
@@ -76,6 +114,7 @@ void main() {
   group('AuthProvider - Login', () {
     test('successful login updates state', () async {
       final mockUser = MockAuth0User();
+      when(() => mockUser.sub).thenReturn('auth0|1');
       when(() => mockAuthService.login()).thenAnswer((_) async {});
       when(() => mockAuthService.isLoggedIn).thenReturn(true);
       when(() => mockAuthService.profile).thenReturn(mockUser);
@@ -84,6 +123,7 @@ void main() {
 
       expect(authProvider.isLoggedIn, isTrue);
       expect(authProvider.profile, equals(mockUser));
+      expect(authProvider.user?.id, 'user-1');
       verify(() => mockAuthService.login()).called(1);
     });
 
@@ -100,13 +140,12 @@ void main() {
 
     test('login clears previous errors', () async {
       final mockUser = MockAuth0User();
-      // First, set an error state
+      when(() => mockUser.sub).thenReturn('auth0|1');
       when(() => mockAuthService.login())
           .thenThrow(AuthException('First error'));
       await authProvider.login();
       expect(authProvider.hasError, isTrue);
 
-      // Then, successful login should clear error
       when(() => mockAuthService.login()).thenAnswer((_) async {});
       when(() => mockAuthService.isLoggedIn).thenReturn(true);
       when(() => mockAuthService.profile).thenReturn(mockUser);
@@ -120,14 +159,13 @@ void main() {
 
   group('AuthProvider - Logout', () {
     test('successful logout clears state', () async {
-      // First login
       final mockUser = MockAuth0User();
+      when(() => mockUser.sub).thenReturn('auth0|1');
       when(() => mockAuthService.login()).thenAnswer((_) async {});
       when(() => mockAuthService.isLoggedIn).thenReturn(true);
       when(() => mockAuthService.profile).thenReturn(mockUser);
       await authProvider.login();
 
-      // Then logout
       when(() => mockAuthService.logout()).thenAnswer((_) async {});
       when(() => mockAuthService.isLoggedIn).thenReturn(false);
       when(() => mockAuthService.profile).thenReturn(null);
@@ -170,7 +208,6 @@ void main() {
           .thenThrow(AuthException('AuthException: Test error'));
       await authProvider.login();
 
-      // Should remove "AuthException: " prefix
       expect(authProvider.errorMessage, equals('Test error'));
     });
 
@@ -189,7 +226,8 @@ void main() {
       authProvider.addListener(() => notifyCount++);
 
       final mockUser = MockAuth0User();
-      when(() => mockAuthService.login()).thenAnswer((_) async => {});
+      when(() => mockUser.sub).thenReturn('auth0|1');
+      when(() => mockAuthService.login()).thenAnswer((_) async {});
       when(() => mockAuthService.isLoggedIn).thenReturn(true);
       when(() => mockAuthService.profile).thenReturn(mockUser);
 
@@ -198,19 +236,15 @@ void main() {
       expect(notifyCount, greaterThan(0));
     });
 
-    test('hasError returns correct value', () {
+    test('hasError returns correct value', () async {
       expect(authProvider.hasError, isFalse);
 
-      // Manually set error for testing
       when(() => mockAuthService.login())
           .thenThrow(AuthException('Error'));
 
-      authProvider.login();
+      await authProvider.login();
 
-      // After async error
-      Future.delayed(Duration.zero, () {
-        expect(authProvider.hasError, isTrue);
-      });
+      expect(authProvider.hasError, isTrue);
     });
   });
 }

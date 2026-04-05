@@ -105,7 +105,7 @@ class EggGoalsProvider extends ChangeNotifier {
         }
       }
 
-      // Save to shared storage for widget
+      // Save to App Group shared storage (iOS native channel)
       for (int i = 0; i < 3; i++) {
         if (i < goalMessages.length && goalMessages[i].isNotEmpty) {
           await SharedPreferencesStorage.setValue('egg_$i', goalMessages[i]);
@@ -147,7 +147,7 @@ class EggGoalsProvider extends ChangeNotifier {
         completed: newCompleted,
       );
 
-      // Save to shared storage
+      // Save to App Group shared storage (iOS)
       await SharedPreferencesStorage.setBool(
           'egg_${index}_completed', newCompleted);
 
@@ -241,5 +241,20 @@ class EggGoalsProvider extends ChangeNotifier {
   Future<void> init() async {
     await _loadGoalsFromStorage();
     notifyListeners();
+  }
+
+  /// Clear goals and prefs for the previous user so the next login starts clean.
+  Future<void> resetOnLogout() async {
+    _goals.clear();
+    _goalStreakSummary = null;
+    _errorMessage = null;
+    _isLoading = false;
+    await preferencesService.remove('has_ever_set_goals');
+    for (int i = 0; i < 3; i++) {
+      await SharedPreferencesStorage.setValue('egg_$i', 'No Egg Goal Set');
+      await SharedPreferencesStorage.setBool('egg_${i}_completed', false);
+    }
+    notifyListeners();
+    logDebug('[EggGoalsProvider] Reset on logout');
   }
 }

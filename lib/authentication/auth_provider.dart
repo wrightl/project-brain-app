@@ -6,13 +6,15 @@ import 'package:projectbrain/services/user_service.dart';
 import 'package:projectbrain/services/feature_flag_service.dart';
 import 'package:projectbrain/services/push_notification_service.dart';
 import 'package:projectbrain/services/error_reporting_service.dart';
+import 'package:projectbrain/services/api_http_cache_coordinator.dart';
+import 'package:projectbrain/core/session/session_cleanup_service.dart';
 import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService authService;
   final FeatureFlagService? featureFlagService;
-  late final UserService userService;
+  final UserService userService;
 
   bool _isLoading = false;
   bool _onboardingComplete = false;
@@ -22,9 +24,8 @@ class AuthProvider extends ChangeNotifier {
   AuthProvider({
     required this.authService,
     this.featureFlagService,
-  }) {
-    userService = UserService(authService: authService);
-  }
+    required this.userService,
+  });
 
   bool get isLoading => _isLoading;
   bool get isLoggedIn => authService.isLoggedIn;
@@ -60,6 +61,9 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       await authService.login();
+      if (sl.isRegistered<ApiHttpCacheCoordinator>()) {
+        sl<ApiHttpCacheCoordinator>().clearAllCaches();
+      }
       await _fetchUserData();
 
       // Set user ID in analytics after successful login
@@ -99,6 +103,14 @@ class AuthProvider extends ChangeNotifier {
         logError(
             '[AuthProvider] Error unregistering push token during logout', e);
         // Continue with logout even if unregister fails
+      }
+
+      if (sl.isRegistered<SessionCleanupService>()) {
+        try {
+          await sl<SessionCleanupService>().clearAfterLogout();
+        } catch (e, st) {
+          logError('[AuthProvider] Session cleanup failed', e, st);
+        }
       }
 
       await authService.logout();

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:projectbrain/core/logging/app_logger.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 /// WebView for handling Stripe checkout
 class StripeCheckoutWebView extends StatefulWidget {
@@ -42,8 +43,7 @@ class _StripeCheckoutWebViewState extends State<StripeCheckoutWebView> {
             });
           },
           onWebResourceError: (WebResourceError error) {
-            // Handle errors
-            debugPrint('WebView error: ${error.description}');
+            logDebug('[StripeWebView] ${error.description}');
           },
           onUrlChange: (UrlChange change) {
             _handleUrlChange(change.url ?? '');

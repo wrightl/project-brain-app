@@ -16,7 +16,7 @@ import 'dart:convert';
 /// Must be a top-level function, not a class method
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Note: Firebase is already initialized in main.dart
+  // Note: Firebase is already initialized during app bootstrap
   // This handler is called when app is in background
   logInfo('[PushNotification] Background message received: ${message.messageId}');
   // Handle background message here if needed
@@ -86,7 +86,7 @@ class PushNotificationService {
     );
 
     await _localNotifications.initialize(
-      initSettings,
+      settings: initSettings,
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
 
@@ -216,10 +216,10 @@ class PushNotificationService {
       );
 
       await _localNotifications.show(
-        message.hashCode,
-        notification.title,
-        notification.body,
-        notificationDetails,
+        id: message.hashCode,
+        title: notification.title,
+        body: notification.body,
+        notificationDetails: notificationDetails,
         payload: message.data.isNotEmpty ? jsonEncode(message.data) : null,
       );
     } catch (e, stackTrace) {

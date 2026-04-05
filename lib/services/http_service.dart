@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:http/http.dart' as http;
 import 'package:projectbrain/services/auth/auth_service.dart';
@@ -67,8 +69,11 @@ class HttpService {
   static const Duration retryDelay = Duration(seconds: 1);
   static const Duration defaultCacheDuration = Duration(minutes: 5);
 
-  // Cache for GET requests
-  final Map<String, _CachedResponse> _cache = {};
+  /// Max distinct GET paths kept in memory (LRU by last access).
+  static const int maxCacheEntries = 64;
+
+  // Cache for GET requests (insertion order = oldest → newest for eviction)
+  final LinkedHashMap<String, _CachedResponse> _cache = LinkedHashMap();
 
   // Circuit breaker per endpoint
   final Map<String, _CircuitBreaker> _circuitBreakers = {};
@@ -85,14 +90,13 @@ class HttpService {
     Duration? cacheDuration,
     bool useCache = true,
   }) async {
-    // Check cache first
+    // Check cache first (refresh LRU order on hit)
     if (useCache && _cache.containsKey(path)) {
-      final cached = _cache[path]!;
+      final cached = _cache.remove(path)!;
       if (!cached.isExpired) {
         logDebug('[HttpService] Cache hit for GET $path');
+        _cache[path] = cached;
         return cached.response;
-      } else {
-        _cache.remove(path);
       }
     }
 
@@ -123,8 +127,13 @@ class HttpService {
     try {
       final response = await requestFuture;
 
-      // Cache successful GET responses
+      // Cache successful GET responses (evict oldest entries if over cap)
       if (useCache && response.statusCode == 200) {
+        while (_cache.length >= maxCacheEntries) {
+          final oldest = _cache.keys.first;
+          _cache.remove(oldest);
+          logDebug('[HttpService] Cache evicted (LRU cap) GET $oldest');
+        }
         _cache[path] = _CachedResponse(
           response,
           cacheDuration ?? defaultCacheDuration,
@@ -139,10 +148,12 @@ class HttpService {
     }
   }
 
-  /// Clear the cache
+  /// Clear GET cache, in-flight dedupe map, and circuit breakers (e.g. on logout).
   void clearCache() {
     _cache.clear();
-    logDebug('[HttpService] Cache cleared');
+    _pendingRequests.clear();
+    _circuitBreakers.clear();
+    logDebug('[HttpService] Cache and request state cleared');
   }
 
   /// Clear cache for a specific path

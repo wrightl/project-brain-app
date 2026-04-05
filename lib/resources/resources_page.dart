@@ -91,7 +91,7 @@ class _ResourcesPageState extends State<ResourcesPage> {
     }
 
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         allowMultiple: true,
         type: FileType.any,
       );

@@ -34,6 +34,8 @@ import 'package:projectbrain/subscription/subscription_provider.dart';
 import 'package:projectbrain/goals/egg_goals_provider.dart';
 import 'package:projectbrain/services/feature_flag_service.dart';
 import 'package:projectbrain/services/http_service.dart';
+import 'package:projectbrain/services/api_http_cache_coordinator.dart';
+import 'package:projectbrain/core/session/session_cleanup_service.dart';
 import 'package:projectbrain/core/routing/app_router.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
 
@@ -109,6 +111,7 @@ Future<void> initializeDependencies() async {
     () => AuthProvider(
       authService: sl<AuthService>(),
       featureFlagService: sl<FeatureFlagService>(),
+      userService: sl<UserService>(),
     ),
   );
 
@@ -176,6 +179,24 @@ Future<void> initializeDependencies() async {
   // User Service (used by auth and journal timezone)
   sl.registerLazySingleton<UserService>(
     () => UserService(authService: sl<AuthService>()),
+  );
+
+  sl.registerSingleton<ApiHttpCacheCoordinator>(
+    ApiHttpCacheCoordinator([
+      sl<HttpService>(),
+      sl<AIService>(),
+      sl<ConversationService>(),
+      sl<ResourceService>(),
+      sl<VoiceNoteService>(),
+      sl<QuizService>(),
+      sl<CoachService>(),
+      sl<SubscriptionService>(),
+      sl<EggGoalsService>(),
+      sl<JournalService>(),
+      sl<StrategyService>(),
+      sl<TagService>(),
+      sl<UserService>(),
+    ]),
   );
 
   // Push Notification Service
@@ -250,6 +271,18 @@ Future<void> initializeDependencies() async {
     () => StrategiesChatProvider(
       aiService: sl<AIService>(),
       strategyService: sl<StrategyService>(),
+    ),
+  );
+
+  sl.registerLazySingleton<SessionCleanupService>(
+    () => SessionCleanupService(
+      httpCacheCoordinator: sl<ApiHttpCacheCoordinator>(),
+      featureFlagService: sl<FeatureFlagService>(),
+      subscriptionProvider: sl<SubscriptionProvider>(),
+      eggGoalsProvider: sl<EggGoalsProvider>(),
+      strategiesProvider: sl<StrategiesProvider>(),
+      strategiesChatProvider: sl<StrategiesChatProvider>(),
+      goalsRealtimeService: sl<GoalsRealtimeService>(),
     ),
   );
 

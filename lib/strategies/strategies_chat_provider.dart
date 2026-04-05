@@ -154,4 +154,11 @@ class StrategiesChatProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
   }
+
+  void resetOnLogout() {
+    startNewConversation();
+    _isLoading = false;
+    notifyListeners();
+    logDebug('[StrategiesChatProvider] Reset on logout');
+  }
 }

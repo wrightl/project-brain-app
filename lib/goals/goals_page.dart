@@ -54,6 +54,7 @@ class GoalsPage extends StatelessWidget {
   Future<bool> _determineRoute(
       BuildContext context, EggGoalsProvider provider) async {
     await provider.init();
+    if (!context.mounted) return false;
     final isLoggedIn =
         Provider.of<AuthProvider>(context, listen: false).isLoggedIn;
     if (isLoggedIn) {

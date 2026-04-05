@@ -104,6 +104,10 @@ class AppConfig {
   static const String authRedirectUri = '$bundleIdentifier://login-callback';
   static const String refreshTokenKey = 'refresh_token';
 
+  /// HTTPS page where users manage or purchase subscriptions (Safari on iOS; required for App Store).
+  static String get subscriptionBillingWebUrl =>
+      getEnvOrDefault('SUBSCRIPTION_BILLING_WEB_URL', '');
+
   // Environment Detection
   static bool get isDebug => kDebugMode;
   static bool get isRelease => kReleaseMode;

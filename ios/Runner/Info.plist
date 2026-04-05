@@ -28,7 +28,15 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>projectbrain</string>
+	<string>Project Brain</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Project Brain needs camera access to attach photos when messaging your coach.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Project Brain needs the microphone to record voice messages for coach chat and voice notes.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Project Brain needs photo library access so you can attach images when messaging your coach.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>We use this to measure app usage and improve stability. You can decline and still use the app.</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -37,6 +45,8 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>

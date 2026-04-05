@@ -1,6 +1,5 @@
 import Flutter
 import UIKit
-import WidgetKit
 import Foundation
 
 public class StorageHelper {
@@ -20,11 +19,6 @@ public class StorageHelper {
     
     public static func getBool(key: String) -> Bool? {
         return storage?.bool(forKey: key)
-    }
-    
-    /// Reload widget timeline after storage updates
-    public static func reloadWidgetTimeline() {
-        WidgetCenter.shared.reloadTimelines(ofKind: "ProjectBrainWidget")
     }
 }
 
@@ -67,14 +61,11 @@ public class StorageHelper {
                     return
                 };
                 
-                // Handle bool values separately
                 if let boolValue = args["value"] as? Bool {
                     StorageHelper.setBool(key: key, value: boolValue)
-                    StorageHelper.reloadWidgetTimeline()
                     result(StorageHelper.getBool(key: key)?.description)
                 } else {
                     StorageHelper.setValue(key: key, value: args["value"] as Any)
-                    StorageHelper.reloadWidgetTimeline()
                     result(StorageHelper.getString(key: key))
                 }
             } else if call.method == "getPreferences" {
@@ -105,21 +96,15 @@ public class StorageHelper {
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
-  // Handle remote notifications for goal completion updates
   override func application(
     _ application: UIApplication,
     didReceiveRemoteNotification userInfo: [AnyHashable: Any],
     fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
   ) {
-    // Check if notification is for goal completion
     if let goalData = userInfo["goal"] as? [String: Any],
        let index = goalData["index"] as? Int,
        let completed = goalData["completed"] as? Bool {
-      
-      // Update shared storage
       StorageHelper.setBool(key: "egg_\(index)_completed", value: completed)
-      StorageHelper.reloadWidgetTimeline()
-      
       completionHandler(.newData)
     } else {
       completionHandler(.noData)

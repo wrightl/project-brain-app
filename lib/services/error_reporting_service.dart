@@ -1,6 +1,7 @@
-import 'package:flutter/foundation.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
 
 /// Centralized error reporting and analytics service
@@ -22,19 +23,32 @@ class ErrorReportingService {
     try {
       // Initialize Crashlytics
       if (_crashlytics != null) {
-        // Pass all uncaught errors to Crashlytics
+        // Framework errors: non-fatal so Crashlytics fatals match real crashes.
         FlutterError.onError = (details) {
-          _crashlytics.recordFlutterFatalError(details);
+          FlutterError.presentError(details);
+          _crashlytics.recordFlutterError(details);
         };
 
-        // Pass all uncaught asynchronous errors to Crashlytics
+        // Unhandled async errors: still reported, but not forced to "fatal" bucket.
         PlatformDispatcher.instance.onError = (error, stack) {
-          _crashlytics.recordError(error, stack, fatal: true);
+          _crashlytics.recordError(error, stack, fatal: false);
           return true;
         };
 
         _initialized = true;
         logDebug('[ErrorReporting] Crashlytics initialized');
+      }
+
+      // iOS: ATT before enabling analytics (IDFA-related collection).
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+        try {
+          final status = await AppTrackingTransparency.trackingAuthorizationStatus;
+          if (status == TrackingStatus.notDetermined) {
+            await AppTrackingTransparency.requestTrackingAuthorization();
+          }
+        } catch (e) {
+          logDebug('[ErrorReporting] ATT request skipped: $e');
+        }
       }
 
       // Initialize Analytics

@@ -44,11 +44,14 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Ignore all environment files
+# Local env files (use .env.*.example templates; CI should write real files before build)
 .env
-.env.*
-*.env
-*.env.*
+.env.dev
+.env.staging
+.env.production
+*.env.local
+
+/private_keys
 
 /coverage/**
 

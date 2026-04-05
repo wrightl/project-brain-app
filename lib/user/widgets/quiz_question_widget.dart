@@ -346,16 +346,19 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
       );
     }
 
-    return Column(
-      children: widget.question.choices!.map((choice) {
-        final isSelected = _currentValue == choice;
-        return RadioListTile<String>(
-          title: Text(choice),
-          value: choice,
-          groupValue: isSelected ? choice : null,
-          onChanged: (value) => _handleChanged(value),
-        );
-      }).toList(),
+    return RadioGroup<String>(
+      groupValue: _currentValue is String ? _currentValue as String : null,
+      onChanged: (value) {
+        if (value != null) _handleChanged(value);
+      },
+      child: Column(
+        children: widget.question.choices!.map((choice) {
+          return RadioListTile<String>(
+            title: Text(choice),
+            value: choice,
+          );
+        }).toList(),
+      ),
     );
   }
 

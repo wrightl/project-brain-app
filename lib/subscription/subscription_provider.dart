@@ -285,4 +285,16 @@ class SubscriptionProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
   }
+
+  /// Drop subscription UI state and prefs so the next user does not see prior tier data.
+  Future<void> resetOnLogout() async {
+    _subscription = null;
+    _usage = null;
+    _tierInfo = null;
+    _errorMessage = null;
+    _isLoading = false;
+    await sharedPreferences.remove(_cacheTimestampKey);
+    notifyListeners();
+    logDebug('[SubscriptionProvider] Reset on logout');
+  }
 }

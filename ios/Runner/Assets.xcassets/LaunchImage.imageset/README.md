@@ -1,5 +1,15 @@
 # Launch Screen Assets
 
-You can customize the launch screen with your own desired assets by replacing the image files in this directory.
+The PNGs here are shown by `LaunchScreen.storyboard` while the app loads. They are generated from `assets/icon/appstore.png` (256 / 512 / 768 px) so `flutter build ipa` does not flag the default Flutter placeholders.
 
-You can also do it by opening your Flutter project's Xcode project with `open ios/Runner.xcworkspace`, selecting `Runner/Assets.xcassets` in the Project Navigator and dropping in the desired images.
+To refresh after changing the app icon:
+
+```bash
+SRC=assets/icon/appstore.png
+DEST=ios/Runner/Assets.xcassets/LaunchImage.imageset
+sips -z 256 256  "$SRC" --out "$DEST/LaunchImage.png"
+sips -z 512 512  "$SRC" --out "$DEST/LaunchImage@2x.png"
+sips -z 768 768  "$SRC" --out "$DEST/LaunchImage@3x.png"
+```
+
+You can also replace them from Xcode: `open ios/Runner.xcworkspace` → **Runner** → **Assets.xcassets** → **LaunchImage**.

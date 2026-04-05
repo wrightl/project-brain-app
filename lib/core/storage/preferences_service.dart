@@ -53,4 +53,9 @@ class PreferencesService {
   Future<bool> setBool(String key, bool value) async {
     return await _prefs.setBool(key, value);
   }
+
+  /// Remove a key (e.g. user-scoped cache on logout).
+  Future<bool> remove(String key) async {
+    return await _prefs.remove(key);
+  }
 }

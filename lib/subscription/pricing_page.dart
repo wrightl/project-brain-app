@@ -1,6 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:projectbrain/core/config/app_config.dart';
 import 'package:projectbrain/subscription/subscription_provider.dart';
 import 'package:projectbrain/models/subscription.dart';
 import 'package:projectbrain/subscription/widgets/tier_badge.dart';
@@ -33,6 +36,11 @@ class _PricingPageState extends State<PricingPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (!kIsWeb &&
+                    defaultTargetPlatform == TargetPlatform.iOS) ...[
+                  _IosWebBillingNotice(theme: Theme.of(context)),
+                  const SizedBox(height: 16),
+                ],
                 // Billing period toggle
                 _buildBillingToggle(),
 
@@ -131,7 +139,7 @@ class _PricingPageState extends State<PricingPage> {
         boxShadow: isPopular
             ? [
                 BoxShadow(
-                  color: Colors.blue.withOpacity(0.2),
+                  color: Colors.blue.withValues(alpha: 0.2),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -146,8 +154,9 @@ class _PricingPageState extends State<PricingPage> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: isPopular
-                  ? Colors.blue.withOpacity(0.1)
-                  : theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                  ? Colors.blue.withValues(alpha: 0.1)
+                  : theme.colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.5),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 topRight: Radius.circular(16),
@@ -291,7 +300,7 @@ class _PricingPageState extends State<PricingPage> {
                           : Text(
                               tier == SubscriptionTier.free
                                   ? 'Downgrade'
-                                  : isCurrentTier == SubscriptionTier.free &&
+                                  : currentTier == SubscriptionTier.free &&
                                           tier == SubscriptionTier.pro
                                       ? 'Start 7-Day Free Trial'
                                       : 'Upgrade to ${tier.displayName}',
@@ -401,12 +410,65 @@ class _PricingPageState extends State<PricingPage> {
     try {
       final subscriptionProvider =
           Provider.of<SubscriptionProvider>(context, listen: false);
+
+      // App Store policy: complete paid subscriptions on the web (Safari), not in-app Stripe.
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+        final billingUrl = AppConfig.subscriptionBillingWebUrl.trim();
+        if (billingUrl.isEmpty) {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Billing URL is not configured. Add SUBSCRIPTION_BILLING_WEB_URL to your environment.',
+              ),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
+        final uri = Uri.tryParse(billingUrl);
+        if (uri == null || uri.scheme != 'https') {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'SUBSCRIPTION_BILLING_WEB_URL must be a valid https:// URL.',
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+        final launched = await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+        if (!context.mounted) return;
+        if (!launched) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not open the billing page.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Finish your purchase in the browser, then return to the app. Use Refresh on the subscription screen if your plan does not update.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
       final checkoutUrl = await subscriptionProvider.createCheckout(
         tier.displayName,
         _isAnnual,
       );
 
-      if (!mounted) return;
+      if (!context.mounted) return;
 
       final result = await Navigator.of(context).push<bool>(
         MaterialPageRoute(
@@ -422,11 +484,12 @@ class _PricingPageState extends State<PricingPage> {
         ),
       );
 
-      if (result == true && mounted) {
+      if (result == true) {
+        if (!context.mounted) return;
         // Refresh subscription data
         await subscriptionProvider.refresh();
 
-        // Show success message
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Subscription upgraded successfully!'),
@@ -434,13 +497,10 @@ class _PricingPageState extends State<PricingPage> {
           ),
         );
 
-        // Navigate back
-        if (mounted) {
-          context.pop();
-        }
+        context.pop();
       }
     } catch (e) {
-      if (!mounted) return;
+      if (!context.mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -453,6 +513,37 @@ class _PricingPageState extends State<PricingPage> {
         setState(() => _isLoading = false);
       }
     }
+  }
+}
+
+class _IosWebBillingNotice extends StatelessWidget {
+  final ThemeData theme;
+
+  const _IosWebBillingNotice({required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: theme.colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.info_outline, color: theme.colorScheme.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'On iPhone, upgrades and checkout open in your browser (App Store guidelines). '
+                'Sign in with the same account you use in the app.',
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -581,7 +672,8 @@ class _FeatureComparisonTable extends StatelessWidget {
                   bottom: isLast
                       ? BorderSide.none
                       : BorderSide(
-                          color: theme.colorScheme.outline.withOpacity(0.3)),
+                          color: theme.colorScheme.outline
+                              .withValues(alpha: 0.3)),
                 ),
               ),
               child: Padding(

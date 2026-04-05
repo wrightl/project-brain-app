@@ -199,7 +199,8 @@ class JournalProvider extends ChangeNotifier {
   Future<void> _ensureTimezoneSet() async {
     if (userService == null) return;
     try {
-      final deviceIdentifier = await FlutterTimezone.getLocalTimezone();
+      final tzInfo = await FlutterTimezone.getLocalTimezone();
+      final deviceIdentifier = tzInfo.identifier;
       if (deviceIdentifier.isEmpty) return;
       final current = await userService!.getTimezone();
       if (current.timezone == null ||

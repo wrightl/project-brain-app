@@ -119,7 +119,6 @@ class AppRouter {
           sl<EggGoalsProvider>().syncFromAPI().then((_) {
             _router?.go('/goals');
           });
-          break;
         default:
           // Navigate to home for unknown types
           _router!.go('/');

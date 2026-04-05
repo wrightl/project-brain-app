@@ -23,6 +23,8 @@ void main() {
   late MockUserService mockUserService;
 
   setUpAll(() {
+    // Avoid TestWidgetsFlutterBinding here: it mocks HttpClient globally and
+    // breaks tests that use real loopback HTTP (e.g. auth_provider_test).
     registerFallbackValue(JournalCreateRequest(content: ''));
     registerFallbackValue(JournalUpdateRequest(content: ''));
   });

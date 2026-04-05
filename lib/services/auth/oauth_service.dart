@@ -23,6 +23,9 @@ class OAuthService {
             audience: AppConfig.authAudience,
             scopes: {'openid', 'profile', 'offline_access', 'email'},
             redirectUrl: AppConfig.authRedirectUri,
+            // Avoid silent SSO / consent-only when an Auth0 session still exists;
+            // forces identifier + credentials on Universal Login.
+            parameters: const {'prompt': 'select_account'},
           );
 
       logDebug('[OAuthService] Login successful');
@@ -49,6 +52,9 @@ class OAuthService {
       logDebug('[OAuthService] Logging out');
       await _auth0.webAuthentication().logout(
             returnTo: AppConfig.authRedirectUri,
+            // Must match [login] so iOS/macOS builds the same redirect URL mode;
+            // mismatch often causes Auth0 "Oops" and leaves the hosted session active.
+            useHTTPS: true,
           );
       logDebug('[OAuthService] Logout complete');
     } catch (e, stackTrace) {

@@ -91,4 +91,12 @@ class StrategiesProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
   }
+
+  void resetOnLogout() {
+    _items = [];
+    _errorMessage = null;
+    _isLoading = false;
+    notifyListeners();
+    logDebug('[StrategiesProvider] Reset on logout');
+  }
 }

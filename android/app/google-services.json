@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "470008647698",
-    "project_id": "projectbrain-app-dev",
-    "storage_bucket": "projectbrain-app-dev.firebasestorage.app"
+    "project_number": "000000000000",
+    "project_id": "projectbrain-placeholder",
+    "storage_bucket": "projectbrain-placeholder.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:470008647698:android:a4db174d450a00133308cb",
+        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
         "android_client_info": {
           "package_name": "com.dotdash.projectbrain"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyB5Uv-wFNhdp7_3hC0jDHh9N0PxeHS0RR8"
+          "current_key": "placeholder-replace-with-firebase-console-download"
         }
       ],
       "services": {

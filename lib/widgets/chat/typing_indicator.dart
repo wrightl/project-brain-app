@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 /// Animated typing indicator with three bouncing dots
@@ -26,6 +28,7 @@ class _TypingIndicatorState extends State<TypingIndicator>
     with TickerProviderStateMixin {
   late List<AnimationController> _controllers;
   late List<Animation<double>> _animations;
+  final List<Timer> _startTimers = [];
 
   @override
   void initState() {
@@ -47,18 +50,25 @@ class _TypingIndicatorState extends State<TypingIndicator>
       );
     }).toList();
 
-    // Start animations with staggered delays
-    for (int i = 0; i < _controllers.length; i++) {
-      Future.delayed(Duration(milliseconds: i * 150), () {
-        if (mounted) {
-          _controllers[i].repeat(reverse: true);
-        }
-      });
+    // Stagger starts; cancel timers in dispose so tests and fast navigation
+    // do not leave pending dart:async Timers.
+    for (var i = 0; i < _controllers.length; i++) {
+      _startTimers.add(
+        Timer(Duration(milliseconds: i * 150), () {
+          if (mounted) {
+            _controllers[i].repeat(reverse: true);
+          }
+        }),
+      );
     }
   }
 
   @override
   void dispose() {
+    for (final t in _startTimers) {
+      t.cancel();
+    }
+    _startTimers.clear();
     for (var controller in _controllers) {
       controller.dispose();
     }
