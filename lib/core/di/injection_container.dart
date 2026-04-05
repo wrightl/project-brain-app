@@ -11,6 +11,7 @@ import 'package:projectbrain/services/auth/oauth_service.dart';
 import 'package:projectbrain/services/auth/user_profile_service.dart';
 import 'package:projectbrain/chat/chat_provider.dart';
 import 'package:projectbrain/core/storage/preferences_service.dart';
+import 'package:projectbrain/helpers/theme_mode_provider.dart';
 import 'package:projectbrain/services/ai_service.dart';
 import 'package:projectbrain/services/conversation_service.dart';
 import 'package:projectbrain/services/resource_service.dart';
@@ -55,6 +56,11 @@ Future<void> initializeDependencies() async {
   // Preferences Service
   sl.registerLazySingleton<PreferencesService>(
     () => PreferencesService(sl<SharedPreferences>()),
+  );
+
+  // Theme mode (light / colorful / dark)
+  sl.registerLazySingleton<ThemeModeProvider>(
+    () => ThemeModeProvider(sl<PreferencesService>()),
   );
 
   // ===== Authentication Services =====

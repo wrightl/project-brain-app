@@ -343,8 +343,8 @@ class AppRouter {
       // Subscription pages don't have bottom nav, return -1 or handle separately
       return -1;
     }
-    if (location.startsWith('/strategies')) {
-      return 0; // Keep Home tab selected when on strategies screens
+    if (location.startsWith('/goals') || location.startsWith('/strategies')) {
+      return 0; // Home-driven flows
     }
     if (location.startsWith('/user') ||
         location.startsWith('/profile') ||

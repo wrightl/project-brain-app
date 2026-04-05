@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:projectbrain/journal/journal_provider.dart';
 import 'package:projectbrain/journal/journal_localizations.dart';
-import 'package:projectbrain/models/journal/journal_entry.dart';
 import 'package:intl/intl.dart';
 
 /// View a single journal entry (read-only) with Edit button.

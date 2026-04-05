@@ -167,7 +167,7 @@ class SubscriptionProvider extends ChangeNotifier {
         subscriptionService.getTier(),
       ]);
 
-      logDebug('[SubscriptionProvider] Results: ${results}');
+      logDebug('[SubscriptionProvider] Results: $results');
 
       _subscription = results[0] as Subscription;
       _usage = results[1] as UsageStats;

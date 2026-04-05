@@ -8,9 +8,26 @@ class PreferencesService {
 
   // Keys
   static const String _lastRouteKey = 'last_route_key';
+  static const String _themeModeKey = 'theme_mode';
 
   /// Get the last visited route
   String? get lastRoute => _prefs.getString(_lastRouteKey);
+
+  /// Get the selected theme mode: 'light' | 'colorful' | 'dark' | 'system'
+  String get themeMode => _prefs.getString(_themeModeKey) ?? 'system';
+
+  /// Set the selected theme mode
+  Future<bool> setThemeMode(String value) async {
+    return await _prefs.setString(_themeModeKey, value);
+  }
+
+  /// Get a string value
+  String? getString(String key) => _prefs.getString(key);
+
+  /// Set a string value
+  Future<bool> setString(String key, String value) async {
+    return await _prefs.setString(key, value);
+  }
 
   /// Set the last visited route
   Future<bool> setLastRoute(String route) async {

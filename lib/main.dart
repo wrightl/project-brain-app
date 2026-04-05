@@ -16,7 +16,7 @@ import 'package:projectbrain/services/feature_flag_service.dart';
 import 'package:projectbrain/services/goals_realtime_service.dart';
 import 'package:projectbrain/services/push_notification_service.dart';
 import 'package:projectbrain/services/error_reporting_service.dart';
-import 'package:projectbrain/helpers/theme.dart';
+import 'package:projectbrain/helpers/theme_mode_provider.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
 
 /// Main entry point for the application
@@ -149,6 +149,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ChangeNotifierProvider.value(
           value: sl<AuthProvider>(),
         ),
+        ChangeNotifierProvider.value(
+          value: sl<ThemeModeProvider>(),
+        ),
         ChangeNotifierProvider(
           create: (_) => sl<ChatProvider>(),
         ),
@@ -171,13 +174,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           value: sl<FeatureFlagService>(),
         ),
       ],
-      child: MaterialApp.router(
-        debugShowCheckedModeBanner: false,
-        title: 'Project Brain',
-        routerConfig: router,
-        themeMode: ThemeMode.system,
-        theme: getTheme(),
-        darkTheme: getDarkTheme(),
+      child: Consumer<ThemeModeProvider>(
+        builder: (context, themeModeProvider, _) {
+          return MaterialApp.router(
+            debugShowCheckedModeBanner: false,
+            title: 'Project Brain',
+            routerConfig: router,
+            themeMode: themeModeProvider.themeMode,
+            theme: themeModeProvider.theme,
+            darkTheme: themeModeProvider.darkTheme,
+          );
+        },
       ),
     );
   }

@@ -364,7 +364,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 labelText: localizations.preferredPronoun,
                 border: const OutlineInputBorder(),
               ),
-              value: provider.preferredPronoun.isEmpty
+              initialValue: provider.preferredPronoun.isEmpty
                   ? null
                   : provider.preferredPronoun,
               items: localizations.pronounOptions.map((pronoun) {
@@ -481,7 +481,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               labelText: localizations.currentFeeling,
               border: const OutlineInputBorder(),
             ),
-            value: provider.currentFeeling,
+            initialValue: provider.currentFeeling,
             items: localizations.currentFeelingOptions.map((feeling) {
               return DropdownMenuItem<String>(
                 value: feeling,
@@ -596,7 +596,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               labelText: localizations.learningStyle,
               border: const OutlineInputBorder(),
             ),
-            value: provider.learningStyle,
+            initialValue: provider.learningStyle,
             items: localizations.learningStyleOptions.map((option) {
               return DropdownMenuItem<String>(
                 value: option,
@@ -611,7 +611,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               labelText: localizations.informationDepth,
               border: const OutlineInputBorder(),
             ),
-            value: provider.informationDepth,
+            initialValue: provider.informationDepth,
             items: localizations.informationDepthOptions.map((option) {
               return DropdownMenuItem<String>(
                 value: option,
@@ -626,7 +626,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               labelText: localizations.celebrationStyle,
               border: const OutlineInputBorder(),
             ),
-            value: provider.celebrationStyle,
+            initialValue: provider.celebrationStyle,
             items: localizations.celebrationStyleOptions.map((option) {
               return DropdownMenuItem<String>(
                 value: option,
@@ -701,7 +701,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               labelText: localizations.motivationStyle,
               border: const OutlineInputBorder(),
             ),
-            value: provider.motivationStyle,
+            initialValue: provider.motivationStyle,
             items: localizations.motivationStyleOptions.map((option) {
               return DropdownMenuItem<String>(
                 value: option,
@@ -777,7 +777,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               labelText: localizations.communicationStyle,
               border: const OutlineInputBorder(),
             ),
-            value: provider.communicationStyle,
+            initialValue: provider.communicationStyle,
             items: localizations.communicationStyleOptions.map((option) {
               return DropdownMenuItem<String>(
                 value: option,

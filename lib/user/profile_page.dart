@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:projectbrain/core/config/app_config.dart';
 import 'package:projectbrain/helpers/theme.dart';
+import 'package:projectbrain/helpers/theme_mode_provider.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -216,6 +217,8 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 _buildEnvironmentBadge(colorScheme, appColors),
                 const SizedBox(height: 24),
+                _buildThemeSection(theme),
+                const SizedBox(height: 24),
                 _buildProfileAvatar(authProvider),
                 const SizedBox(height: 16),
                 _buildProfileEmail(authProvider, theme, colorScheme),
@@ -314,6 +317,55 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ),
     );
+  }
+
+  /// Theme mode selector (Light / Colorful / Dark / System)
+  Widget _buildThemeSection(ThemeData theme) {
+    return Consumer<ThemeModeProvider>(
+      builder: (context, themeModeProvider, _) {
+        const options = ['light', 'colorful', 'dark', 'system'];
+        const labels = {'light': 'Light', 'colorful': 'Colorful', 'dark': 'Dark', 'system': 'System'};
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Appearance',
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: Column(
+                children: options.map((value) {
+                  final isSelected = themeModeProvider.mode == value;
+                  return ListTile(
+                    leading: Icon(_iconForThemeMode(value)),
+                    title: Text(labels[value]!),
+                    trailing: isSelected ? Icon(Icons.check, color: theme.colorScheme.primary) : null,
+                    onTap: () => themeModeProvider.setMode(value),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  IconData _iconForThemeMode(String mode) {
+    switch (mode) {
+      case 'light':
+        return Icons.light_mode;
+      case 'colorful':
+        return Icons.palette;
+      case 'dark':
+        return Icons.dark_mode;
+      default:
+        return Icons.brightness_auto;
+    }
   }
 
   /// Profile avatar widget

@@ -10,14 +10,15 @@ class UserPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Define the list of navigation links
-    final links = [
+    final todayLinks = [
       NavigationLink(
         icon: Icons.check_circle,
         title: 'Daily Goals',
         subtitle: 'Set and track your 3 daily goals',
         onTap: () => context.go('/goals'),
       ),
+    ];
+    final accountLinks = [
       NavigationLink(
         icon: Icons.person,
         title: 'Profile',
@@ -42,6 +43,12 @@ class UserPage extends StatelessWidget {
         subtitle: 'Take quizzes to identify neurodiverse traits',
         onTap: () => context.go('/quizzes'),
       ),
+      NavigationLink(
+        icon: Icons.people,
+        title: 'Network',
+        subtitle: 'Connect with coaches for support',
+        onTap: () => context.go('/network'),
+      ),
     ];
 
     return Scaffold(
@@ -51,9 +58,8 @@ class UserPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              // Page title
               Text(
-                'User',
+                'Profile',
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -67,10 +73,9 @@ class UserPage extends StatelessWidget {
               ),
               const SizedBox(height: 32),
 
-              // Links list using reusable component
-              LinkList(
-                links: links,
-              ),
+              LinkList(links: todayLinks, sectionTitle: 'Today'),
+              const SizedBox(height: 24),
+              LinkList(links: accountLinks, sectionTitle: 'Account & tools'),
             ],
           ),
         ),

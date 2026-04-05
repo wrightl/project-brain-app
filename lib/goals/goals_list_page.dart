@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:projectbrain/goals/egg_goals_provider.dart';
@@ -77,6 +78,7 @@ class GoalsListPage extends StatelessWidget {
 
             // Navigate to celebration if completing a goal
             if (nowCompleted && !wasCompleted) {
+              HapticFeedback.mediumImpact();
               if (progress['completed'] == 3) {
                 // All goals completed
                 context.push('/goals/celebration/all');

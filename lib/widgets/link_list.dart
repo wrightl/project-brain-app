@@ -74,7 +74,6 @@ class LinkList extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Card(
-      elevation: 1,
       child: ListTile(
         leading: Container(
           padding: const EdgeInsets.all(8),

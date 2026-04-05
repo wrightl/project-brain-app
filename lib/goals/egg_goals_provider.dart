@@ -12,6 +12,18 @@ class EggGoal {
   EggGoal({required this.message, required this.completed});
 }
 
+/// Goal completion streak summary (from backend when available).
+/// Backend contract: e.g. GET /eggs/streak-summary returns currentStreak, longestStreak.
+class GoalStreakSummary {
+  final int currentStreak;
+  final int longestStreak;
+
+  const GoalStreakSummary({
+    required this.currentStreak,
+    required this.longestStreak,
+  });
+}
+
 /// Provider for managing egg goals state
 class EggGoalsProvider extends ChangeNotifier {
   final EggGoalsService? eggGoalsService;
@@ -20,11 +32,15 @@ class EggGoalsProvider extends ChangeNotifier {
   List<EggGoal> _goals = [];
   bool _isLoading = false;
   String? _errorMessage;
+  GoalStreakSummary? _goalStreakSummary;
 
   List<EggGoal> get goals => List.unmodifiable(_goals);
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get hasError => _errorMessage != null;
+
+  /// Goal completion streak (populated when backend provides GET /eggs/streak-summary).
+  GoalStreakSummary? get goalStreakSummary => _goalStreakSummary;
 
   EggGoalsProvider({
     this.eggGoalsService,
@@ -211,6 +227,14 @@ class EggGoalsProvider extends ChangeNotifier {
         completed: completedBool,
       ));
     }
+  }
+
+  /// Load goal streak summary from backend (placeholder: no API yet).
+  /// When backend adds e.g. GET /eggs/streak-summary, call it and set _goalStreakSummary.
+  Future<void> loadGoalStreakSummary() async {
+    // TODO: Backend TBD - GET /eggs/streak-summary returning currentStreak, longestStreak
+    _goalStreakSummary = null;
+    notifyListeners();
   }
 
   /// Initialize - load from storage
