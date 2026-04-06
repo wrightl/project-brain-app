@@ -71,4 +71,32 @@ class OAuthService {
     logDebug('[OAuthService] Refreshing credentials');
     return await _auth0.api.renewCredentials(refreshToken: refreshToken);
   }
+
+  /// Returns credentials persisted by the native SDK after [login], if valid.
+  ///
+  /// [minTtl] is the minimum remaining access token lifetime in seconds.
+  Future<Credentials?> tryRestoreCredentialsFromCredentialsManager({
+    int minTtl = 60,
+  }) async {
+    try {
+      final has = await _auth0.credentialsManager.hasValidCredentials(
+        minTtl: minTtl,
+      );
+      if (!has) {
+        logDebug('[OAuthService] CredentialsManager has no valid credentials');
+        return null;
+      }
+      final credentials = await _auth0.credentialsManager.credentials(
+        minTtl: minTtl,
+      );
+      logDebug('[OAuthService] Restored credentials from CredentialsManager');
+      return credentials;
+    } on CredentialsManagerException catch (e) {
+      logDebug('[OAuthService] CredentialsManager: ${e.message}');
+      return null;
+    } catch (e) {
+      logDebug('[OAuthService] CredentialsManager restore failed: $e');
+      return null;
+    }
+  }
 }

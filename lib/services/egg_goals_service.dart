@@ -64,6 +64,30 @@ class EggGoalsService extends HttpService {
     }
   }
 
+  /// AI-suggested goals for today (GET /eggs/suggestions).
+  Future<List<String>> fetchGoalSuggestions() async {
+    try {
+      final res = await get('/eggs/suggestions', useCache: false);
+      if (res.statusCode != 200) {
+        logDebug(
+            '[EggGoalsService] Failed to fetch suggestions: ${res.statusCode}');
+        return [];
+      }
+      final data = jsonDecode(res.body);
+      if (data is Map && data['goals'] is List) {
+        return (data['goals'] as List)
+            .map((e) => e?.toString().trim() ?? '')
+            .where((s) => s.isNotEmpty)
+            .take(3)
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      logError('[EggGoalsService] Error fetching goal suggestions', e);
+      return [];
+    }
+  }
+
   /// Check if user has ever created goals via API
   Future<bool> hasEverCreatedGoals() async {
     try {

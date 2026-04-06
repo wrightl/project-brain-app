@@ -1,4 +1,6 @@
+import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:get_it/get_it.dart';
+import 'package:projectbrain/core/config/app_config.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -66,6 +68,11 @@ Future<void> initializeDependencies() async {
   );
 
   // ===== Authentication Services =====
+  // Single Auth0 client (CredentialsManager + Authentication API share state)
+  sl.registerLazySingleton<Auth0>(
+    () => Auth0(AppConfig.authDomain, AppConfig.authClientId),
+  );
+
   // Token Storage - handles secure storage of tokens
   sl.registerLazySingleton<TokenStorage>(
     () => TokenStorage(),
@@ -73,12 +80,15 @@ Future<void> initializeDependencies() async {
 
   // Token Manager - manages access token lifecycle
   sl.registerLazySingleton<TokenManager>(
-    () => TokenManager(tokenStorage: sl<TokenStorage>()),
+    () => TokenManager(
+      auth0: sl<Auth0>(),
+      tokenStorage: sl<TokenStorage>(),
+    ),
   );
 
   // OAuth Service - handles Auth0 OAuth flows
   sl.registerLazySingleton<OAuthService>(
-    () => OAuthService(),
+    () => OAuthService(auth0: sl<Auth0>()),
   );
 
   // User Profile Service - fetches user profile from Auth0

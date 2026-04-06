@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/goals/egg_goals_provider.dart';
+import 'package:projectbrain/services/egg_goals_service.dart';
 
 /// Page for entering/editing daily goals
 class GoalEntryPage extends StatefulWidget {
@@ -17,6 +19,8 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
     TextEditingController(),
     TextEditingController(),
   ];
+
+  bool _suggestingGoals = false;
 
   @override
   void dispose() {
@@ -68,7 +72,59 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
+
+              OutlinedButton.icon(
+                onPressed: (goalsProvider.isLoading || _suggestingGoals)
+                    ? null
+                    : () async {
+                        setState(() => _suggestingGoals = true);
+                        try {
+                          final suggested =
+                              await sl<EggGoalsService>().fetchGoalSuggestions();
+                          if (!context.mounted) return;
+                          if (suggested.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'No suggestions available right now. Try again later.',
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+                          var si = 0;
+                          for (var i = 0; i < 3 && si < suggested.length; i++) {
+                            if (_controllers[i].text.trim().isEmpty) {
+                              _controllers[i].text = suggested[si++];
+                            }
+                          }
+                          setState(() {});
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Could not load suggestions: $e'),
+                              ),
+                            );
+                          }
+                        } finally {
+                          if (mounted) {
+                            setState(() => _suggestingGoals = false);
+                          }
+                        }
+                      },
+                icon: _suggestingGoals
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.auto_awesome_outlined),
+                label: Text(_suggestingGoals ? 'Suggesting…' : 'Suggest goals for today'),
+              ),
+
+              const SizedBox(height: 24),
 
               // Goal input fields
               for (int i = 0; i < 3; i++) ...[
@@ -93,7 +149,7 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: goalsProvider.isLoading
+                  onPressed: (goalsProvider.isLoading || _suggestingGoals)
                       ? null
                       : () async {
                           final goals = _controllers
