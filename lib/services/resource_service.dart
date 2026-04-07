@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:projectbrain/models/resource.dart';
@@ -38,8 +40,57 @@ class ResourceService extends HttpService {
     }
   }
 
-  /// Upload one or more files
-  Future<void> uploadFiles(List<File> files) async {
+  /// Whether [file] has at least one way to read bytes for upload (path, in-memory bytes, or sized stream).
+  static bool platformFileHasReadableData(PlatformFile file) {
+    if (file.path != null && file.path!.isNotEmpty) return true;
+    if (file.bytes != null) return true;
+    if (file.readStream != null && file.size > 0) return true;
+    return false;
+  }
+
+  static String _uploadFilename(PlatformFile file) {
+    final n = file.name.trim();
+    return n.isEmpty ? 'upload.bin' : n;
+  }
+
+  static Future<http.MultipartFile> _multipartFromPlatformFile(
+      PlatformFile file) async {
+    final filename = _uploadFilename(file);
+    if (file.path != null && file.path!.isNotEmpty) {
+      final f = File(file.path!);
+      final length = await f.length();
+      return http.MultipartFile(
+        'files',
+        http.ByteStream(f.openRead()),
+        length,
+        filename: filename,
+      );
+    }
+    if (file.bytes != null) {
+      return http.MultipartFile.fromBytes(
+        'files',
+        file.bytes!,
+        filename: filename,
+      );
+    }
+    if (file.readStream != null && file.size > 0) {
+      return http.MultipartFile(
+        'files',
+        http.ByteStream(file.readStream!),
+        file.size,
+        filename: filename,
+      );
+    }
+    throw Exception(
+      'Could not read file data for "$filename" (no path, bytes, or readable stream).',
+    );
+  }
+
+  /// Upload files picked via [file_picker] (supports path, [PlatformFile.bytes], or [PlatformFile.readStream]).
+  Future<void> uploadPlatformFiles(List<PlatformFile> files) async {
+    if (files.isEmpty) {
+      throw ArgumentError('No files to upload');
+    }
     logDebug('[ResourceService] Uploading ${files.length} file(s)');
 
     final token = await authService.getAccessToken();
@@ -51,17 +102,8 @@ class ResourceService extends HttpService {
         'Authorization': 'Bearer $token',
       });
 
-      // Add all files to the request
       for (final file in files) {
-        final fileStream = http.ByteStream(file.openRead());
-        final fileLength = await file.length();
-        final multipartFile = http.MultipartFile(
-          'files', // Field name for files
-          fileStream,
-          fileLength,
-          filename: file.path.split('/').last,
-        );
-        request.files.add(multipartFile);
+        request.files.add(await _multipartFromPlatformFile(file));
       }
 
       final streamedResponse =
@@ -71,7 +113,6 @@ class ResourceService extends HttpService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         logDebug(
             '[ResourceService] Successfully uploaded ${files.length} file(s)');
-        // Clear cache for resource list
         clearCacheForPath('/resource/user');
       } else {
         logError(
@@ -85,6 +126,24 @@ class ResourceService extends HttpService {
       logDebug('[ResourceService] Stack trace: $stackTrace');
       throw Exception('Failed to upload files: $error');
     }
+  }
+
+  /// Upload one or more local [File]s (e.g. from recording or cache).
+  Future<void> uploadFiles(List<File> files) async {
+    if (files.isEmpty) {
+      throw ArgumentError('No files to upload');
+    }
+    final platformFiles = <PlatformFile>[];
+    for (final file in files) {
+      final len = await file.length();
+      final segments = file.path.replaceAll('\\', '/').split('/');
+      final base = segments.isNotEmpty ? segments.last : '';
+      final name = base.isEmpty ? 'upload.bin' : base;
+      platformFiles.add(
+        PlatformFile(path: file.path, name: name, size: len),
+      );
+    }
+    await uploadPlatformFiles(platformFiles);
   }
 
   /// Delete a resource by ID

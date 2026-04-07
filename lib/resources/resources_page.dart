@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
@@ -54,23 +54,14 @@ class _ResourcesPageState extends State<ResourcesPage> {
   Future<void> _uploadFiles() async {
     // Check subscription limits
     final subscriptionProvider = Provider.of<SubscriptionProvider>(context, listen: false);
-    final fileCountLimit = subscriptionProvider.getFileCountLimit();
     final storageLimitMB = subscriptionProvider.getFileStorageLimitMB();
     
-    // Get current usage
+    // Get current usage (refresh swallows errors; null usage = skip client checks)
     try {
       await subscriptionProvider.refresh();
       final usage = subscriptionProvider.usage;
-      if (usage == null) return;
-      
-      // Check file count limit
-      if (fileCountLimit != null) {
-        // Note: We'd need to get current file count from resources list
-        // For now, we'll rely on backend enforcement
-      }
-      
-      // Check storage limit
-      if (storageLimitMB != null) {
+
+      if (usage != null && storageLimitMB != null) {
         final currentStorageMB = usage.fileStorage.megabytes;
         if (currentStorageMB >= storageLimitMB) {
           if (mounted) {
@@ -94,6 +85,8 @@ class _ResourcesPageState extends State<ResourcesPage> {
       final result = await FilePicker.pickFiles(
         allowMultiple: true,
         type: FileType.any,
+        withReadStream: !kIsWeb,
+        withData: kIsWeb,
       );
 
       if (result != null && result.files.isNotEmpty) {
@@ -103,13 +96,11 @@ class _ResourcesPageState extends State<ResourcesPage> {
           _successMessage = null;
         });
 
-        // Convert PlatformFile to File
-        final files = result.files
-            .where((file) => file.path != null)
-            .map((file) => File(file.path!))
+        final platformFiles = result.files
+            .where(ResourceService.platformFileHasReadableData)
             .toList();
 
-        if (files.isEmpty) {
+        if (platformFiles.isEmpty) {
           setState(() {
             _errorMessage = 'No valid files selected';
             _isUploading = false;
@@ -117,37 +108,34 @@ class _ResourcesPageState extends State<ResourcesPage> {
           return;
         }
 
-        // Check if new files would exceed storage limit
+        // Check if new files would exceed storage limit (only when usage is known)
         if (storageLimitMB != null) {
           try {
             await subscriptionProvider.refresh();
             final usage = subscriptionProvider.usage;
-            if (usage == null) {
-              setState(() {
-                _isUploading = false;
-              });
-              return;
-            }
-            final totalSizeMB = files.fold<double>(
-              0,
-              (sum, file) => sum + (file.lengthSync() / (1024 * 1024)),
-            );
-            
-            if (usage.fileStorage.megabytes + totalSizeMB > storageLimitMB) {
-              setState(() {
-                _errorMessage = 'Upload would exceed storage limit. Please upgrade your plan.';
-                _isUploading = false;
-              });
-              if (mounted) {
-                showDialog(
-                  context: context,
-                  builder: (context) => UpgradePromptDialog(
-                    requiredTier: SubscriptionTier.pro,
-                    featureName: 'File storage',
-                  ),
-                );
+            if (usage != null) {
+              final totalSizeMB = platformFiles.fold<double>(
+                0,
+                (sum, file) => sum + (file.size / (1024 * 1024)),
+              );
+
+              if (usage.fileStorage.megabytes + totalSizeMB > storageLimitMB) {
+                setState(() {
+                  _errorMessage =
+                      'Upload would exceed storage limit. Please upgrade your plan.';
+                  _isUploading = false;
+                });
+                if (mounted) {
+                  showDialog(
+                    context: context,
+                    builder: (context) => UpgradePromptDialog(
+                      requiredTier: SubscriptionTier.pro,
+                      featureName: 'File storage',
+                    ),
+                  );
+                }
+                return;
               }
-              return;
             }
           } catch (e) {
             // If we can't check, proceed anyway (backend will enforce)
@@ -155,10 +143,11 @@ class _ResourcesPageState extends State<ResourcesPage> {
           }
         }
 
-        await _resourceService.uploadFiles(files);
+        await _resourceService.uploadPlatformFiles(platformFiles);
 
         setState(() {
-          _successMessage = 'Successfully uploaded ${files.length} file(s)';
+          _successMessage =
+              'Successfully uploaded ${platformFiles.length} file(s)';
           _isUploading = false;
         });
 
