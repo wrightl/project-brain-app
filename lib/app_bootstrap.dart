@@ -16,53 +16,108 @@ import 'package:projectbrain/core/logging/app_logger.dart';
 
 /// Runs the same initialization sequence previously in [main], after the first frame.
 Future<void> runApplicationBootstrap() async {
-  try {
+  final startupWatch = Stopwatch()..start();
+  logInfo('[Startup] Bootstrap started');
+
+  await _runTimedStep('firebase.init', () async {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp();
     }
-    logInfo('[App] Firebase initialized');
-  } catch (e, stackTrace) {
-    logError('[App] Error initializing Firebase', e, stackTrace);
-  }
+  }, continueOnError: true);
 
-  initializeHttpOverrides();
+  await _runTimedStep('httpOverrides.init', () async {
+    initializeHttpOverrides();
+  }, continueOnError: false);
 
-  await initializeDependencies();
-
-  try {
-    await sl<ErrorReportingService>().init();
-    logInfo('[App] Error reporting service initialized');
-  } catch (e, stackTrace) {
-    logError('[App] Error initializing error reporting service', e, stackTrace);
-  }
-
-  await sl<FeatureFlagService>().init();
-
-  try {
-    await sl<PushNotificationService>().init();
-    logInfo('[App] Push notification service initialized');
-  } catch (e, stackTrace) {
-    logError(
-        '[App] Error initializing push notification service', e, stackTrace);
-  }
-
-  await sl<AuthProvider>().init();
+  await _runTimedStep(
+    'dependencies.init',
+    initializeDependencies,
+    continueOnError: false,
+  );
+  await _runTimedStep(
+    'authProvider.init',
+    () => sl<AuthProvider>().init(),
+    continueOnError: false,
+  );
 
   final authProvider = sl<AuthProvider>();
-  if (authProvider.isLoggedIn) {
-    try {
-      await sl<PushNotificationService>().registerToken();
-    } catch (e, stackTrace) {
-      logError('[App] Error registering push token after auth', e, stackTrace);
-    }
+  logInfo(
+      '[Startup] Critical bootstrap complete in ${startupWatch.elapsedMilliseconds}ms (isLoggedIn=${authProvider.isLoggedIn})');
+
+  unawaited(_runDeferredBootstrap(isLoggedIn: authProvider.isLoggedIn));
+}
+
+Future<void> _runDeferredBootstrap({required bool isLoggedIn}) async {
+  final deferredWatch = Stopwatch()..start();
+  logInfo('[Startup] Deferred bootstrap started');
+
+  final tasks = <Future<void>>[
+    _runDeferredTask('errorReporting.init', () async {
+      await sl<ErrorReportingService>().init();
+    }),
+    _runDeferredTask('featureFlags.init', () async {
+      await sl<FeatureFlagService>().init();
+    }),
+    _runDeferredTask('push.init', () async {
+      await sl<PushNotificationService>().init(requestPermissionsOnInit: false);
+    }),
+    _runDeferredTask('subscription.init', () async {
+      await sl<SubscriptionProvider>().init(refreshInBackground: true);
+    }),
+    _runDeferredTask('eggGoals.init', () async {
+      await sl<EggGoalsProvider>().init();
+    }),
+  ];
+
+  if (isLoggedIn) {
+    tasks.add(
+      _runDeferredTask('push.registerToken', () async {
+        await sl<PushNotificationService>().registerToken();
+      }),
+    );
+    tasks.add(
+      _runDeferredTask('eggGoals.syncFromAPI', () async {
+        await sl<EggGoalsProvider>().syncFromAPI();
+      }),
+    );
   }
 
-  await sl<SubscriptionProvider>().init();
+  await Future.wait(tasks);
+  logInfo(
+      '[Startup] Deferred bootstrap complete in ${deferredWatch.elapsedMilliseconds}ms');
+}
 
-  await sl<EggGoalsProvider>().init();
+Future<void> _runTimedStep(
+  String name,
+  Future<void> Function() action, {
+  required bool continueOnError,
+}) async {
+  final stepWatch = Stopwatch()..start();
+  logInfo('[Startup] Step started: $name');
+  try {
+    await action();
+    logInfo(
+        '[Startup] Step finished: $name (${stepWatch.elapsedMilliseconds}ms)');
+  } catch (e, stackTrace) {
+    logError('[Startup] Step failed: $name', e, stackTrace);
+    if (!continueOnError) {
+      rethrow;
+    }
+  }
+}
 
-  if (authProvider.isLoggedIn) {
-    sl<EggGoalsProvider>().syncFromAPI();
+Future<void> _runDeferredTask(
+  String name,
+  Future<void> Function() action, {
+  Duration timeout = const Duration(seconds: 12),
+}) async {
+  final stepWatch = Stopwatch()..start();
+  try {
+    await action().timeout(timeout);
+    logInfo(
+        '[Startup] Deferred task finished: $name (${stepWatch.elapsedMilliseconds}ms)');
+  } catch (e, stackTrace) {
+    logError('[Startup] Deferred task failed: $name', e, stackTrace);
   }
 }
 

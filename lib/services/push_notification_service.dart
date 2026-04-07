@@ -40,8 +40,11 @@ class PushNotificationService {
     required this.sharedPreferences,
   });
 
-  /// Initialize push notification service
-  Future<void> init() async {
+  /// Initialize push notification service.
+  ///
+  /// This performs non-blocking setup first. Permission prompts are optional
+  /// and should generally be triggered by explicit user intent.
+  Future<void> init({bool requestPermissionsOnInit = false}) async {
     try {
       // Initialize local notifications for foreground display
       await _initializeLocalNotifications();
@@ -49,26 +52,34 @@ class PushNotificationService {
       // Set up background message handler
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
-      // Request notification permissions
-      final permissionGranted = await requestPermissions();
-      if (!permissionGranted) {
-        logWarning('[PushNotification] Permissions not granted');
-        return;
-      }
-
-      // Configure notification settings
-      await _configureNotificationSettings();
-
       // Set up message handlers
       _setupMessageHandlers();
 
       // Listen for token refresh
       _firebaseMessaging.onTokenRefresh.listen(_handleTokenRefresh);
 
+      if (requestPermissionsOnInit) {
+        await ensurePermissionsAndConfigure();
+      }
+
       logInfo('[PushNotification] Service initialized');
     } catch (e, stackTrace) {
       logError('[PushNotification] Error initializing service', e, stackTrace);
     }
+  }
+
+  /// Request notification permission and apply platform presentation settings.
+  ///
+  /// Returns true when permissions are granted (or effectively granted).
+  Future<bool> ensurePermissionsAndConfigure() async {
+    final permissionGranted = await requestPermissions();
+    if (!permissionGranted) {
+      logWarning('[PushNotification] Permissions not granted');
+      return false;
+    }
+
+    await _configureNotificationSettings();
+    return true;
   }
 
   /// Initialize local notifications plugin

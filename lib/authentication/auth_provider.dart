@@ -79,6 +79,7 @@ class AuthProvider extends ChangeNotifier {
 
       // Register push notification token after successful login
       try {
+        await sl<PushNotificationService>().ensurePermissionsAndConfigure();
         await sl<PushNotificationService>().registerToken();
       } catch (e) {
         logError('[AuthProvider] Error registering push token after login', e);

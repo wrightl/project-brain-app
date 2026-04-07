@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:projectbrain/services/subscription_service.dart';
 import 'package:projectbrain/models/subscription.dart';
@@ -131,8 +133,12 @@ class SubscriptionProvider extends ChangeNotifier {
     }
   }
 
-  /// Initialize and load subscription data
-  Future<void> init() async {
+  /// Initialize subscription state.
+  ///
+  /// By default, refreshes from API before returning. When
+  /// [refreshInBackground] is true, the API refresh is kicked off without
+  /// blocking the caller.
+  Future<void> init({bool refreshInBackground = false}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -142,7 +148,13 @@ class SubscriptionProvider extends ChangeNotifier {
       await _loadFromCache();
 
       // Then refresh from API
-      await refresh();
+      if (refreshInBackground) {
+        _isLoading = false;
+        notifyListeners();
+        unawaited(refresh());
+      } else {
+        await refresh();
+      }
     } catch (e) {
       logError('[SubscriptionProvider] Error during init', e);
       _errorMessage = 'Failed to initialize subscription data';
