@@ -103,6 +103,8 @@ command -v flutter >/dev/null 2>&1 || die "flutter not found on PATH"
 ENV_FILE=".env.${NORMALIZED_ENV}"
 [[ -f "$ENV_FILE" ]] || die "missing ${ENV_FILE} — copy from .env.${NORMALIZED_ENV}.example and fill in values"
 
+"${ROOT}/scripts/sync_ios_secrets.sh" "${NORMALIZED_ENV}"
+
 SHOULD_UPLOAD=false
 if [[ "$NORMALIZED_ENV" != "dev" && "$NO_UPLOAD" == "false" ]]; then
   SHOULD_UPLOAD=true
