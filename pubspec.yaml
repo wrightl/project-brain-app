@@ -70,6 +70,9 @@ dependencies:
   audio_session: ^0.2.3
   webview_flutter: ^4.13.1
   app_tracking_transparency: ^2.0.6+1
+  geolocator: ^14.0.2
+  google_maps_flutter: ^2.14.0
+  signalr_netcore: ^1.4.4
 
 dev_dependencies:
   flutter_launcher_icons: ^0.14.4

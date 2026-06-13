@@ -15,7 +15,7 @@ class NetworkPage extends StatelessWidget {
       NavigationLink(
         icon: Icons.chat,
         title: 'Talk to a Coach',
-        subtitle: 'Chat with a coach via text, voice, files, and photos',
+        subtitle: 'Message and manage your connected coaches',
         onTap: () => context.go('/network/coaches'),
       ),
       NavigationLink(

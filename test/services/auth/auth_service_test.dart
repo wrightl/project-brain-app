@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:auth0_flutter/auth0_flutter.dart';
-import 'package:flutter_test/flutter_test.dart' hide verify;
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:projectbrain/core/config/app_config.dart';
 import 'package:projectbrain/models/auth0_user.dart';
@@ -73,6 +73,9 @@ void main() {
     when(() => mockStorage.saveRefreshToken(any())).thenAnswer((_) async {});
     when(() => mockStorage.clearAll()).thenAnswer((_) async {});
     when(() => mockStorage.getRefreshToken()).thenAnswer((_) async => null);
+    when(() => mockOAuth.tryRestoreCredentialsWithBiometric(
+          minTtl: any(named: 'minTtl'),
+        )).thenAnswer((_) async => null);
     tokenManager = TokenManager(
       auth0: Auth0(AppConfig.authDomain, AppConfig.authClientId),
       tokenStorage: mockStorage,
@@ -82,6 +85,7 @@ void main() {
       tokenManager: tokenManager,
       tokenStorage: mockStorage,
       userProfileService: mockProfile,
+      enableBiometricLaunchGate: false,
     );
   });
 
@@ -262,6 +266,78 @@ void main() {
 
       expect(ok, isFalse);
       verify(() => mockStorage.clearAll()).called(1);
+    });
+  });
+
+  group('AuthService.init (biometric launch gate)', () {
+    late AuthService biometricAuthService;
+
+    setUp(() {
+      biometricAuthService = AuthService(
+        oauthService: mockOAuth,
+        tokenManager: tokenManager,
+        tokenStorage: mockStorage,
+        userProfileService: mockProfile,
+        enableBiometricLaunchGate: true,
+      );
+    });
+
+    test('restores session from biometric-gated credentials', () async {
+      final access = makeTestJwt({
+        'aud': AppConfig.authAudience,
+        'exp': DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
+            1000,
+      });
+      final creds = testCredentials(
+        accessToken: access,
+        idToken: makeTestJwt({'sub': 'auth0|bio'}),
+        refreshToken: 'bio-rt',
+      );
+
+      when(() => mockOAuth.tryRestoreCredentialsWithBiometric(
+            minTtl: any(named: 'minTtl'),
+          )).thenAnswer((_) async => creds);
+      when(() => mockProfile.getUserProfile(access)).thenAnswer(
+        (_) async => Auth0User(
+          nickname: 'bio',
+          name: 'Biometric User',
+          email: 'bio@test.com',
+          picture: '',
+          updatedAt: '2024-01-01T00:00:00.000Z',
+          sub: 'auth0|bio',
+        ),
+      );
+
+      final ok = await biometricAuthService.init();
+
+      expect(ok, isTrue);
+      expect(biometricAuthService.isLoggedIn, isTrue);
+      verifyNever(() => mockStorage.getRefreshToken());
+      verifyNever(() => mockOAuth.refreshCredentials(any()));
+    });
+
+    test('does not bypass biometric gate when canceled/failed', () async {
+      when(() => mockOAuth.tryRestoreCredentialsWithBiometric(
+            minTtl: any(named: 'minTtl'),
+          )).thenThrow(AuthException('Biometric authentication failed'));
+
+      final ok = await biometricAuthService.init();
+
+      expect(ok, isFalse);
+      verifyNever(() => mockStorage.getRefreshToken());
+      verifyNever(() => mockOAuth.refreshCredentials(any()));
+    });
+
+    test('returns logged-out when no biometric session is available', () async {
+      when(() => mockOAuth.tryRestoreCredentialsWithBiometric(
+            minTtl: any(named: 'minTtl'),
+          )).thenAnswer((_) async => null);
+
+      final ok = await biometricAuthService.init();
+
+      expect(ok, isFalse);
+      verifyNever(() => mockStorage.getRefreshToken());
+      verifyNever(() => mockOAuth.refreshCredentials(any()));
     });
   });
 }

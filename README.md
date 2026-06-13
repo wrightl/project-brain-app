@@ -522,10 +522,41 @@ flutter run -d <device-id>
 
 ### iOS: Build and distribute
 
-Use this flow to produce an IPA and upload it to App Store Connect (e.g. TestFlight). Ensure signing is configured in Xcode first (`open ios/Runner.xcworkspace` → **Runner** target → **Signing & Capabilities**).
+Ensure signing is configured in Xcode first (`open ios/Runner.xcworkspace` → **Runner** target → **Signing & Capabilities**). Copy the appropriate `.env.*.example` to `.env.dev`, `.env.staging`, or `.env.production` before building.
 
-1. **Update the version (if needed)**  
-   Edit `pubspec.yaml`: `version: x.y.z+build` (`+build` is the build number Apple expects to increase for each upload).
+#### Automated build script (recommended)
+
+[`scripts/build_ios.sh`](scripts/build_ios.sh) increments the pubspec build number, builds an IPA for the given environment, and uploads to App Store Connect for **staging** and **production**. **dev** builds locally and skips upload.
+
+```bash
+# Staging or production: bump build number, build, upload to TestFlight
+export ASC_API_KEY_ID=YOUR_API_KEY_ID
+export ASC_API_ISSUER_ID=YOUR_ISSUER_ID
+./scripts/build_ios.sh staging
+./scripts/build_ios.sh production
+
+# Dev: bump build number and build IPA only (no upload)
+./scripts/build_ios.sh dev
+
+# Optional flags
+./scripts/build_ios.sh production --obfuscate   # Crashlytics symbol files
+./scripts/build_ios.sh staging --no-bump        # skip pubspec increment
+./scripts/build_ios.sh production --no-upload   # build IPA only
+./scripts/build_ios.sh production --commit      # git commit pubspec.yaml after success
+```
+
+| Variable | Purpose |
+| --- | --- |
+| `ASC_API_KEY_ID` | App Store Connect API Key ID |
+| `ASC_API_ISSUER_ID` | Issuer ID from App Store Connect |
+
+Store the downloaded `.p8` key as **`private_keys/AuthKey_<ASC_API_KEY_ID>.p8`** at the project root (gitignored). Create the key under App Store Connect → Users and Access → Keys.
+
+After upload, finish processing and TestFlight/App Store steps in [App Store Connect](https://appstoreconnect.apple.com).
+
+#### Manual steps (alternative)
+
+1. **Update the version** — edit `pubspec.yaml`: `version: x.y.z+build` (`+build` must increase for each Apple upload).
 
 2. **Create the IPA**
 
@@ -533,7 +564,7 @@ Use this flow to produce an IPA and upload it to App Store Connect (e.g. TestFli
     flutter build ipa --dart-define=ENVIRONMENT=production
     ```
 
-    Optional: enable Dart obfuscation and write symbol files for Crashlytics (keep the symbols off-repo):
+    Optional obfuscation (keep symbols off-repo):
 
     ```bash
     flutter build ipa --dart-define=ENVIRONMENT=production \
@@ -544,18 +575,12 @@ Use this flow to produce an IPA and upload it to App Store Connect (e.g. TestFli
 
 3. **Upload with App Store Connect API key**
 
-    Create an **App Store Connect API** key (Users and Access → Keys), download the `.p8` once, and store it in **`private_keys/`** at the project root as `AuthKey_<KEY_ID>.p8` (same `<KEY_ID>` you pass to `--apiKey`). Use your **Issuer ID** from the Keys page for `--apiIssuer`.
-
     ```bash
     xcrun altool --upload-app --type ios \
       -f build/ios/ipa/*.ipa \
       --apiKey YOUR_API_KEY_ID \
       --apiIssuer YOUR_ISSUER_ID
     ```
-
-    Replace `YOUR_API_KEY_ID` and `YOUR_ISSUER_ID` with the Key ID and Issuer ID from App Store Connect. The tool locates the private key under `./private_keys` (or `~/private_keys`) when the filename matches the key ID.
-
-After upload, finish processing and TestFlight/App Store steps in [App Store Connect](https://appstoreconnect.apple.com).
 
 ### Android Build
 

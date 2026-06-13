@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:projectbrain/models/auth0_user.dart';
@@ -17,6 +18,8 @@ class AuthService {
   final TokenManager _tokenManager;
   final TokenStorage _tokenStorage;
   final UserProfileService _userProfileService;
+  final bool _enableBiometricLaunchGate;
+  String? _launchAuthMessage;
 
   Auth0User? _profile;
 
@@ -26,24 +29,64 @@ class AuthService {
   /// The authenticated user's profile
   Auth0User? get profile => _profile;
 
+  /// One-time launch auth message (e.g., biometric canceled by user).
+  String? consumeLaunchAuthMessage() {
+    final message = _launchAuthMessage;
+    _launchAuthMessage = null;
+    return message;
+  }
+
   /// Constructor with dependency injection for testability
   AuthService({
     OAuthService? oauthService,
     TokenManager? tokenManager,
     TokenStorage? tokenStorage,
     UserProfileService? userProfileService,
+    bool? enableBiometricLaunchGate,
   })  : _oauthService = oauthService ?? OAuthService(),
         _tokenManager = tokenManager ?? TokenManager(tokenStorage: TokenStorage()),
         _tokenStorage = tokenStorage ?? TokenStorage(),
-        _userProfileService = userProfileService ?? UserProfileService();
+        _userProfileService = userProfileService ?? UserProfileService(),
+        _enableBiometricLaunchGate = enableBiometricLaunchGate ?? Platform.isIOS;
 
   /// Initialize the auth service and attempt to restore previous session
   ///
   /// Returns true if a valid session was restored, false otherwise
   Future<bool> init() async {
     logInfo('[AuthService] Initializing...');
+    _launchAuthMessage = null;
 
     try {
+      if (_enableBiometricLaunchGate) {
+        logDebug('[AuthService] Using biometric-gated session restore');
+        final credentials =
+            await _oauthService.tryRestoreCredentialsWithBiometric();
+        if (credentials == null) {
+          logDebug('[AuthService] No session available for biometric restore');
+          return false;
+        }
+
+        if (credentials.accessToken.isEmpty) {
+          await _clearSession();
+          return false;
+        }
+
+        final isValidAudience =
+            await _tokenManager.validateTokenAudience(credentials.accessToken);
+        if (!isValidAudience) {
+          logWarning('[AuthService] Invalid token audience, clearing session');
+          await _clearSession();
+          return false;
+        }
+
+        await _hydrateSessionFromCredentials(
+          credentials,
+          allowIdTokenProfileFallback: true,
+        );
+        logInfo('[AuthService] Session restored successfully');
+        return true;
+      }
+
       Credentials? credentials =
           await _oauthService.tryRestoreCredentialsFromCredentialsManager();
 
@@ -83,6 +126,12 @@ class AuthService {
     } on ApiException catch (e) {
       logError('[AuthService] API error during init: ${e.message}', e);
       await _clearSession();
+      return false;
+    } on AuthException catch (e) {
+      // Biometric challenge canceled/failed should keep app logged out.
+      logWarning('[AuthService] Auth init blocked by biometric/local auth', e);
+      _launchAuthMessage =
+          'Biometric unlock was canceled or failed. Please log in to continue.';
       return false;
     } catch (e, stackTrace) {
       logError('[AuthService] Unexpected error during init', e, stackTrace);

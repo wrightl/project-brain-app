@@ -20,6 +20,14 @@ if (hasReleaseKeystore) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
+def resolvedGoogleMapsApiKey = {
+    def p = project.findProperty("googleMapsApiKey") as String
+    if (p != null && !p.trim().isEmpty()) return p.trim()
+    def e = System.getenv("GOOGLE_MAPS_API_KEY")
+    if (e != null && !e.trim().isEmpty()) return e.trim()
+    return ""
+}()
+
 def resolvedAuth0Domain = {
     def p = project.findProperty("auth0Domain") as String
     if (p != null && !p.trim().isEmpty()) return p.trim()
@@ -63,7 +71,8 @@ android {
         manifestPlaceholders = [
             appAuthRedirectScheme: "com.dotdash.projectbrain",
             auth0Domain            : resolvedAuth0Domain,
-            auth0Scheme            : "https"
+            auth0Scheme            : "https",
+            googleMapsApiKey       : resolvedGoogleMapsApiKey,
         ]
     }
 

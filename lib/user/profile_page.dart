@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:projectbrain/core/config/app_config.dart';
 import 'package:projectbrain/helpers/theme.dart';
 import 'package:projectbrain/helpers/theme_mode_provider.dart';
+import 'package:projectbrain/services/auth/auth_exception.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -65,6 +66,18 @@ class _ProfilePageState extends State<ProfilePage> {
     _dobController.dispose();
     _customPronounController.dispose();
     super.dispose();
+  }
+
+  /// Debug-only: avoid calling [AuthService.getAccessToken] when logged out — a
+  /// new [Future] is created on every rebuild, so after logout the token is
+  /// cleared before this widget can disappear and [getAccessToken] would throw.
+  Future<String?> _debugAccessTokenFuture(AuthProvider auth) async {
+    if (!auth.isLoggedIn) return null;
+    try {
+      return await auth.authService.getAccessToken();
+    } on AuthException {
+      return null;
+    }
   }
 
   void _loadUserData() {
@@ -543,7 +556,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: FutureBuilder<String?>(
-        future: authProvider.authService.getAccessToken(),
+        future: _debugAccessTokenFuture(authProvider),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Text('Loading access token...');

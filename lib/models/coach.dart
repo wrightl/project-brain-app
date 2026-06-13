@@ -2,6 +2,7 @@ import 'package:projectbrain/core/logging/app_logger.dart';
 
 class Coach {
   final String id;
+  final String? coachProfileId;
   final String fullName;
   final String? email;
   final String? phone;
@@ -11,6 +12,8 @@ class Coach {
   final String? stateProvince;
   final String? postalCode;
   final String? country;
+  final double? latitude;
+  final double? longitude;
   final List<String>? specialisms;
   final List<String>? qualifications;
   final List<String>? ageGroups;
@@ -22,6 +25,7 @@ class Coach {
 
   Coach({
     required this.id,
+    this.coachProfileId,
     required this.fullName,
     this.email,
     this.phone,
@@ -31,6 +35,8 @@ class Coach {
     this.stateProvince,
     this.postalCode,
     this.country,
+    this.latitude,
+    this.longitude,
     this.specialisms,
     this.qualifications,
     this.ageGroups,
@@ -48,6 +54,7 @@ class Coach {
 
     return Coach(
       id: json['id'] ?? json['Id'] ?? '',
+      coachProfileId: json['coachProfileId'] ?? json['CoachProfileId'],
       fullName: json['fullName'] ?? json['FullName'] ?? '',
       email: json['email'] ?? json['Email'],
       phone: json['phone'] ?? json['Phone'],
@@ -57,6 +64,8 @@ class Coach {
       stateProvince: json['stateProvince'] ?? json['StateProvince'],
       postalCode: json['postalCode'] ?? json['PostalCode'],
       country: json['country'] ?? json['Country'],
+      latitude: _parseDouble(json['latitude'] ?? json['Latitude']),
+      longitude: _parseDouble(json['longitude'] ?? json['Longitude']),
       specialisms: json['specialisms'] != null
           ? List<String>.from(json['specialisms'] ?? [])
           : null,
@@ -80,9 +89,24 @@ class Coach {
     );
   }
 
+  bool get hasCoordinates =>
+      latitude != null &&
+      longitude != null &&
+      latitude!.isFinite &&
+      longitude!.isFinite;
+
+  String get profileId => coachProfileId ?? id;
+
+  static double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString());
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      if (coachProfileId != null) 'coachProfileId': coachProfileId,
       'fullName': fullName,
       'email': email,
       'phone': phone,
@@ -92,6 +116,8 @@ class Coach {
       'stateProvince': stateProvince,
       'postalCode': postalCode,
       'country': country,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
       'specialisms': specialisms,
       'qualifications': qualifications,
       'ageGroups': ageGroups,
@@ -106,12 +132,13 @@ class Coach {
 
 class CoachMessage {
   final String id;
+  final String? connectionId;
   final String coachId;
   final String? text;
   final String? audioUrl;
   final String? fileUrl;
   final String? imageUrl;
-  final String messageType; // 'text', 'audio', 'file', 'image'
+  final String messageType; // 'text', 'audio', 'file', 'image', 'voice'
   final bool isFromCoach;
   final DateTime createdAt;
   final String? status;
@@ -121,6 +148,7 @@ class CoachMessage {
 
   CoachMessage({
     required this.id,
+    this.connectionId,
     required this.coachId,
     this.text,
     this.audioUrl,
@@ -136,16 +164,36 @@ class CoachMessage {
   });
 
   factory CoachMessage.fromJson(Map<String, dynamic> json) {
-    final connectionId = json['connectionId']?.toString() ?? json['ConnectionId']?.toString();
+    final connectionId =
+        json['connectionId']?.toString() ?? json['ConnectionId']?.toString();
+
+    final isFromCurrentUser = json['isFromCurrentUser'] == true ||
+        json['IsFromCurrentUser'] == true;
+    final isFromCoachLegacy = json['isFromCoach'] == true ||
+        json['IsFromCoach'] == true;
+
     return CoachMessage(
       id: json['id']?.toString() ?? json['Id']?.toString() ?? '',
-      coachId: json['coachId']?.toString() ?? json['CoachId']?.toString() ?? connectionId ?? '',
-      text: json['content']?.toString() ?? json['text']?.toString() ?? json['Text']?.toString(),
-      audioUrl: json['voiceNoteUrl']?.toString() ?? json['audioUrl']?.toString() ?? json['AudioUrl']?.toString(),
+      connectionId: connectionId,
+      coachId: json['coachId']?.toString() ??
+          json['CoachId']?.toString() ??
+          connectionId ??
+          '',
+      text: json['content']?.toString() ??
+          json['text']?.toString() ??
+          json['Text']?.toString(),
+      audioUrl: json['voiceNoteUrl']?.toString() ??
+          json['audioUrl']?.toString() ??
+          json['AudioUrl']?.toString(),
       fileUrl: json['fileUrl']?.toString() ?? json['FileUrl']?.toString(),
       imageUrl: json['imageUrl']?.toString() ?? json['ImageUrl']?.toString(),
-      messageType: json['messageType']?.toString() ?? json['MessageType']?.toString() ?? 'text',
-      isFromCoach: json['isFromCoach'] == true || json['IsFromCoach'] == true,
+      messageType: json['messageType']?.toString() ??
+          json['MessageType']?.toString() ??
+          'text',
+      isFromCoach: json.containsKey('isFromCurrentUser') ||
+              json.containsKey('IsFromCurrentUser')
+          ? !isFromCurrentUser
+          : isFromCoachLegacy,
       createdAt: json['createdAt'] != null
           ? (DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now())
           : DateTime.now(),
@@ -156,13 +204,15 @@ class CoachMessage {
       readAt: json['readAt'] != null
           ? DateTime.tryParse(json['readAt'].toString())
           : null,
-      voiceNoteFileName: json['voiceNoteFileName']?.toString() ?? json['VoiceNoteFileName']?.toString(),
+      voiceNoteFileName: json['voiceNoteFileName']?.toString() ??
+          json['VoiceNoteFileName']?.toString(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      if (connectionId != null) 'connectionId': connectionId,
       'coachId': coachId,
       'text': text,
       'audioUrl': audioUrl,
@@ -177,6 +227,17 @@ class CoachMessage {
       if (voiceNoteFileName != null) 'voiceNoteFileName': voiceNoteFileName,
     };
   }
+}
+
+/// Connection status with optional connection id from the API.
+class CoachConnectionStatusResult {
+  final ConnectionStatus status;
+  final String? connectionId;
+
+  const CoachConnectionStatusResult({
+    required this.status,
+    this.connectionId,
+  });
 }
 
 /// Connection status enum for coach connections

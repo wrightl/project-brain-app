@@ -26,6 +26,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
 
   Coach? _coach;
   ConnectionStatus _connectionStatus = ConnectionStatus.none;
+  String? _connectionId;
   bool _isLoading = true;
   bool _isUpdatingConnection = false;
   String? _errorMessage;
@@ -51,7 +52,9 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
 
       setState(() {
         _coach = results[0] as Coach;
-        _connectionStatus = results[1] as ConnectionStatus;
+        final statusResult = results[1] as CoachConnectionStatusResult;
+        _connectionStatus = statusResult.status;
+        _connectionId = statusResult.connectionId;
         _isLoading = false;
       });
     } catch (e) {
@@ -98,15 +101,19 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
     });
 
     try {
-      await _coachService.sendConnectionRequest(widget.coachId);
+      final status = await _coachService.sendConnectionRequest(widget.coachId);
       setState(() {
-        _connectionStatus = ConnectionStatus.pending;
+        _connectionStatus = status;
         _isUpdatingConnection = false;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Connection request sent successfully'),
+          SnackBar(
+            content: Text(
+              status == ConnectionStatus.connected
+                  ? 'Connected successfully'
+                  : 'Connection request sent successfully',
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -243,10 +250,11 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
         );
       case ConnectionStatus.connected:
         return ElevatedButton.icon(
-          onPressed: () {
-            // Navigate to chat page with this coach
-            context.go('/network/chat?coachId=${widget.coachId}');
-          },
+          onPressed: _connectionId != null
+              ? () {
+                  context.go('/network/chat/$_connectionId');
+                }
+              : null,
           icon: const Icon(Icons.chat),
           label: const Text('Message'),
           style: ElevatedButton.styleFrom(

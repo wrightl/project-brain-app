@@ -35,8 +35,14 @@
 	<string>Project Brain needs the microphone to record voice messages for coach chat and voice notes.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Project Brain needs photo library access so you can attach images when messaging your coach.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Project Brain uses Face ID to securely unlock your saved session.</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>We use this to measure app usage and improve stability. You can decline and still use the app.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Project Brain uses your location to find coaches near you.</string>
+	<key>GMSApiKey</key>
+	<string>$(GOOGLE_MAPS_API_KEY)</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

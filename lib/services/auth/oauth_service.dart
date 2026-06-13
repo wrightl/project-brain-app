@@ -1,5 +1,6 @@
 import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:projectbrain/core/config/app_config.dart';
 import 'package:projectbrain/services/auth/auth_exception.dart';
@@ -20,6 +21,7 @@ class OAuthService {
       logDebug('[OAuthService] Starting login flow');
       final credentials = await _auth0.webAuthentication().login(
             useHTTPS: true,
+            useEphemeralSession: true,
             audience: AppConfig.authAudience,
             scopes: {'openid', 'profile', 'offline_access', 'email'},
             redirectUrl: AppConfig.authRedirectUri,
@@ -46,16 +48,22 @@ class OAuthService {
     }
   }
 
-  /// Log out the current user from Auth0 (clears SSO session)
+  /// Log out: clears Auth0-stored credentials. On iOS, skips hosted logout so
+  /// ASWebAuthenticationSession does not run (avoids the system credential sheet).
+  /// On other platforms, performs federated web logout then clears credentials.
   Future<void> logout() async {
     try {
       logDebug('[OAuthService] Logging out');
-      await _auth0.webAuthentication().logout(
-            returnTo: AppConfig.authRedirectUri,
-            // Must match [login] so iOS/macOS builds the same redirect URL mode;
-            // mismatch often causes Auth0 "Oops" and leaves the hosted session active.
-            useHTTPS: true,
-          );
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        await _auth0.credentialsManager.clearCredentials();
+      } else {
+        await _auth0.webAuthentication().logout(
+              returnTo: AppConfig.authRedirectUri,
+              // Must match [login] so iOS/macOS builds the same redirect URL mode;
+              // mismatch often causes Auth0 "Oops" and leaves the hosted session active.
+              useHTTPS: true,
+            );
+      }
       logDebug('[OAuthService] Logout complete');
     } catch (e, stackTrace) {
       logDebug('[OAuthService] Error during logout: $e');
@@ -97,6 +105,45 @@ class OAuthService {
     } catch (e) {
       logDebug('[OAuthService] CredentialsManager restore failed: $e');
       return null;
+    }
+  }
+
+  /// Returns credentials from CredentialsManager, requiring local auth when configured.
+  ///
+  /// Returns null when no session is available. Throws [AuthException] when
+  /// a biometric/local-auth challenge fails or is canceled.
+  Future<Credentials?> tryRestoreCredentialsWithBiometric({
+    int minTtl = 60,
+  }) async {
+    try {
+      final credentials = await _auth0.credentialsManager.credentials(
+        minTtl: minTtl,
+      );
+      logDebug('[OAuthService] Restored credentials with biometric gate');
+      return credentials;
+    } on CredentialsManagerException catch (e) {
+      // No credentials available to restore: treat as logged out.
+      if (e.isNoCredentialsFound || e.isNoRefreshTokenFound) {
+        logDebug('[OAuthService] No stored credentials for biometric restore');
+        return null;
+      }
+
+      // Token renewal failed from stale/invalid stored credentials.
+      if (e.isTokenRenewFailed) {
+        logDebug('[OAuthService] Stored credentials could not be renewed');
+        return null;
+      }
+
+      // Any remaining credentials manager errors are treated as local-auth denial.
+      logDebug('[OAuthService] Biometric/local auth failed: ${e.message}');
+      throw AuthException('Biometric authentication failed', e);
+    } catch (e, stackTrace) {
+      logDebug('[OAuthService] Biometric restore failed: $e');
+      throw AuthException(
+        'Failed to restore session with biometric authentication',
+        e,
+        stackTrace,
+      );
     }
   }
 }

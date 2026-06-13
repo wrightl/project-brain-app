@@ -35,6 +35,7 @@ import 'package:projectbrain/strategies/strategies_chat_page.dart';
 import 'package:projectbrain/core/routing/page_transitions.dart';
 import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/goals/egg_goals_provider.dart';
+import 'package:projectbrain/services/connection_service.dart';
 import 'package:projectbrain/services/push_notification_service.dart';
 import 'package:projectbrain/services/error_reporting_service.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
@@ -99,9 +100,12 @@ class AppRouter {
 
       switch (type) {
         case 'coach_message':
+          final connectionId = data['connectionId'] as String?;
           final coachId = data['coachId'] as String?;
-          if (coachId != null) {
-            _router!.go('/network/chat/$coachId');
+          if (connectionId != null) {
+            _router!.go('/network/chat/$connectionId');
+          } else if (coachId != null) {
+            _openCoachChatForCoachId(coachId);
           } else {
             _router!.go('/network');
           }
@@ -125,6 +129,25 @@ class AppRouter {
       }
     } catch (e, stackTrace) {
       logError('[AppRouter] Error navigating from notification', e, stackTrace);
+    }
+  }
+
+  /// Resolve a coach user id to a connection id and open chat.
+  Future<void> _openCoachChatForCoachId(String coachId) async {
+    if (_router == null) return;
+
+    try {
+      final connections = await sl<ConnectionService>().getAcceptedConnections();
+      final match =
+          connections.where((connection) => connection.coachId == coachId);
+      if (match.isNotEmpty) {
+        _router!.go('/network/chat/${match.first.id}');
+      } else {
+        _router!.go('/network/chat/$coachId');
+      }
+    } catch (e, stackTrace) {
+      logError('[AppRouter] Error resolving coach chat route', e, stackTrace);
+      _router!.go('/network/chat/$coachId');
     }
   }
 
@@ -227,10 +250,10 @@ class AppRouter {
               builder: (context, state) => const CoachesListPage(),
             ),
             GoRoute(
-              path: '/network/chat/:coachId',
+              path: '/network/chat/:connectionId',
               builder: (context, state) {
-                final coachId = state.pathParameters['coachId']!;
-                return CoachChatPage(coachId: coachId);
+                final connectionId = state.pathParameters['connectionId']!;
+                return CoachChatPage(connectionId: connectionId);
               },
             ),
             GoRoute(

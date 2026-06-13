@@ -20,6 +20,9 @@ import 'package:projectbrain/services/resource_service.dart';
 import 'package:projectbrain/services/voice_note_service.dart';
 import 'package:projectbrain/services/quiz_service.dart';
 import 'package:projectbrain/services/coach_service.dart';
+import 'package:projectbrain/services/coach_message_signalr_service.dart';
+import 'package:projectbrain/services/connection_service.dart';
+import 'package:projectbrain/services/location_service.dart';
 import 'package:projectbrain/services/subscription_service.dart';
 import 'package:projectbrain/services/egg_goals_service.dart';
 import 'package:projectbrain/services/goals_realtime_service.dart';
@@ -70,7 +73,15 @@ Future<void> initializeDependencies() async {
   // ===== Authentication Services =====
   // Single Auth0 client (CredentialsManager + Authentication API share state)
   sl.registerLazySingleton<Auth0>(
-    () => Auth0(AppConfig.authDomain, AppConfig.authClientId),
+    () => Auth0(
+      AppConfig.authDomain,
+      AppConfig.authClientId,
+      localAuthentication: const LocalAuthentication(
+        title: 'Unlock Project Brain',
+        cancelTitle: 'Cancel',
+        fallbackTitle: 'Use Passcode',
+      ),
+    ),
   );
 
   // Token Storage - handles secure storage of tokens
@@ -103,6 +114,7 @@ Future<void> initializeDependencies() async {
       tokenManager: sl<TokenManager>(),
       tokenStorage: sl<TokenStorage>(),
       userProfileService: sl<UserProfileService>(),
+      enableBiometricLaunchGate: false,
     ),
   );
 
@@ -154,6 +166,21 @@ Future<void> initializeDependencies() async {
   // Coach Service
   sl.registerLazySingleton<CoachService>(
     () => CoachService(authService: sl<AuthService>()),
+  );
+
+  // Connection Service
+  sl.registerLazySingleton<ConnectionService>(
+    () => ConnectionService(authService: sl<AuthService>()),
+  );
+
+  // Coach message SignalR
+  sl.registerLazySingleton<CoachMessageSignalRService>(
+    () => CoachMessageSignalRService(authService: sl<AuthService>()),
+  );
+
+  // Location Service
+  sl.registerLazySingleton<LocationService>(
+    () => LocationService(authService: sl<AuthService>()),
   );
 
   // Subscription Service

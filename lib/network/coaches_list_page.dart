@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:projectbrain/core/di/injection_container.dart';
-import 'package:projectbrain/models/coach.dart';
-import 'package:projectbrain/services/coach_service.dart';
+import 'package:projectbrain/models/connection.dart';
+import 'package:projectbrain/services/connection_service.dart';
 
-/// Page for listing connected coaches
+/// Talk to a Coach — list connected coaches with message and manage actions.
 class CoachesListPage extends StatefulWidget {
   const CoachesListPage({super.key});
 
@@ -13,27 +14,28 @@ class CoachesListPage extends StatefulWidget {
 }
 
 class _CoachesListPageState extends State<CoachesListPage> {
-  final CoachService _coachService = sl<CoachService>();
-  List<Coach> _coaches = [];
+  final ConnectionService _connectionService = sl<ConnectionService>();
+  List<Connection> _connections = [];
+  final Set<String> _removingIds = {};
   bool _isLoading = true;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _loadConnectedCoaches();
+    _loadConnections();
   }
 
-  Future<void> _loadConnectedCoaches() async {
+  Future<void> _loadConnections() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      final coaches = await _coachService.getConnectedCoaches();
+      final connections = await _connectionService.getActiveConnections();
       setState(() {
-        _coaches = coaches;
+        _connections = connections;
         _isLoading = false;
       });
     } catch (e) {
@@ -44,23 +46,100 @@ class _CoachesListPageState extends State<CoachesListPage> {
     }
   }
 
-  void _navigateToChat(Coach coach) {
-    context.go('/network/chat/${coach.id}');
+  void _navigateToChat(Connection connection) {
+    context.go('/network/chat/${connection.id}');
+  }
+
+  void _navigateToProfile(Connection connection) {
+    final profileId = connection.coachProfileId;
+    if (profileId != null && profileId.isNotEmpty) {
+      context.push('/network/coaches/$profileId');
+    }
   }
 
   void _navigateToFindCoach() {
     context.go('/network/find');
   }
 
-  Color _getConnectionStatusColor(ConnectionStatus status, ThemeData theme) {
-    switch (status) {
-      case ConnectionStatus.connected:
-        return Colors.green;
-      case ConnectionStatus.pending:
-        return Colors.orange;
-      case ConnectionStatus.none:
-        return theme.colorScheme.onSurface.withValues(alpha: 0.6);
+  Future<void> _confirmRemoveConnection(Connection connection) async {
+    final isPending = connection.isPending;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(isPending ? 'Cancel request?' : 'Remove connection?'),
+        content: Text(
+          isPending
+              ? 'Cancel your connection request to ${connection.coachName ?? 'this coach'}?'
+              : 'Remove your connection with ${connection.coachName ?? 'this coach'}? '
+                  'You will no longer be able to message them.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Keep'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(isPending ? 'Cancel request' : 'Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+    await _removeConnection(connection);
+  }
+
+  Future<void> _removeConnection(Connection connection) async {
+    setState(() {
+      _removingIds.add(connection.id);
+    });
+
+    try {
+      await _connectionService.deleteConnection(connection.id);
+      if (!mounted) return;
+      setState(() {
+        _connections.removeWhere((c) => c.id == connection.id);
+        _removingIds.remove(connection.id);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            connection.isPending
+                ? 'Connection request cancelled'
+                : 'Connection removed',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _removingIds.remove(connection.id);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update connection: ${e.toString()}'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
     }
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return '';
+    return DateFormat('d MMM yyyy').format(date);
+  }
+
+  Color _statusColor(Connection connection, ThemeData theme) {
+    if (connection.isAccepted) return Colors.green;
+    if (connection.isPending) return Colors.orange;
+    return theme.colorScheme.onSurface.withValues(alpha: 0.6);
+  }
+
+  String _statusLabel(Connection connection) {
+    if (connection.isAccepted) return 'Connected';
+    if (connection.isPending) return 'Pending';
+    return connection.status;
   }
 
   @override
@@ -69,7 +148,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Coaches'),
+        title: const Text('Talk to a Coach'),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -80,195 +159,240 @@ class _CoachesListPageState extends State<CoachesListPage> {
       ),
       body: SafeArea(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Find Coach Button
             Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _navigateToFindCoach,
-                  icon: const Icon(Icons.person_add),
-                  label: const Text('Find a Coach'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Text(
+                'Your connected coaches. Send a message or manage your connections.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
             ),
-
-            // Error message
-            if (_errorMessage != null)
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.errorContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  _errorMessage!,
-                  style: TextStyle(color: theme.colorScheme.onErrorContainer),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: OutlinedButton.icon(
+                onPressed: _navigateToFindCoach,
+                icon: const Icon(Icons.person_add),
+                label: const Text('Find a Coach'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
               ),
-
-            // Loading indicator
+            ),
+            if (_errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.errorContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _errorMessage!,
+                    style:
+                        TextStyle(color: theme.colorScheme.onErrorContainer),
+                  ),
+                ),
+              ),
             if (_isLoading)
               const Expanded(
                 child: Center(child: CircularProgressIndicator()),
               )
-            // Empty state
-            else if (_coaches.isEmpty)
+            else if (_connections.isEmpty)
               Expanded(
                 child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.people_outline,
-                        size: 64,
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.3),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No coaches connected',
-                        style: theme.textTheme.titleMedium?.copyWith(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.people_outline,
+                          size: 64,
                           color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.6),
+                              .withValues(alpha: 0.3),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Find and connect with coaches to get started',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.5),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No coaches connected yet',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.6),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            // Coaches list
-            else
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: _loadConnectedCoaches,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _coaches.length,
-                    itemBuilder: (context, index) {
-                      final coach = _coaches[index];
-                      final isOnline = coach.isOnline ?? false;
-
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          leading: Stack(
-                            children: [
-                              CircleAvatar(
-                                radius: 28,
-                                backgroundColor:
-                                    theme.colorScheme.primaryContainer,
-                                child: Icon(
-                                  Icons.person,
-                                  size: 32,
-                                  color: theme.colorScheme.onPrimaryContainer,
-                                ),
-                              ),
-                              // Online indicator
-                              if (isOnline)
-                                Positioned(
-                                  right: 0,
-                                  bottom: 0,
-                                  child: Container(
-                                    width: 16,
-                                    height: 16,
-                                    decoration: BoxDecoration(
-                                      color: Colors.green,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: theme.colorScheme.surface,
-                                        width: 2,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          title: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  coach.fullName,
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Connection status
-                              if (coach.connectionStatus != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 4),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _getConnectionStatusColor(
-                                              coach.connectionStatus!, theme)
-                                          .withValues(alpha: 0.2),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      coach.connectionStatus!.displayName,
-                                      style:
-                                          theme.textTheme.bodySmall?.copyWith(
-                                        color: _getConnectionStatusColor(
-                                            coach.connectionStatus!, theme),
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              // Specialisms
-                              if (coach.specialisms != null &&
-                                  coach.specialisms!.isNotEmpty)
-                                Wrap(
-                                  spacing: 4,
-                                  runSpacing: 4,
-                                  children:
-                                      coach.specialisms!.take(3).map((spec) {
-                                    return Chip(
-                                      label: Text(
-                                        spec,
-                                        style: theme.textTheme.bodySmall,
-                                      ),
-                                      padding: EdgeInsets.zero,
-                                      visualDensity: VisualDensity.compact,
-                                    );
-                                  }).toList(),
-                                ),
-                            ],
-                          ),
-                          trailing: Icon(
-                            Icons.chevron_right,
+                        const SizedBox(height: 8),
+                        Text(
+                          'Find and connect with a coach to start messaging.',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurface
                                 .withValues(alpha: 0.5),
                           ),
-                          onTap: () => _navigateToChat(coach),
+                        ),
+                        const SizedBox(height: 24),
+                        FilledButton.icon(
+                          onPressed: _navigateToFindCoach,
+                          icon: const Icon(Icons.search),
+                          label: const Text('Find a Coach'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: _loadConnections,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _connections.length,
+                    itemBuilder: (context, index) {
+                      final connection = _connections[index];
+                      final isRemoving = _removingIds.contains(connection.id);
+                      final statusColor = _statusColor(connection, theme);
+
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 24,
+                                    backgroundColor:
+                                        theme.colorScheme.primaryContainer,
+                                    child: Icon(
+                                      Icons.person,
+                                      color:
+                                          theme.colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          connection.coachName ?? 'Coach',
+                                          style: theme.textTheme.titleMedium
+                                              ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: statusColor.withValues(
+                                              alpha: 0.15,
+                                            ),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          child: Text(
+                                            _statusLabel(connection),
+                                            style: theme.textTheme.labelSmall
+                                                ?.copyWith(
+                                              color: statusColor,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (connection.isAccepted &&
+                                  connection.respondedAt != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Text(
+                                    'Connected on ${_formatDate(connection.respondedAt)}',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(alpha: 0.6),
+                                    ),
+                                  ),
+                                ),
+                              if (connection.isPending &&
+                                  connection.requestedAt != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Text(
+                                    'Requested on ${_formatDate(connection.requestedAt)}',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(alpha: 0.6),
+                                    ),
+                                  ),
+                                ),
+                              const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  if (connection.isAccepted)
+                                    FilledButton.icon(
+                                      onPressed: isRemoving
+                                          ? null
+                                          : () => _navigateToChat(connection),
+                                      icon: const Icon(Icons.chat, size: 18),
+                                      label: const Text('Message'),
+                                    ),
+                                  if (connection.coachProfileId != null &&
+                                      connection.coachProfileId!.isNotEmpty)
+                                    OutlinedButton.icon(
+                                      onPressed: isRemoving
+                                          ? null
+                                          : () =>
+                                              _navigateToProfile(connection),
+                                      icon: const Icon(Icons.person, size: 18),
+                                      label: const Text('View profile'),
+                                    ),
+                                  OutlinedButton.icon(
+                                    onPressed: isRemoving
+                                        ? null
+                                        : () =>
+                                            _confirmRemoveConnection(connection),
+                                    icon: isRemoving
+                                        ? SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: theme.colorScheme.primary,
+                                            ),
+                                          )
+                                        : Icon(
+                                            Icons.link_off,
+                                            size: 18,
+                                            color: theme.colorScheme.error,
+                                          ),
+                                    label: Text(
+                                      connection.isPending
+                                          ? 'Cancel'
+                                          : 'Remove',
+                                      style: TextStyle(
+                                        color: theme.colorScheme.error,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },

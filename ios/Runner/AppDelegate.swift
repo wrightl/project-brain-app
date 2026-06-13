@@ -1,6 +1,7 @@
 import Flutter
 import UIKit
 import Foundation
+import GoogleMaps
 
 public class StorageHelper {
     static let storage = UserDefaults.init(suiteName: "group.com.dotdash.projectbrain")
@@ -91,6 +92,12 @@ public class StorageHelper {
                 result(FlutterMethodNotImplemented)
             }
         })
+
+    if let apiKey = Bundle.main.object(forInfoDictionaryKey: "GMSApiKey") as? String,
+       !apiKey.isEmpty,
+       !apiKey.hasPrefix("$(") {
+      GMSServices.provideAPIKey(apiKey)
+    }
 
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)

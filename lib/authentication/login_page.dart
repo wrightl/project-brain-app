@@ -18,9 +18,26 @@ class LoginPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Login')),
       body: Center(
-        child: ElevatedButton(
-          onPressed: () => authProvider.login(),
-          child: const Text('Login / Sign Up'),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (authProvider.hasError) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                child: Text(
+                  authProvider.errorMessage!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ),
+            ],
+            ElevatedButton(
+              onPressed: () => authProvider.login(),
+              child: const Text('Login / Sign Up'),
+            ),
+          ],
         ),
       ),
     );

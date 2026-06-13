@@ -499,6 +499,7 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 3JA363674L;
 				ENABLE_BITCODE = NO;
+				GOOGLE_MAPS_API_KEY = AIzaSyCacrwJD1oMU68iZeQ4edAP90HouR8kJcA;
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Project Brain App";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
@@ -688,6 +689,7 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 3JA363674L;
 				ENABLE_BITCODE = NO;
+				GOOGLE_MAPS_API_KEY = AIzaSyCacrwJD1oMU68iZeQ4edAP90HouR8kJcA;
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Project Brain App";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
@@ -715,6 +717,7 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 3JA363674L;
 				ENABLE_BITCODE = NO;
+				GOOGLE_MAPS_API_KEY = AIzaSyCacrwJD1oMU68iZeQ4edAP90HouR8kJcA;
 				INFOPLIST_FILE = Runner/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Project Brain App";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";

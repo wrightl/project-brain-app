@@ -42,6 +42,9 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       await authService.init();
+      if (!isLoggedIn) {
+        _errorMessage = authService.consumeLaunchAuthMessage();
+      }
       if (isLoggedIn) {
         await _fetchUserData();
       }

@@ -108,6 +108,10 @@ class AppConfig {
   static String get subscriptionBillingWebUrl =>
       getEnvOrDefault('SUBSCRIPTION_BILLING_WEB_URL', '');
 
+  /// Google Maps API key for coach results map view.
+  static String get googleMapsApiKey =>
+      getEnvOrDefault('GOOGLE_MAPS_API_KEY', '');
+
   // Environment Detection
   static bool get isDebug => kDebugMode;
   static bool get isRelease => kReleaseMode;

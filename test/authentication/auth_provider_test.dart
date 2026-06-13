@@ -60,6 +60,7 @@ void main() {
     mockAuthService = MockAuthService();
     when(() => mockAuthService.isLoggedIn).thenReturn(false);
     when(() => mockAuthService.profile).thenReturn(null);
+    when(() => mockAuthService.consumeLaunchAuthMessage()).thenReturn(null);
     when(() => mockAuthService.getAccessToken())
         .thenAnswer((_) async => 'test_jwt');
     authProvider = AuthProvider(
@@ -98,6 +99,19 @@ void main() {
 
       expect(authProvider.isLoggedIn, isFalse);
       expect(authProvider.profile, isNull);
+    });
+
+    test('shows launch auth message when init returns logged out', () async {
+      when(() => mockAuthService.init()).thenAnswer((_) async => false);
+      when(() => mockAuthService.isLoggedIn).thenReturn(false);
+      when(() => mockAuthService.consumeLaunchAuthMessage())
+          .thenReturn('Biometric unlock was canceled or failed.');
+
+      await authProvider.init();
+
+      expect(authProvider.isLoggedIn, isFalse);
+      expect(authProvider.hasError, isTrue);
+      expect(authProvider.errorMessage, contains('Biometric unlock'));
     });
 
     test('handles initialization errors', () async {

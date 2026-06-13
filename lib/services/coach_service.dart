@@ -57,38 +57,113 @@ class CoachService extends HttpService {
     }
   }
 
-  /// Search for coaches by postcode, address, location, neurodiverse traits, or age groups
-  Future<List<Coach>> searchCoaches({
-    String? postcode,
-    String? address,
+  /// Get the catalog of coach specialism options
+  Future<List<String>> getSpecialisms() async {
+    logDebug('[CoachService] Fetching coach specialisms');
+
+    final response = await get(
+      '/coaches/specialisms',
+      useCache: false,
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      final specialisms = data.map((item) => item.toString()).toList();
+      logDebug('[CoachService] Fetched ${specialisms.length} specialisms');
+      return specialisms;
+    } else {
+      logError(
+          '[CoachService] Failed to fetch specialisms: ${response.statusCode} ${response.reasonPhrase}');
+      throw Exception(
+        'Failed to fetch specialisms: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+  }
+
+  /// Build query string for coach search (testable; mirrors web portal).
+  static String buildCoachSearchQuery({
+    String? city,
+    String? stateProvince,
+    String? country,
     double? latitude,
     double? longitude,
-    List<String>? neurodiverseTraits,
+    int? distanceMiles,
     List<String>? ageGroups,
+    List<String>? specialisms,
+  }) {
+    final parts = <String>[];
+
+    void addParam(String key, String value) {
+      parts.add(
+        '${Uri.encodeQueryComponent(key)}=${Uri.encodeQueryComponent(value)}',
+      );
+    }
+
+    final hasGeoCenter = latitude != null &&
+        longitude != null &&
+        latitude.isFinite &&
+        longitude.isFinite &&
+        distanceMiles != null &&
+        distanceMiles > 0;
+
+    if (hasGeoCenter) {
+      addParam('latitude', latitude.toString());
+      addParam('longitude', longitude.toString());
+      addParam('distanceMiles', distanceMiles.toString());
+    } else {
+      if (country != null && country.isNotEmpty) {
+        addParam('country', country);
+      }
+      if (city != null && city.isNotEmpty) {
+        addParam('city', city);
+      }
+      if (stateProvince != null && stateProvince.isNotEmpty) {
+        addParam('stateProvince', stateProvince);
+      }
+    }
+
+    if (ageGroups != null) {
+      for (final ageGroup in ageGroups) {
+        if (ageGroup.isNotEmpty) {
+          addParam('ageGroups', ageGroup);
+        }
+      }
+    }
+
+    if (specialisms != null) {
+      for (final specialism in specialisms) {
+        if (specialism.isNotEmpty) {
+          addParam('specialisms', specialism);
+        }
+      }
+    }
+
+    return parts.isEmpty ? '' : '?${parts.join('&')}';
+  }
+
+  /// Search for coaches by location, age groups, and specialisms.
+  Future<List<Coach>> searchCoaches({
+    String? city,
+    String? stateProvince,
+    String? country,
+    double? latitude,
+    double? longitude,
+    int? distanceMiles,
+    List<String>? ageGroups,
+    List<String>? specialisms,
   }) async {
     logDebug('[CoachService] Searching coaches');
 
-    final queryParams = <String, String>{};
-    if (postcode != null && postcode.isNotEmpty) {
-      queryParams['postcode'] = postcode;
-    }
-    if (address != null && address.isNotEmpty) {
-      queryParams['address'] = address;
-    }
-    if (latitude != null && longitude != null) {
-      queryParams['latitude'] = latitude.toString();
-      queryParams['longitude'] = longitude.toString();
-    }
-    if (neurodiverseTraits != null && neurodiverseTraits.isNotEmpty) {
-      queryParams['neurodiverseTraits'] = neurodiverseTraits.join(',');
-    }
-    if (ageGroups != null && ageGroups.isNotEmpty) {
-      queryParams['ageGroups'] = ageGroups.join(',');
-    }
-
-    final queryString = queryParams.isEmpty
-        ? ''
-        : '?${Uri(queryParameters: queryParams).query}';
+    final queryString = buildCoachSearchQuery(
+      city: city,
+      stateProvince: stateProvince,
+      country: country,
+      latitude: latitude,
+      longitude: longitude,
+      distanceMiles: distanceMiles,
+      ageGroups: ageGroups,
+      specialisms: specialisms,
+    );
 
     final response = await get(
       '/coaches/search$queryString',
@@ -110,12 +185,20 @@ class CoachService extends HttpService {
     }
   }
 
-  /// Get messages with a specific coach
-  Future<List<CoachMessage>> getMessages(String coachId) async {
-    logDebug('[CoachService] Fetching messages for coach: $coachId');
+  /// Build path for fetching conversation messages (testable).
+  static String buildConversationMessagesPath(
+    String connectionId, {
+    int pageSize = 20,
+  }) {
+    return '/coach-messages/conversation/$connectionId?pageSize=$pageSize';
+  }
+
+  /// Get messages for a coach connection conversation.
+  Future<List<CoachMessage>> getMessages(String connectionId) async {
+    logDebug('[CoachService] Fetching messages for connection: $connectionId');
 
     final response = await get(
-      '/coaches/$coachId/messages',
+      buildConversationMessagesPath(connectionId),
       useCache: false,
     );
 
@@ -134,15 +217,18 @@ class CoachService extends HttpService {
     }
   }
 
-  /// Send a text message to a coach
-  Future<CoachMessage> sendTextMessage(String coachId, String text) async {
-    logDebug('[CoachService] Sending text message to coach: $coachId');
+  /// Send a text message on a coach connection.
+  Future<CoachMessage> sendTextMessage(
+    String connectionId,
+    String content,
+  ) async {
+    logDebug('[CoachService] Sending text message to connection: $connectionId');
 
     final response = await post(
-      '/coaches/$coachId/messages',
+      '/coach-messages',
       body: jsonEncode({
-        'text': text,
-        'messageType': 'text',
+        'connectionId': connectionId,
+        'content': content,
       }),
     );
 
@@ -161,23 +247,27 @@ class CoachService extends HttpService {
     }
   }
 
-  /// Send an audio message to a coach
-  Future<CoachMessage> sendAudioMessage(String coachId, File audioFile) async {
-    logDebug('[CoachService] Sending audio message to coach: $coachId');
+  /// Send a voice message on a coach connection.
+  Future<CoachMessage> sendAudioMessage(
+    String connectionId,
+    File audioFile,
+  ) async {
+    logDebug('[CoachService] Sending audio message to connection: $connectionId');
 
     final token = await authService.getAccessToken();
-    final uri = Uri.parse('$baseUrl/coaches/$coachId/messages/audio');
+    final uri = Uri.parse('$baseUrl/coach-messages/voice');
 
     try {
       final request = http.MultipartRequest('POST', uri);
       request.headers.addAll({
         'Authorization': 'Bearer $token',
       });
+      request.fields['connectionId'] = connectionId;
 
       final fileStream = http.ByteStream(audioFile.openRead());
       final fileLength = await audioFile.length();
       final multipartFile = http.MultipartFile(
-        'audio',
+        'file',
         fileStream,
         fileLength,
         filename: audioFile.path.split('/').last,
@@ -208,105 +298,28 @@ class CoachService extends HttpService {
     }
   }
 
-  /// Send a file to a coach
-  Future<CoachMessage> sendFile(String coachId, File file) async {
-    logDebug('[CoachService] Sending file to coach: $coachId');
+  /// Mark all messages in a conversation as read.
+  Future<void> markConversationRead(String connectionId) async {
+    logDebug('[CoachService] Marking conversation read: $connectionId');
 
-    final token = await authService.getAccessToken();
-    final uri = Uri.parse('$baseUrl/coaches/$coachId/messages/file');
+    final response = await put('/coach-messages/conversation/$connectionId/read');
 
-    try {
-      final request = http.MultipartRequest('POST', uri);
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-      });
-
-      final fileStream = http.ByteStream(file.openRead());
-      final fileLength = await file.length();
-      final multipartFile = http.MultipartFile(
-        'file',
-        fileStream,
-        fileLength,
-        filename: file.path.split('/').last,
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      logDebug('[CoachService] Conversation marked as read');
+    } else {
+      logError(
+          '[CoachService] Failed to mark conversation read: ${response.statusCode} ${response.reasonPhrase}');
+      throw Exception(
+        'Failed to mark conversation read: ${response.statusCode} ${response.reasonPhrase}',
       );
-      request.files.add(multipartFile);
-
-      final streamedResponse =
-          await request.send().timeout(Duration(seconds: 120));
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final body = response.body;
-        final data = jsonDecode(body);
-        final message = CoachMessage.fromJson(data);
-        logDebug('[CoachService] File sent successfully');
-        return message;
-      } else {
-        logError(
-            '[CoachService] Failed to send file: ${response.statusCode} ${response.reasonPhrase}');
-        throw Exception(
-          'Failed to send file: ${response.statusCode} ${response.reasonPhrase}',
-        );
-      }
-    } catch (error, stackTrace) {
-      logError('[CoachService] Error sending file: $error');
-      logDebug('[CoachService] Stack trace: $stackTrace');
-      throw Exception('Failed to send file: $error');
     }
   }
 
-  /// Send a photo to a coach
-  Future<CoachMessage> sendPhoto(String coachId, File imageFile) async {
-    logDebug('[CoachService] Sending photo to coach: $coachId');
-
-    final token = await authService.getAccessToken();
-    final uri = Uri.parse('$baseUrl/coaches/$coachId/messages/photo');
-
-    try {
-      final request = http.MultipartRequest('POST', uri);
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-      });
-
-      final fileStream = http.ByteStream(imageFile.openRead());
-      final fileLength = await imageFile.length();
-      final multipartFile = http.MultipartFile(
-        'photo',
-        fileStream,
-        fileLength,
-        filename: imageFile.path.split('/').last,
-      );
-      request.files.add(multipartFile);
-
-      final streamedResponse =
-          await request.send().timeout(Duration(seconds: 120));
-      final response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final body = response.body;
-        final data = jsonDecode(body);
-        final message = CoachMessage.fromJson(data);
-        logDebug('[CoachService] Photo sent successfully');
-        return message;
-      } else {
-        logError(
-            '[CoachService] Failed to send photo: ${response.statusCode} ${response.reasonPhrase}');
-        throw Exception(
-          'Failed to send photo: ${response.statusCode} ${response.reasonPhrase}',
-        );
-      }
-    } catch (error, stackTrace) {
-      logError('[CoachService] Error sending photo: $error');
-      logDebug('[CoachService] Stack trace: $stackTrace');
-      throw Exception('Failed to send photo: $error');
-    }
-  }
-
-  /// Delete a message
-  Future<void> deleteMessage(String coachId, String messageId) async {
+  /// Delete a message.
+  Future<void> deleteMessage(String messageId) async {
     logDebug('[CoachService] Deleting message: $messageId');
 
-    final response = await delete('/coaches/$coachId/messages/$messageId');
+    final response = await delete('/coach-messages/$messageId');
 
     if (response.statusCode == 200 || response.statusCode == 204) {
       logDebug('[CoachService] Successfully deleted message: $messageId');
@@ -343,9 +356,9 @@ class CoachService extends HttpService {
     }
   }
 
-  /// Get the connection status between the current user and a coach
+  /// Get the connection status between the current user and a coach.
   /// API Endpoint: GET /coaches/{coachId}/connection-status
-  Future<ConnectionStatus> getConnectionStatus(String coachId) async {
+  Future<CoachConnectionStatusResult> getConnectionStatus(String coachId) async {
     logDebug('[CoachService] Getting connection status for coach: $coachId');
 
     final response = await get(
@@ -358,12 +371,16 @@ class CoachService extends HttpService {
       final data = jsonDecode(body);
       final statusString = data['status'] ?? data['Status'] ?? 'none';
       final status = ConnectionStatus.fromString(statusString.toString());
+      final connectionId =
+          data['connectionId']?.toString() ?? data['ConnectionId']?.toString();
       logDebug('[CoachService] Connection status: ${status.displayName}');
-      return status;
+      return CoachConnectionStatusResult(
+        status: status,
+        connectionId: connectionId,
+      );
     } else if (response.statusCode == 404) {
-      // No connection exists yet
       logDebug('[CoachService] No connection found, returning none');
-      return ConnectionStatus.none;
+      return const CoachConnectionStatusResult(status: ConnectionStatus.none);
     } else {
       logError(
           '[CoachService] Failed to get connection status: ${response.statusCode} ${response.reasonPhrase}');
@@ -375,7 +392,7 @@ class CoachService extends HttpService {
 
   /// Send a connection request to a coach
   /// API Endpoint: POST /coaches/{coachId}/connections
-  Future<void> sendConnectionRequest(String coachId) async {
+  Future<ConnectionStatus> sendConnectionRequest(String coachId) async {
     logDebug('[CoachService] Sending connection request to coach: $coachId');
 
     final response = await post(
@@ -385,6 +402,9 @@ class CoachService extends HttpService {
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       logDebug('[CoachService] Connection request sent successfully');
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final status = data['status'] as String? ?? 'pending';
+      return ConnectionStatus.fromString(status);
     } else {
       logError(
           '[CoachService] Failed to send connection request: ${response.statusCode} ${response.reasonPhrase}');

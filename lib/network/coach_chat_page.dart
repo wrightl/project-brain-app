@@ -1,23 +1,23 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
 import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/models/coach.dart';
+import 'package:projectbrain/models/connection.dart';
+import 'package:projectbrain/services/coach_message_signalr_service.dart';
 import 'package:projectbrain/services/coach_service.dart';
-import 'package:projectbrain/subscription/subscription_provider.dart';
-import 'package:projectbrain/subscription/widgets/upgrade_prompt.dart';
-import 'package:projectbrain/models/subscription.dart';
+import 'package:projectbrain/services/connection_service.dart';
+import 'package:projectbrain/utils/coach_message_utils.dart';
 import 'package:intl/intl.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 
-/// Chat page for communicating with coaches
+/// Chat page for communicating with connected coaches.
 class CoachChatPage extends StatefulWidget {
-  final String? coachId;
+  /// Route param: connection GUID, or legacy coach Auth0 user id.
+  final String? connectionId;
 
-  const CoachChatPage({super.key, this.coachId});
+  const CoachChatPage({super.key, this.connectionId});
 
   @override
   State<CoachChatPage> createState() => _CoachChatPageState();
@@ -25,13 +25,16 @@ class CoachChatPage extends StatefulWidget {
 
 class _CoachChatPageState extends State<CoachChatPage> {
   final CoachService _coachService = sl<CoachService>();
+  final ConnectionService _connectionService = sl<ConnectionService>();
+  final CoachMessageSignalRService _signalRService =
+      sl<CoachMessageSignalRService>();
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final AudioRecorder _audioRecorder = AudioRecorder();
-  final ImagePicker _imagePicker = ImagePicker();
 
-  List<Coach> _coaches = [];
-  Coach? _selectedCoach;
+  List<Connection> _connections = [];
+  String? _selectedConnectionId;
+  String? _headerName;
   List<CoachMessage> _messages = [];
   bool _isLoading = true;
   bool _isSending = false;
@@ -42,44 +45,38 @@ class _CoachChatPageState extends State<CoachChatPage> {
   @override
   void initState() {
     super.initState();
-    _loadCoaches();
+    _loadConnections();
   }
 
   @override
   void dispose() {
+    _signalRService.stop();
     _textController.dispose();
     _scrollController.dispose();
     _audioRecorder.dispose();
     super.dispose();
   }
 
-  Future<void> _loadCoaches() async {
+  Future<void> _loadConnections() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      // If a specific coachId is provided, load that coach directly
-      if (widget.coachId != null) {
-        final coach = await _coachService.getCoachById(widget.coachId!);
-        setState(() {
-          _coaches = [coach];
-          _selectedCoach = coach;
-          _isLoading = false;
-        });
-        _loadMessages();
-      } else {
-        // Otherwise, load all coaches and select the first one
-        final coaches = await _coachService.getCoaches();
-        setState(() {
-          _coaches = coaches;
-          if (coaches.isNotEmpty && _selectedCoach == null) {
-            _selectedCoach = coaches.first;
-            _loadMessages();
-          }
-          _isLoading = false;
-        });
+      final connections = await _connectionService.getAcceptedConnections();
+      final selectedId = _resolveInitialConnectionId(connections);
+
+      setState(() {
+        _connections = connections;
+        _selectedConnectionId = selectedId;
+        _isLoading = false;
+      });
+
+      if (selectedId != null) {
+        await _startRealtime(selectedId);
+        await _loadConnectionDetails(selectedId);
+        await _loadMessages();
       }
     } catch (e) {
       setState(() {
@@ -89,15 +86,97 @@ class _CoachChatPageState extends State<CoachChatPage> {
     }
   }
 
+  Future<void> _startRealtime(String connectionId) async {
+    await _signalRService.start(onNewMessage: _handleNewMessage);
+    await _signalRService.joinConversation(connectionId);
+  }
+
+  void _handleNewMessage(CoachMessage message) {
+    if (!mounted) return;
+    if (message.connectionId != _selectedConnectionId) return;
+
+    setState(() {
+      _messages = mergeCoachMessages(_messages, [message]);
+    });
+    _scrollToBottom();
+
+    final connectionId = _selectedConnectionId;
+    if (connectionId != null) {
+      _coachService.markConversationRead(connectionId).catchError((_) {});
+    }
+  }
+
+  String? _resolveInitialConnectionId(List<Connection> connections) {
+    final routeParam = widget.connectionId;
+    if (routeParam == null) {
+      return connections.isNotEmpty ? connections.first.id : null;
+    }
+
+    if (isConnectionGuid(routeParam)) {
+      return connections.any((c) => c.id == routeParam)
+          ? routeParam
+          : routeParam;
+    }
+
+    final match = connections.where((c) => c.coachId == routeParam);
+    return match.isNotEmpty ? match.first.id : null;
+  }
+
+  Future<void> _loadConnectionDetails(String connectionId) async {
+    try {
+      final connection =
+          await _connectionService.getConnectionById(connectionId);
+      setState(() {
+        _headerName = connection.coachName ?? 'Coach';
+      });
+    } catch (e) {
+      String? fallback;
+      for (final connection in _connections) {
+        if (connection.id == connectionId) {
+          fallback = connection.coachName;
+          break;
+        }
+      }
+      setState(() {
+        _headerName = fallback ?? 'Coach';
+      });
+    }
+  }
+
+  Future<void> _selectConnection(Connection connection) async {
+    final oldId = _selectedConnectionId;
+    if (oldId != null) {
+      await _signalRService.leaveConversation(oldId);
+    }
+
+    setState(() {
+      _selectedConnectionId = connection.id;
+      _headerName = connection.coachName ?? 'Coach';
+      _messages = [];
+      _errorMessage = null;
+    });
+
+    await _signalRService.joinConversation(connection.id);
+    await _loadConnectionDetails(connection.id);
+    await _loadMessages();
+  }
+
   Future<void> _loadMessages() async {
-    if (_selectedCoach == null) return;
+    final connectionId = _selectedConnectionId;
+    if (connectionId == null) return;
 
     try {
-      final messages = await _coachService.getMessages(_selectedCoach!.id);
+      final messages = await _coachService.getMessages(connectionId);
       setState(() {
-        _messages = messages;
+        _messages = mergeCoachMessages([], messages);
       });
       _scrollToBottom();
+
+      try {
+        await _coachService.markConversationRead(connectionId);
+      } catch (_) {
+        // Non-fatal if read receipt fails.
+      }
     } catch (e) {
       setState(() {
         _errorMessage = 'Failed to load messages: ${e.toString()}';
@@ -106,7 +185,8 @@ class _CoachChatPageState extends State<CoachChatPage> {
   }
 
   Future<void> _sendTextMessage() async {
-    if (_selectedCoach == null || _textController.text.trim().isEmpty) return;
+    final connectionId = _selectedConnectionId;
+    if (connectionId == null || _textController.text.trim().isEmpty) return;
 
     setState(() {
       _isSending = true;
@@ -115,11 +195,11 @@ class _CoachChatPageState extends State<CoachChatPage> {
 
     try {
       final message = await _coachService.sendTextMessage(
-        _selectedCoach!.id,
+        connectionId,
         _textController.text.trim(),
       );
       setState(() {
-        _messages.add(message);
+        _messages = mergeCoachMessages(_messages, [message]);
         _textController.clear();
       });
       _scrollToBottom();
@@ -136,8 +216,6 @@ class _CoachChatPageState extends State<CoachChatPage> {
 
   Future<void> _startRecording() async {
     try {
-      // Skip permission check - let start() handle it
-      // This avoids crashes from hasPermission() method
       final directory = await getTemporaryDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final path = '${directory.path}/coach_audio_$timestamp.m4a';
@@ -201,7 +279,8 @@ class _CoachChatPageState extends State<CoachChatPage> {
   }
 
   Future<void> _sendAudioMessage(File audioFile) async {
-    if (_selectedCoach == null) return;
+    final connectionId = _selectedConnectionId;
+    if (connectionId == null) return;
 
     setState(() {
       _isSending = true;
@@ -210,11 +289,11 @@ class _CoachChatPageState extends State<CoachChatPage> {
 
     try {
       final message = await _coachService.sendAudioMessage(
-        _selectedCoach!.id,
+        connectionId,
         audioFile,
       );
       setState(() {
-        _messages.add(message);
+        _messages = mergeCoachMessages(_messages, [message]);
         _recordingDuration = Duration.zero;
       });
       _scrollToBottom();
@@ -225,143 +304,6 @@ class _CoachChatPageState extends State<CoachChatPage> {
     } finally {
       setState(() {
         _isSending = false;
-      });
-    }
-  }
-
-  Future<void> _pickAndSendFile() async {
-    if (_selectedCoach == null) return;
-
-    // Check subscription limits
-    final subscriptionProvider = Provider.of<SubscriptionProvider>(context, listen: false);
-    final storageLimitMB = subscriptionProvider.getFileStorageLimitMB();
-    
-    if (storageLimitMB != null) {
-      try {
-        await subscriptionProvider.refresh();
-        final usage = subscriptionProvider.usage;
-        if (usage == null) return;
-        if (usage.fileStorage.megabytes >= storageLimitMB) {
-          if (mounted) {
-            showDialog(
-              context: context,
-              builder: (context) => UpgradePromptDialog(
-                requiredTier: SubscriptionTier.pro,
-                featureName: 'File storage',
-              ),
-            );
-          }
-          return;
-        }
-      } catch (e) {
-        // If we can't check usage, proceed anyway (backend will enforce)
-        debugPrint('Could not check usage: $e');
-      }
-    }
-
-    try {
-      final result = await FilePicker.pickFiles();
-      if (result != null && result.files.single.path != null) {
-        final file = File(result.files.single.path!);
-        
-        // Check if file would exceed storage limit
-        if (storageLimitMB != null) {
-          try {
-            await subscriptionProvider.refresh();
-            final usage = subscriptionProvider.usage;
-            if (usage == null) {
-              setState(() {
-                _isSending = false;
-              });
-              return;
-            }
-            final fileSizeMB = file.lengthSync() / (1024 * 1024);
-            
-            if (usage.fileStorage.megabytes + fileSizeMB > storageLimitMB) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('File would exceed storage limit. Please upgrade your plan.'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-                showDialog(
-                  context: context,
-                  builder: (context) => UpgradePromptDialog(
-                    requiredTier: SubscriptionTier.pro,
-                    featureName: 'File storage',
-                  ),
-                );
-              }
-              return;
-            }
-          } catch (e) {
-            // If we can't check, proceed anyway (backend will enforce)
-            debugPrint('Could not check storage: $e');
-          }
-        }
-        
-        setState(() {
-          _isSending = true;
-          _errorMessage = null;
-        });
-
-        try {
-          final message =
-              await _coachService.sendFile(_selectedCoach!.id, file);
-          setState(() {
-            _messages.add(message);
-          });
-          _scrollToBottom();
-        } catch (e) {
-          setState(() {
-            _errorMessage = 'Failed to send file: ${e.toString()}';
-          });
-        } finally {
-          setState(() {
-            _isSending = false;
-          });
-        }
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to pick file: ${e.toString()}';
-      });
-    }
-  }
-
-  Future<void> _pickAndSendPhoto() async {
-    if (_selectedCoach == null) return;
-
-    try {
-      final image = await _imagePicker.pickImage(source: ImageSource.gallery);
-      if (image != null) {
-        final file = File(image.path);
-        setState(() {
-          _isSending = true;
-          _errorMessage = null;
-        });
-
-        try {
-          final message =
-              await _coachService.sendPhoto(_selectedCoach!.id, file);
-          setState(() {
-            _messages.add(message);
-          });
-          _scrollToBottom();
-        } catch (e) {
-          setState(() {
-            _errorMessage = 'Failed to send photo: ${e.toString()}';
-          });
-        } finally {
-          setState(() {
-            _isSending = false;
-          });
-        }
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to pick photo: ${e.toString()}';
       });
     }
   }
@@ -391,25 +333,20 @@ class _CoachChatPageState extends State<CoachChatPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final coachName = _headerName ?? 'Select a Coach';
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_selectedCoach?.fullName ?? 'Select a Coach'),
+        title: Text(coachName),
         actions: [
-          if (_coaches.length > 1)
-            PopupMenuButton<Coach>(
+          if (_connections.length > 1)
+            PopupMenuButton<Connection>(
               icon: const Icon(Icons.more_vert),
-              onSelected: (coach) {
-                setState(() {
-                  _selectedCoach = coach;
-                  _messages = [];
-                });
-                _loadMessages();
-              },
-              itemBuilder: (context) => _coaches.map((coach) {
-                return PopupMenuItem<Coach>(
-                  value: coach,
-                  child: Text(coach.fullName),
+              onSelected: _selectConnection,
+              itemBuilder: (context) => _connections.map((connection) {
+                return PopupMenuItem<Connection>(
+                  value: connection,
+                  child: Text(connection.coachName ?? 'Coach'),
                 );
               }).toList(),
             ),
@@ -429,16 +366,16 @@ class _CoachChatPageState extends State<CoachChatPage> {
             ),
           if (_isLoading)
             const Expanded(child: Center(child: CircularProgressIndicator()))
-          else if (_selectedCoach == null)
+          else if (_selectedConnectionId == null)
             const Expanded(
-              child: Center(child: Text('No coaches available')),
+              child: Center(child: Text('No connected coaches available')),
             )
           else
             Expanded(
               child: _messages.isEmpty
                   ? Center(
                       child: Text(
-                        'Start a conversation with ${_selectedCoach!.fullName}',
+                        'Start a conversation with $coachName',
                         style: theme.textTheme.bodyLarge?.copyWith(
                           color: theme.colorScheme.onSurface
                               .withValues(alpha: 0.6),
@@ -476,27 +413,12 @@ class _CoachChatPageState extends State<CoachChatPage> {
                                     style: theme.textTheme.bodyMedium,
                                   ),
                                 if (message.audioUrl != null)
-                                  Row(
+                                  const Row(
                                     children: [
                                       Icon(Icons.mic, size: 20),
-                                      const SizedBox(width: 8),
+                                      SizedBox(width: 8),
                                       Text('Audio message'),
                                     ],
-                                  ),
-                                if (message.fileUrl != null)
-                                  Row(
-                                    children: [
-                                      Icon(Icons.attach_file, size: 20),
-                                      const SizedBox(width: 8),
-                                      Text('File attachment'),
-                                    ],
-                                  ),
-                                if (message.imageUrl != null)
-                                  Image.network(
-                                    message.imageUrl!,
-                                    width: 200,
-                                    height: 200,
-                                    fit: BoxFit.cover,
                                   ),
                                 const SizedBox(height: 4),
                                 Text(
@@ -537,61 +459,52 @@ class _CoachChatPageState extends State<CoachChatPage> {
                 ],
               ),
             ),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              border: Border(
-                top: BorderSide(color: theme.dividerColor),
+          if (_selectedConnectionId != null)
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                border: Border(
+                  top: BorderSide(color: theme.dividerColor),
+                ),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.mic),
+                    onPressed:
+                        _isSending || _isRecording ? null : _startRecording,
+                    tooltip: 'Record audio',
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: _textController,
+                      decoration: const InputDecoration(
+                        hintText: 'Type a message...',
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                      ),
+                      maxLines: null,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => _sendTextMessage(),
+                    ),
+                  ),
+                  IconButton(
+                    icon: _isSending
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.send),
+                    onPressed: _isSending ? null : _sendTextMessage,
+                  ),
+                ],
               ),
             ),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.attach_file),
-                  onPressed: _isSending ? null : _pickAndSendFile,
-                  tooltip: 'Send file',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.photo),
-                  onPressed: _isSending ? null : _pickAndSendPhoto,
-                  tooltip: 'Send photo',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.mic),
-                  onPressed:
-                      _isSending || _isRecording ? null : _startRecording,
-                  tooltip: 'Record audio',
-                ),
-                Expanded(
-                  child: TextField(
-                    controller: _textController,
-                    decoration: const InputDecoration(
-                      hintText: 'Type a message...',
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                    ),
-                    maxLines: null,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _sendTextMessage(),
-                  ),
-                ),
-                IconButton(
-                  icon: _isSending
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.send),
-                  onPressed: _isSending ? null : _sendTextMessage,
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
