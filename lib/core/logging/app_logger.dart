@@ -11,6 +11,18 @@ import 'package:projectbrain/core/config/app_config.dart';
 class AppLogger {
   static Logger? _instance;
 
+  /// Optional sink for error-level logs (wired to Crashlytics in `main`).
+  ///
+  /// Kept as a hook so the logger has no hard dependency on Firebase and stays
+  /// testable. Every [logError]/[logFatal] call is forwarded here, turning
+  /// existing service catch blocks into crash-reporter non-fatals.
+  static void Function(
+    String message,
+    dynamic error,
+    StackTrace? stackTrace, {
+    bool fatal,
+  })? crashReporter;
+
   /// Get the singleton logger instance
   static Logger get instance {
     _instance ??= _createLogger();
@@ -102,8 +114,10 @@ void logWarning(String message, [dynamic error, StackTrace? stackTrace]) {
 
 void logError(String message, [dynamic error, StackTrace? stackTrace]) {
   AppLogger.instance.e(message, error: error, stackTrace: stackTrace);
+  AppLogger.crashReporter?.call(message, error, stackTrace, fatal: false);
 }
 
 void logFatal(String message, [dynamic error, StackTrace? stackTrace]) {
   AppLogger.instance.f(message, error: error, stackTrace: stackTrace);
+  AppLogger.crashReporter?.call(message, error, stackTrace, fatal: true);
 }

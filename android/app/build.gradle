@@ -20,12 +20,29 @@ if (hasReleaseKeystore) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
+def readMapsKeyFromEnvFile = {
+    def envNames = ['dev', 'staging', 'production']
+    for (name in envNames) {
+        def envFile = rootProject.file("../../.env.${name}")
+        if (!envFile.exists()) continue
+        def matcher = (envFile.text =~ /(?m)^GOOGLE_MAPS_API_KEY=(.*)$/)
+        if (matcher.find()) {
+            def key = matcher.group(1).trim()
+            key = key.replaceAll(/^["']|["']$/, '')
+            if (!key.isEmpty()) return key
+        }
+    }
+    return ""
+}
+
 def resolvedGoogleMapsApiKey = {
     def p = project.findProperty("googleMapsApiKey") as String
     if (p != null && !p.trim().isEmpty()) return p.trim()
     def e = System.getenv("GOOGLE_MAPS_API_KEY")
     if (e != null && !e.trim().isEmpty()) return e.trim()
-    return ""
+    def fromLocal = localProperties.getProperty("googleMapsApiKey")
+    if (fromLocal != null && !fromLocal.trim().isEmpty()) return fromLocal.trim()
+    return readMapsKeyFromEnvFile()
 }()
 
 def resolvedAuth0Domain = {
@@ -33,7 +50,17 @@ def resolvedAuth0Domain = {
     if (p != null && !p.trim().isEmpty()) return p.trim()
     def e = System.getenv("AUTH0_DOMAIN")
     if (e != null && !e.trim().isEmpty()) return e.trim()
-    return "dev-cpd6arma80386i5r.us.auth0.com"
+    // Never embed a tenant fallback in release builds: fail loudly so CI must
+    // inject AUTH0_DOMAIN rather than silently shipping a dev tenant.
+    def isReleaseBuild = gradle.startParameter.taskNames.any {
+        it.toLowerCase().contains("release")
+    }
+    if (isReleaseBuild) {
+        throw new GradleException(
+            "AUTH0_DOMAIN is not set. Provide -Pauth0Domain=<tenant> or the " +
+            "AUTH0_DOMAIN environment variable for release builds.")
+    }
+    return ""
 }()
 
 android {

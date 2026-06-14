@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:projectbrain/models/strategies/coping_strategy_library_item.dart';
 import 'package:projectbrain/strategies/strategies_localizations.dart';
 import 'package:projectbrain/strategies/strategies_provider.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Strategies library screen: list saved strategies, rate, delete.
 class StrategiesLibraryPage extends StatefulWidget {
@@ -46,7 +47,7 @@ class _StrategiesLibraryPageState extends State<StrategiesLibraryPage> {
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyLarge,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: AppSpacing.lg),
                   FilledButton(
                     onPressed: () => provider.loadLibrary(),
                     child: Text(l10n.retry),
@@ -58,7 +59,7 @@ class _StrategiesLibraryPageState extends State<StrategiesLibraryPage> {
           if (provider.items.isEmpty) {
             return Center(
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: AppInsets.page,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -67,7 +68,7 @@ class _StrategiesLibraryPageState extends State<StrategiesLibraryPage> {
                       size: 64,
                       color: theme.colorScheme.primary.withValues(alpha: 0.6),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: AppSpacing.lg),
                     Text(
                       l10n.emptyLibraryTitle,
                       style: theme.textTheme.titleLarge?.copyWith(
@@ -75,7 +76,7 @@ class _StrategiesLibraryPageState extends State<StrategiesLibraryPage> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: AppSpacing.sm),
                     Text(
                       l10n.emptyLibraryMessage,
                       style: theme.textTheme.bodyMedium?.copyWith(
@@ -83,7 +84,7 @@ class _StrategiesLibraryPageState extends State<StrategiesLibraryPage> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: AppSpacing.xl),
                     FilledButton.icon(
                       onPressed: () => context.go('/strategies/chat'),
                       icon: const Icon(Icons.add),
@@ -97,7 +98,7 @@ class _StrategiesLibraryPageState extends State<StrategiesLibraryPage> {
           return RefreshIndicator(
             onRefresh: () => provider.loadLibrary(),
             child: ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: AppInsets.screen,
               itemCount: provider.items.length,
               itemBuilder: (context, index) {
                 final item = provider.items[index];
@@ -168,9 +169,9 @@ class _StrategyLibraryCard extends StatelessWidget {
     final icon = _iconFor(item.iconKey);
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: AppInsets.listItemBottom,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppInsets.screen,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -179,7 +180,7 @@ class _StrategyLibraryCard extends StatelessWidget {
               children: [
                 if (icon != null)
                   Padding(
-                    padding: const EdgeInsets.only(right: 12),
+                    padding: EdgeInsets.only(right: AppSpacing.md),
                     child: Icon(icon, color: theme.colorScheme.primary, size: 28),
                   ),
                 Expanded(
@@ -192,7 +193,7 @@ class _StrategyLibraryCard extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: AppSpacing.xs),
                       Text(
                         item.description,
                         style: theme.textTheme.bodyMedium?.copyWith(
@@ -201,7 +202,7 @@ class _StrategyLibraryCard extends StatelessWidget {
                         maxLines: 4,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: AppSpacing.sm),
                       Text(
                         dateStr,
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -222,10 +223,12 @@ class _StrategyLibraryCard extends StatelessWidget {
                         children: [
                           Icon(Icons.delete_outline,
                               color: theme.colorScheme.error),
-                          const SizedBox(width: 8),
+                          SizedBox(width: AppSpacing.sm),
                           Text(
                             StrategiesLocalizations.of(context).delete,
-                            style: TextStyle(color: theme.colorScheme.error),
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: theme.colorScheme.error,
+                            ),
                           ),
                         ],
                       ),
@@ -234,7 +237,7 @@ class _StrategyLibraryCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: AppSpacing.sm),
             Row(
               children: List.generate(5, (i) {
                 final star = i + 1;
@@ -247,7 +250,7 @@ class _StrategyLibraryCard extends StatelessWidget {
                         : theme.colorScheme.onSurface.withValues(alpha: 0.4),
                   ),
                   onPressed: () => onRatingChanged(star),
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.xs),
                   constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                 );
               }),

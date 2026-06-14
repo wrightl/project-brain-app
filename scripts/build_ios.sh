@@ -41,6 +41,40 @@ die() {
   exit 1
 }
 
+has_ios_distribution_identity() {
+  security find-identity -v -p codesigning 2>/dev/null \
+    | grep -Eq '"(Apple Distribution|iPhone Distribution):'
+}
+
+check_ios_distribution_signing() {
+  if has_ios_distribution_identity; then
+    return 0
+  fi
+
+  cat >&2 <<'EOF'
+error: no iOS Distribution signing certificate found in the login keychain.
+
+The App Store Connect API key (ASC_API_KEY_*) is only used to upload the IPA after
+it is built. Exporting an App Store IPA still requires an Apple Distribution
+certificate on this Mac.
+
+Fix (one-time setup in Xcode):
+  1. open ios/Runner.xcworkspace
+  2. Xcode → Settings → Accounts → sign in with your Apple Developer Apple ID
+  3. Select team 3JA363674L → Manage Certificates… → + → Apple Distribution
+  4. Runner target → Signing & Capabilities → confirm "Automatically manage signing"
+     and team 3JA363674L for the Release configuration
+  5. Re-run this script
+
+Verify with:
+  security find-identity -v -p codesigning | grep Distribution
+
+If you already archived successfully, you can export from Xcode after fixing certs:
+  open build/ios/archive/Runner.xcarchive
+EOF
+  exit 1
+}
+
 normalize_environment() {
   case "$1" in
     dev | development) echo "dev" ;;
@@ -99,6 +133,7 @@ NORMALIZED_ENV="$(normalize_environment "$ENVIRONMENT")" || die "invalid ENVIRON
 # --- Pre-flight checks ---
 [[ "$(uname -s)" == "Darwin" ]] || die "iOS IPA builds require macOS"
 command -v flutter >/dev/null 2>&1 || die "flutter not found on PATH"
+check_ios_distribution_signing
 
 ENV_FILE=".env.${NORMALIZED_ENV}"
 [[ -f "$ENV_FILE" ]] || die "missing ${ENV_FILE} — copy from .env.${NORMALIZED_ENV}.example and fill in values"

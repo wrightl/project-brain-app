@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Getting Started page for first-time users of the daily goals feature
 class GettingStartedPage extends StatelessWidget {
@@ -15,7 +16,7 @@ class GettingStartedPage extends StatelessWidget {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: AppInsets.page,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -26,14 +27,14 @@ class GettingStartedPage extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: AppSpacing.xl),
 
               // Feature description
               Text(
                 'Set and track 3 daily goals to help you stay focused and productive.',
                 style: theme.textTheme.bodyLarge,
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: AppSpacing.xxl),
 
               // How it works section
               Text(
@@ -42,7 +43,7 @@ class GettingStartedPage extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: AppSpacing.lg),
 
               _buildFeatureItem(
                 context,
@@ -50,7 +51,7 @@ class GettingStartedPage extends StatelessWidget {
                 title: 'Set Your Goals',
                 description: 'Define up to 3 goals you want to accomplish today.',
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: AppSpacing.lg),
 
               _buildFeatureItem(
                 context,
@@ -58,7 +59,7 @@ class GettingStartedPage extends StatelessWidget {
                 title: 'Track Progress',
                 description: 'Mark goals as complete as you finish them throughout the day.',
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: AppSpacing.lg),
 
               _buildFeatureItem(
                 context,
@@ -66,7 +67,7 @@ class GettingStartedPage extends StatelessWidget {
                 title: 'Widget Support',
                 description: 'View your goals at a glance with the iOS widget on your home screen.',
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: AppSpacing.xxl),
 
               // Get Started button
               SizedBox(
@@ -76,12 +77,9 @@ class GettingStartedPage extends StatelessWidget {
                     context.go('/goals/entry');
                   },
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
                   ),
-                  child: const Text(
-                    'Get Started',
-                    style: TextStyle(fontSize: 16),
-                  ),
+                  child: const Text('Get Started'),
                 ),
               ),
             ],
@@ -103,17 +101,17 @@ class GettingStartedPage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
             color: theme.colorScheme.primaryContainer,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadius.circularMd,
           ),
           child: Icon(
             icon,
             color: theme.colorScheme.onPrimaryContainer,
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: AppSpacing.lg),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,7 +122,7 @@ class GettingStartedPage extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: AppSpacing.xs),
               Text(
                 description,
                 style: theme.textTheme.bodyMedium?.copyWith(

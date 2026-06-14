@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Celebration page shown when user completes a single goal
 class SingleGoalCelebrationPage extends StatelessWidget {
@@ -12,7 +13,7 @@ class SingleGoalCelebrationPage extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: AppInsets.page,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -30,7 +31,7 @@ class SingleGoalCelebrationPage extends StatelessWidget {
                   color: Colors.green,
                 ),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: AppSpacing.xxl),
 
               // Congratulations message
               Text(
@@ -41,14 +42,14 @@ class SingleGoalCelebrationPage extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: AppSpacing.lg),
 
               Text(
                 'You completed one of your goals!',
                 style: theme.textTheme.titleLarge,
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: AppSpacing.sm),
 
               Text(
                 'Keep up the momentum and tackle the rest!',
@@ -57,7 +58,7 @@ class SingleGoalCelebrationPage extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 48),
+              SizedBox(height: AppSpacing.xxxl),
 
               // Back to goals button
               SizedBox(
@@ -68,13 +69,10 @@ class SingleGoalCelebrationPage extends StatelessWidget {
                     context.pop();
                   },
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
                     backgroundColor: Colors.green,
                   ),
-                  child: const Text(
-                    'Back to Goals',
-                    style: TextStyle(fontSize: 16),
-                  ),
+                  child: const Text('Back to Goals'),
                 ),
               ),
             ],

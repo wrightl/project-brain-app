@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:projectbrain/models/location.dart';
 import 'package:projectbrain/services/location_service.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 class CitySearchField extends StatefulWidget {
   final LocationService locationService;
@@ -118,7 +119,7 @@ class _CitySearchFieldState extends State<CitySearchField> {
             prefixIcon: const Icon(Icons.location_city),
             suffixIcon: _loading
                 ? const Padding(
-                    padding: EdgeInsets.all(12),
+                    padding: EdgeInsets.all(AppSpacing.md),
                     child: SizedBox(
                       width: 18,
                       height: 18,

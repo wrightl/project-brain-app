@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:projectbrain/core/logging/app_logger.dart';
+import 'package:projectbrain/core/security/url_security.dart';
 import 'package:projectbrain/models/citation.dart';
 import 'package:projectbrain/models/chatmessage.dart';
 import 'package:projectbrain/widgets/chat/typing_indicator.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Reusable message bubble widget for displaying chat messages
-class MessageBubble extends StatelessWidget {
+class MessageBubble extends StatefulWidget {
   final ChatMessage message;
 
   const MessageBubble({
@@ -15,7 +18,38 @@ class MessageBubble extends StatelessWidget {
   });
 
   @override
+  State<MessageBubble> createState() => _MessageBubbleState();
+}
+
+class _MessageBubbleState extends State<MessageBubble> {
+  /// Cached citation-processed content so the regex only runs when the
+  /// underlying content/citations change, not on every rebuild.
+  late String _processedContent;
+
+  @override
+  void initState() {
+    super.initState();
+    _processedContent = _processCitationLinks(
+      widget.message.content,
+      widget.message.citations,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant MessageBubble oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.message.content != widget.message.content ||
+        oldWidget.message.citations != widget.message.citations) {
+      _processedContent = _processCitationLinks(
+        widget.message.content,
+        widget.message.citations,
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final message = widget.message;
     final theme = Theme.of(context);
     final isUser = message.role == 'user';
     final isEmpty = message.content.isEmpty && !isUser;
@@ -24,12 +58,12 @@ class MessageBubble extends StatelessWidget {
     if (isEmpty) {
       return Container(
         alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.all(8),
+        padding: EdgeInsets.all(AppSpacing.sm),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: AppInsets.card,
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.circularSm,
           ),
           child: TypingIndicator(
             dotColor: theme.colorScheme.onSurfaceVariant,
@@ -41,25 +75,25 @@ class MessageBubble extends StatelessWidget {
     return Container(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       padding: isUser
-          ? const EdgeInsets.all(8).add(const EdgeInsets.only(left: 20))
-          : const EdgeInsets.all(8).add(const EdgeInsets.only(right: 20)),
+          ? EdgeInsets.all(AppSpacing.sm).add(EdgeInsets.only(left: AppSpacing.s20))
+          : EdgeInsets.all(AppSpacing.sm).add(EdgeInsets.only(right: AppSpacing.s20)),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           color: isUser
               ? theme.colorScheme.primary
               : theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppRadius.circularSm,
         ),
         child: MarkdownBody(
-          data: _processCitationLinks(message.content, message.citations),
+          data: _processedContent,
           styleSheet: MarkdownStyleSheet(
-            p: TextStyle(
+            p: theme.textTheme.bodyMedium?.copyWith(
               color: isUser
                   ? theme.colorScheme.onPrimary
                   : theme.colorScheme.onSurface,
             ),
-            a: TextStyle(
+            a: theme.textTheme.bodyMedium?.copyWith(
               color: isUser
                   ? theme.colorScheme.onPrimary
                   : theme.colorScheme.primary,
@@ -99,10 +133,16 @@ class MessageBubble extends StatelessWidget {
     });
   }
 
-  /// Launch a URL in the browser
+  /// Launch a URL in the browser.
+  ///
+  /// URLs originate from AI output, so only https links are allowed.
   Future<void> _launchUrl(String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri != null && await canLaunchUrl(uri)) {
+    if (!UrlSecurity.isSafeExternalUrl(url)) {
+      logWarning('[MessageBubble] Blocked unsafe link: $url');
+      return;
+    }
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }

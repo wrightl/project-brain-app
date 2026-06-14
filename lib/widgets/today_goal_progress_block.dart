@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:projectbrain/helpers/theme.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Block showing today's goal progress (X/3) with a primary CTA.
 class TodayGoalProgressBlock extends StatelessWidget {
@@ -26,7 +27,7 @@ class TodayGoalProgressBlock extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppInsets.screen,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -34,10 +35,10 @@ class TodayGoalProgressBlock extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
                     color: achievementColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppRadius.circularSm,
                   ),
                   child: Icon(
                     Icons.check_circle_outline,
@@ -45,7 +46,7 @@ class TodayGoalProgressBlock extends StatelessWidget {
                     size: 24,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,7 +58,7 @@ class TodayGoalProgressBlock extends StatelessWidget {
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: AppSpacing.micro),
                       Text(
                         hasGoals
                             ? '$completed / $total completed'
@@ -72,9 +73,9 @@ class TodayGoalProgressBlock extends StatelessWidget {
               ],
             ),
             if (hasGoals) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: AppSpacing.md),
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppRadius.circularSm,
                 child: LinearProgressIndicator(
                   value: progress,
                   minHeight: 8,
@@ -85,7 +86,7 @@ class TodayGoalProgressBlock extends StatelessWidget {
                 ),
               ),
             ],
-            const SizedBox(height: 12),
+            SizedBox(height: AppSpacing.md),
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(

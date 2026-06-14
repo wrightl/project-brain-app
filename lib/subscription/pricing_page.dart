@@ -8,6 +8,7 @@ import 'package:projectbrain/subscription/subscription_provider.dart';
 import 'package:projectbrain/models/subscription.dart';
 import 'package:projectbrain/subscription/widgets/tier_badge.dart';
 import 'package:projectbrain/subscription/widgets/stripe_checkout_webview.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Pricing/Upgrade page showing all subscription tiers
 class PricingPage extends StatefulWidget {
@@ -32,19 +33,19 @@ class _PricingPageState extends State<PricingPage> {
           final currentTier = subscriptionProvider.currentTier;
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: AppInsets.screen,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (!kIsWeb &&
                     defaultTargetPlatform == TargetPlatform.iOS) ...[
                   _IosWebBillingNotice(theme: Theme.of(context)),
-                  const SizedBox(height: 16),
+                  SizedBox(height: AppSpacing.lg),
                 ],
                 // Billing period toggle
                 _buildBillingToggle(),
 
-                const SizedBox(height: 24),
+                SizedBox(height: AppSpacing.xl),
 
                 // Tier cards
                 _buildTierCard(
@@ -53,7 +54,7 @@ class _PricingPageState extends State<PricingPage> {
                   currentTier,
                   _isAnnual,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: AppSpacing.lg),
                 _buildTierCard(
                   context,
                   SubscriptionTier.pro,
@@ -61,7 +62,7 @@ class _PricingPageState extends State<PricingPage> {
                   _isAnnual,
                   isPopular: true,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: AppSpacing.lg),
                 _buildTierCard(
                   context,
                   SubscriptionTier.ultimate,
@@ -69,12 +70,12 @@ class _PricingPageState extends State<PricingPage> {
                   _isAnnual,
                 ),
 
-                const SizedBox(height: 32),
+                SizedBox(height: AppSpacing.xxl),
 
                 // Feature comparison
                 _buildFeatureComparison(context),
 
-                const SizedBox(height: 32),
+                SizedBox(height: AppSpacing.xxl),
               ],
             ),
           );
@@ -85,10 +86,10 @@ class _PricingPageState extends State<PricingPage> {
 
   Widget _buildBillingToggle() {
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: EdgeInsets.all(AppSpacing.xs),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.circularMd,
       ),
       child: Row(
         children: [
@@ -127,7 +128,7 @@ class _PricingPageState extends State<PricingPage> {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.circularLg,
         border: Border.all(
           color: isCurrentTier
               ? theme.colorScheme.primary
@@ -151,7 +152,7 @@ class _PricingPageState extends State<PricingPage> {
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: AppInsets.screen,
             decoration: BoxDecoration(
               color: isPopular
                   ? Colors.blue.withValues(alpha: 0.1)
@@ -172,21 +173,20 @@ class _PricingPageState extends State<PricingPage> {
                         children: [
                           TierBadge(tier: tier),
                           if (isPopular) ...[
-                            const SizedBox(width: 8),
+                            SizedBox(width: AppSpacing.sm),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
+                                horizontal: AppSpacing.sm,
+                                vertical: AppSpacing.xs,
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.blue,
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: AppRadius.circularMd,
                               ),
-                              child: const Text(
+                              child: Text(
                                 'Most Popular',
-                                style: TextStyle(
+                                style: theme.textTheme.labelMedium?.copyWith(
                                   color: Colors.white,
-                                  fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -194,7 +194,7 @@ class _PricingPageState extends State<PricingPage> {
                           ],
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: AppSpacing.sm),
                       Text(
                         _getTierDescription(tier),
                         style: theme.textTheme.bodyMedium,
@@ -208,7 +208,7 @@ class _PricingPageState extends State<PricingPage> {
 
           // Pricing
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: AppInsets.screen,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -222,7 +222,7 @@ class _PricingPageState extends State<PricingPage> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(top: 8),
+                      padding: EdgeInsets.only(top: AppSpacing.sm),
                       child: Text(
                         '/$period',
                         style: theme.textTheme.bodyMedium?.copyWith(
@@ -234,7 +234,7 @@ class _PricingPageState extends State<PricingPage> {
                 ),
                 if (isAnnual && tier != SubscriptionTier.free)
                   Padding(
-                    padding: const EdgeInsets.only(top: 4),
+                    padding: EdgeInsets.only(top: AppSpacing.xs),
                     child: Text(
                       'Billed annually (\$${_getAnnualTotal(tier)}/year)',
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -248,11 +248,11 @@ class _PricingPageState extends State<PricingPage> {
 
           // Features list
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Column(
               children: _getTierFeatures(tier).map((feature) {
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
+                  padding: EdgeInsets.only(bottom: AppSpacing.sm),
                   child: Row(
                     children: [
                       Icon(
@@ -260,7 +260,7 @@ class _PricingPageState extends State<PricingPage> {
                         color: theme.colorScheme.primary,
                         size: 20,
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Text(
                           feature,
@@ -276,7 +276,7 @@ class _PricingPageState extends State<PricingPage> {
 
           // Action button
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: AppInsets.screen,
             child: SizedBox(
               width: double.infinity,
               child: isCurrentTier
@@ -289,7 +289,7 @@ class _PricingPageState extends State<PricingPage> {
                           ? null
                           : () => _handleUpgrade(context, tier),
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
                       ),
                       child: _isLoading
                           ? const SizedBox(
@@ -325,7 +325,7 @@ class _PricingPageState extends State<PricingPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: AppSpacing.lg),
         _FeatureComparisonTable(),
       ],
     );
@@ -525,14 +525,14 @@ class _IosWebBillingNotice extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: theme.colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadius.circularMd,
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(AppSpacing.md),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(Icons.info_outline, color: theme.colorScheme.primary),
-            const SizedBox(width: 12),
+            SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(
                 'On iPhone, upgrades and checkout open in your browser (App Store guidelines). '
@@ -567,16 +567,16 @@ class _BillingOption extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
         decoration: BoxDecoration(
           color: isSelected ? theme.colorScheme.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppRadius.circularSm,
         ),
         child: Column(
           children: [
             Text(
               label,
-              style: TextStyle(
+              style: theme.textTheme.labelLarge?.copyWith(
                 color: isSelected
                     ? theme.colorScheme.onPrimary
                     : theme.colorScheme.onSurface,
@@ -585,12 +585,11 @@ class _BillingOption extends StatelessWidget {
             ),
             if (badge != null && isSelected)
               Padding(
-                padding: const EdgeInsets.only(top: 4),
+                padding: EdgeInsets.only(top: AppSpacing.xs),
                 child: Text(
                   badge!,
-                  style: TextStyle(
+                  style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.onPrimary,
-                    fontSize: 10,
                   ),
                 ),
               ),
@@ -621,13 +620,13 @@ class _FeatureComparisonTable extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: theme.colorScheme.outline),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.circularSm,
       ),
       child: Column(
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerHighest,
               borderRadius: const BorderRadius.only(
@@ -677,7 +676,7 @@ class _FeatureComparisonTable extends StatelessWidget {
                 ),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(AppSpacing.md),
                 child: Row(
                   children: [
                     Expanded(

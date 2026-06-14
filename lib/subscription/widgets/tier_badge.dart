@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:projectbrain/models/subscription.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Widget that displays a tier badge with appropriate styling
 class TierBadge extends StatelessWidget {
@@ -25,21 +26,21 @@ class TierBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final color = _getTierColor();
 
     if (isCompact) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: AppInsets.chip,
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.circularMd,
           border: Border.all(color: color, width: 1),
         ),
         child: Text(
           tier.displayName,
-          style: TextStyle(
+          style: theme.textTheme.labelMedium?.copyWith(
             color: color,
-            fontSize: 12,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -47,10 +48,10 @@ class TierBadge extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.s6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.circularLg,
         border: Border.all(color: color, width: 1.5),
       ),
       child: Row(
@@ -61,12 +62,11 @@ class TierBadge extends StatelessWidget {
             color: color,
             size: 16,
           ),
-          const SizedBox(width: 4),
+          SizedBox(width: AppSpacing.xs),
           Text(
             tier.displayName,
-            style: TextStyle(
+            style: theme.textTheme.labelLarge?.copyWith(
               color: color,
-              fontSize: 14,
               fontWeight: FontWeight.bold,
             ),
           ),

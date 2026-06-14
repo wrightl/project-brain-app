@@ -11,6 +11,8 @@ import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/core/routing/app_router.dart';
 import 'package:projectbrain/services/feature_flag_service.dart';
 import 'package:projectbrain/services/goals_realtime_service.dart';
+import 'package:projectbrain/services/connectivity_service.dart';
+import 'package:projectbrain/widgets/offline_banner.dart';
 import 'package:projectbrain/helpers/theme_mode_provider.dart';
 
 class MyApp extends StatefulWidget {
@@ -21,6 +23,10 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  // Build the router once; createRouter() is idempotent but holding the
+  // instance keeps build() free of side effects.
+  late final _router = sl<AppRouter>().createRouter();
+
   @override
   void initState() {
     super.initState();
@@ -50,7 +56,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final router = sl<AppRouter>().createRouter();
+    final router = _router;
 
     return MultiProvider(
       providers: [
@@ -60,8 +66,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ChangeNotifierProvider.value(
           value: sl<ThemeModeProvider>(),
         ),
-        ChangeNotifierProvider(
-          create: (_) => sl<ChatProvider>(),
+        ChangeNotifierProvider.value(
+          value: sl<ChatProvider>(),
         ),
         ChangeNotifierProvider.value(
           value: sl<SubscriptionProvider>(),
@@ -69,8 +75,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ChangeNotifierProvider.value(
           value: sl<EggGoalsProvider>(),
         ),
-        ChangeNotifierProvider(
-          create: (_) => sl<JournalProvider>(),
+        ChangeNotifierProvider.value(
+          value: sl<JournalProvider>(),
         ),
         ChangeNotifierProvider.value(
           value: sl<StrategiesProvider>(),
@@ -80,6 +86,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ),
         Provider<FeatureFlagService>.value(
           value: sl<FeatureFlagService>(),
+        ),
+        ChangeNotifierProvider<ConnectivityService>.value(
+          value: sl<ConnectivityService>(),
         ),
       ],
       child: Consumer<ThemeModeProvider>(
@@ -91,6 +100,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             themeMode: themeModeProvider.themeMode,
             theme: themeModeProvider.theme,
             darkTheme: themeModeProvider.darkTheme,
+            // Overlay a persistent offline banner above every route.
+            builder: (context, child) => OfflineBanner(child: child),
           );
         },
       ),

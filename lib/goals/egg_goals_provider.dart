@@ -3,6 +3,7 @@ import 'package:projectbrain/services/egg_goals_service.dart';
 import 'package:projectbrain/ios_widget/shared_preferences_storage.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:projectbrain/core/storage/preferences_service.dart';
+import 'package:projectbrain/models/goal_streak_summary.dart';
 
 /// Model for an egg goal
 class EggGoal {
@@ -10,18 +11,6 @@ class EggGoal {
   final bool completed;
 
   EggGoal({required this.message, required this.completed});
-}
-
-/// Goal completion streak summary (from backend when available).
-/// Backend contract: e.g. GET /eggs/streak-summary returns currentStreak, longestStreak.
-class GoalStreakSummary {
-  final int currentStreak;
-  final int longestStreak;
-
-  const GoalStreakSummary({
-    required this.currentStreak,
-    required this.longestStreak,
-  });
 }
 
 /// Provider for managing egg goals state
@@ -157,6 +146,7 @@ class EggGoalsProvider extends ChangeNotifier {
       }
 
       await _loadGoalsFromStorage();
+      await loadGoalStreakSummary();
     } catch (e) {
       logError('[EggGoalsProvider] Error toggling goal completion', e);
       // Revert on error
@@ -229,12 +219,15 @@ class EggGoalsProvider extends ChangeNotifier {
     }
   }
 
-  /// Load goal streak summary from backend (placeholder: no API yet).
-  /// When backend adds e.g. GET /eggs/streak-summary, call it and set _goalStreakSummary.
+  /// Load goal streak summary from backend.
   Future<void> loadGoalStreakSummary() async {
-    // TODO: Backend TBD - GET /eggs/streak-summary returning currentStreak, longestStreak
-    _goalStreakSummary = null;
-    notifyListeners();
+    if (eggGoalsService == null) return;
+    try {
+      _goalStreakSummary = await eggGoalsService!.getStreakSummary();
+      notifyListeners();
+    } catch (e) {
+      logError('[EggGoalsProvider] loadGoalStreakSummary failed', e);
+    }
   }
 
   /// Initialize - load from storage

@@ -52,7 +52,9 @@ class User {
       preferredPronoun: json['preferredPronoun']?.toString(),
       doB: json['doB']?.toString(),
       neurodiverseTraits: json['neurodiverseTraits'] is List
-          ? List<String>.from(json['neurodiverseTraits'] as List)
+          ? (json['neurodiverseTraits'] as List)
+              .map((e) => e.toString())
+              .toList()
           : null,
     );
   }

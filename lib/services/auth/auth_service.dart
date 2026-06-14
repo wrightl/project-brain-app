@@ -276,6 +276,9 @@ class AuthService {
   /// Clear all authentication data
   Future<void> _clearSession() async {
     await _tokenStorage.clearAll();
+    // Also drop natively-persisted Auth0 credentials so an invalid-audience or
+    // failed-remote-logout reset cannot be silently restored on next launch.
+    await _oauthService.clearLocalCredentials();
     _tokenManager.clearAccessToken();
     _profile = null;
   }

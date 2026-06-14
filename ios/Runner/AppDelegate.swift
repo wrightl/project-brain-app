@@ -30,6 +30,12 @@ public class StorageHelper {
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
 
+    if let apiKey = Bundle.main.object(forInfoDictionaryKey: "GMSApiKey") as? String,
+       !apiKey.isEmpty,
+       !apiKey.hasPrefix("$(") {
+      GMSServices.provideAPIKey(apiKey)
+    }
+
     let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
     let storageChannel = FlutterMethodChannel(
         name: "com.dotdash.projectbrain/storage",
@@ -93,11 +99,40 @@ public class StorageHelper {
             }
         })
 
-    if let apiKey = Bundle.main.object(forInfoDictionaryKey: "GMSApiKey") as? String,
-       !apiKey.isEmpty,
-       !apiKey.hasPrefix("$(") {
-      GMSServices.provideAPIKey(apiKey)
-    }
+    let mapsChannel = FlutterMethodChannel(
+        name: "com.dotdash.projectbrain/google_maps",
+        binaryMessenger: controller.binaryMessenger
+    )
+
+    mapsChannel.setMethodCallHandler({
+        (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+        if call.method == "configureApiKey" {
+            guard let args = call.arguments as? [String: Any],
+                  let apiKey = args["apiKey"] as? String,
+                  !apiKey.isEmpty else {
+                result(
+                    FlutterError(
+                        code: "INVALID_ARGUMENT",
+                        message: "apiKey is required",
+                        details: nil
+                    )
+                )
+                return
+            }
+            GMSServices.provideAPIKey(apiKey)
+            result(nil)
+        } else if call.method == "isApiKeyConfigured" {
+            if let apiKey = Bundle.main.object(forInfoDictionaryKey: "GMSApiKey") as? String,
+               !apiKey.isEmpty,
+               !apiKey.hasPrefix("$(") {
+                result(true)
+            } else {
+                result(false)
+            }
+        } else {
+            result(FlutterMethodNotImplemented)
+        }
+    })
 
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)

@@ -10,6 +10,7 @@ import 'package:projectbrain/widgets/link_list.dart';
 import 'package:projectbrain/widgets/streak_card.dart';
 import 'package:projectbrain/widgets/today_goal_progress_block.dart';
 import 'package:provider/provider.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Home page of the application
 class HomePage extends StatefulWidget {
@@ -103,7 +104,7 @@ class _HomePageState extends State<HomePage> {
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(24.0),
+            padding: AppInsets.page,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
@@ -114,14 +115,14 @@ class _HomePageState extends State<HomePage> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: AppSpacing.sm),
                 Text(
                   'Here’s your progress today.',
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: AppSpacing.xl),
 
                 // Today block: goals + journal streak (entrance animation)
                 AnimatedOpacity(
@@ -142,7 +143,7 @@ class _HomePageState extends State<HomePage> {
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: AppSpacing.md),
                         Consumer<EggGoalsProvider>(
                           builder: (context, goalsProvider, _) {
                             final progress =
@@ -160,7 +161,7 @@ class _HomePageState extends State<HomePage> {
                             );
                           },
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: AppSpacing.md),
                         Consumer<JournalProvider>(
                           builder: (context, journalProvider, _) {
                             final streak = journalProvider.streakSummary;
@@ -181,7 +182,7 @@ class _HomePageState extends State<HomePage> {
                             if (summary == null) return const SizedBox.shrink();
                             return Column(
                               children: [
-                                const SizedBox(height: 12),
+                                SizedBox(height: AppSpacing.md),
                                 StreakCard(
                                   title: 'Goal streak',
                                   currentStreak: summary.currentStreak,
@@ -200,7 +201,7 @@ class _HomePageState extends State<HomePage> {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const SizedBox(height: 12),
+                                SizedBox(height: AppSpacing.md),
                                 Text(
                                   l10n.recentEntries,
                                   style: theme.textTheme.titleSmall?.copyWith(
@@ -229,7 +230,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: AppSpacing.xl),
 
                 // Quick links (short list, entrance animation)
                 AnimatedOpacity(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Custom bottom navigation bar with outline icons for inactive items
 /// and filled icons for active items, with a top border indicator
@@ -31,7 +32,7 @@ class CustomBottomNavBar extends StatelessWidget {
       child: SafeArea(
         child: Container(
           height: kBottomNavigationBarHeight,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -86,38 +87,49 @@ class CustomBottomNavBar extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Expanded(
-      child: GestureDetector(
-        onTap: () => onDestinationSelected(index),
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(
-                color: isSelected ? colorScheme.primary : Colors.transparent,
-                width: 3.0,
+      child: Semantics(
+        button: true,
+        selected: isSelected,
+        label: label,
+        child: GestureDetector(
+          onTap: () => onDestinationSelected(index),
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            // Ensure the tap target spans the full nav height (>= 48dp).
+            constraints: const BoxConstraints(minHeight: 48),
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(
+                  color: isSelected ? colorScheme.primary : Colors.transparent,
+                  width: 3.0,
+                ),
               ),
             ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                isSelected ? selectedIcon : icon,
-                color: isSelected
-                    ? colorScheme.primary
-                    : colorScheme.onSurface.withValues(alpha: 0.6),
-                size: 24,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: theme.textTheme.labelSmall?.copyWith(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  isSelected ? selectedIcon : icon,
                   color: isSelected
                       ? colorScheme.primary
                       : colorScheme.onSurface.withValues(alpha: 0.6),
+                  size: 24,
                 ),
-              ),
-            ],
+                SizedBox(height: AppSpacing.xs),
+                // ExcludeSemantics: the label is already announced via the
+                // Semantics wrapper above; avoid duplicate read-out.
+                ExcludeSemantics(
+                  child: Text(
+                    label,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: isSelected
+                          ? colorScheme.primary
+                          : colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

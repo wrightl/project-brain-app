@@ -5,6 +5,7 @@ import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:projectbrain/models/quiz.dart';
 import 'package:projectbrain/services/quiz_service.dart';
 import 'package:intl/intl.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Quizzes page for managing neurodiversity quizzes
 class QuizzesPage extends StatefulWidget {
@@ -131,7 +132,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
           onRefresh: _loadAllData,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16.0),
+            padding: AppInsets.screen,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -140,9 +141,9 @@ class _QuizzesPageState extends State<QuizzesPage> {
                     _isLoadingInsights ||
                     _insightsErrorMessage != null)
                   Card(
-                    margin: const EdgeInsets.only(bottom: 16),
+                    margin: EdgeInsets.only(bottom: AppSpacing.lg),
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: AppInsets.screen,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -152,7 +153,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
                                 Icons.insights,
                                 color: theme.colorScheme.primary,
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: AppSpacing.sm),
                               Text(
                                 'Quiz Insights',
                                 style: theme.textTheme.titleLarge?.copyWith(
@@ -161,13 +162,13 @@ class _QuizzesPageState extends State<QuizzesPage> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: AppSpacing.lg),
                           if (_isLoadingInsights)
                             const Center(child: CircularProgressIndicator())
                           else if (_insightsErrorMessage != null)
                             Text(
                               _insightsErrorMessage!,
-                              style: TextStyle(
+                              style: theme.textTheme.bodyMedium?.copyWith(
                                 color: theme.colorScheme.error,
                               ),
                             )
@@ -178,17 +179,17 @@ class _QuizzesPageState extends State<QuizzesPage> {
                                 style: theme.textTheme.bodyLarge,
                               ),
                             if (_insights!.keyInsights.isNotEmpty) ...[
-                              const SizedBox(height: 16),
+                              SizedBox(height: AppSpacing.lg),
                               Text(
                                 'Key Insights:',
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              SizedBox(height: AppSpacing.sm),
                               ..._insights!.keyInsights.map((insight) =>
                                   Padding(
-                                    padding: const EdgeInsets.only(bottom: 8),
+                                    padding: EdgeInsets.only(bottom: AppSpacing.sm),
                                     child: Row(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
@@ -198,7 +199,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
                                           size: 20,
                                           color: theme.colorScheme.primary,
                                         ),
-                                        const SizedBox(width: 8),
+                                        SizedBox(width: AppSpacing.sm),
                                         Expanded(
                                           child: Text(
                                             insight,
@@ -210,7 +211,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
                                   )),
                             ],
                             if (_insights!.lastUpdated != null) ...[
-                              const SizedBox(height: 16),
+                              SizedBox(height: AppSpacing.lg),
                               Text(
                                 'Last updated: ${_formatDate(_insights!.lastUpdated)}',
                                 style: theme.textTheme.bodySmall?.copyWith(
@@ -236,22 +237,23 @@ class _QuizzesPageState extends State<QuizzesPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: AppSpacing.lg),
 
                 // Error message
                 if (_errorMessage != null)
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: AppInsets.screen,
+                    margin: EdgeInsets.only(bottom: AppSpacing.lg),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppRadius.circularSm,
                     ),
                     child: Text(
                       _errorMessage!,
-                      style:
-                          TextStyle(color: theme.colorScheme.onErrorContainer),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onErrorContainer,
+                      ),
                     ),
                   ),
 
@@ -270,7 +272,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
                           color: theme.colorScheme.onSurface
                               .withValues(alpha: 0.3),
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: AppSpacing.lg),
                         Text(
                           'No quizzes available',
                           style: theme.textTheme.titleMedium?.copyWith(
@@ -278,7 +280,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
                                 .withValues(alpha: 0.6),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: AppSpacing.sm),
                         Text(
                           'Check back later for new quizzes',
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -293,7 +295,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
                 // Quizzes list
                 else
                   ..._quizzes.map((quiz) => Card(
-                        margin: const EdgeInsets.only(bottom: 12),
+                        margin: AppInsets.listItemBottom,
                         child: ListTile(
                           leading: CircleAvatar(
                             backgroundColor: theme.colorScheme.primaryContainer,
@@ -312,7 +314,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               if (quiz.description.isNotEmpty) ...[
-                                const SizedBox(height: 4),
+                                SizedBox(height: AppSpacing.xs),
                                 Text(
                                   quiz.description,
                                   style: theme.textTheme.bodySmall,
@@ -320,7 +322,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ],
-                              const SizedBox(height: 4),
+                              SizedBox(height: AppSpacing.xs),
                               Text(
                                 _formatDate(quiz.createdAt),
                                 style: theme.textTheme.bodySmall?.copyWith(
@@ -342,7 +344,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
                         ),
                       )),
 
-                const SizedBox(height: 32),
+                SizedBox(height: AppSpacing.xxl),
 
                 // Completed Quizzes Section
                 Row(
@@ -355,22 +357,23 @@ class _QuizzesPageState extends State<QuizzesPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: AppSpacing.lg),
 
                 // Completed quizzes error message
                 if (_completedErrorMessage != null)
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: AppInsets.screen,
+                    margin: EdgeInsets.only(bottom: AppSpacing.lg),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppRadius.circularSm,
                     ),
                     child: Text(
                       _completedErrorMessage!,
-                      style:
-                          TextStyle(color: theme.colorScheme.onErrorContainer),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onErrorContainer,
+                      ),
                     ),
                   ),
 
@@ -389,7 +392,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
                           color: theme.colorScheme.onSurface
                               .withValues(alpha: 0.3),
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: AppSpacing.lg),
                         Text(
                           'No completed quizzes',
                           style: theme.textTheme.titleMedium?.copyWith(
@@ -397,7 +400,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
                                 .withValues(alpha: 0.6),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: AppSpacing.sm),
                         Text(
                           'Complete a quiz to see it here',
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -413,7 +416,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
                 else
                   ..._completedQuizzes.map((response) {
                     return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
+                      margin: AppInsets.listItemBottom,
                       child: ListTile(
                         leading: CircleAvatar(
                           backgroundColor: theme.colorScheme.secondaryContainer,
@@ -432,7 +435,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             if (response.score != null) ...[
-                              const SizedBox(height: 4),
+                              SizedBox(height: AppSpacing.xs),
                               Row(
                                 children: [
                                   Icon(
@@ -440,7 +443,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
                                     size: 16,
                                     color: theme.colorScheme.primary,
                                   ),
-                                  const SizedBox(width: 4),
+                                  SizedBox(width: AppSpacing.xs),
                                   Text(
                                     'Score: ${response.score}',
                                     style: theme.textTheme.bodySmall?.copyWith(
@@ -451,7 +454,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
                                 ],
                               ),
                             ],
-                            const SizedBox(height: 4),
+                            SizedBox(height: AppSpacing.xs),
                             Text(
                               'Completed: ${_formatDate(response.completedAt)}',
                               style: theme.textTheme.bodySmall?.copyWith(

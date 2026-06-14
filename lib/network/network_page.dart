@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:projectbrain/widgets/link_list.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Network page for connecting with coaches
 class NetworkPage extends StatelessWidget {
@@ -29,7 +30,7 @@ class NetworkPage extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: AppInsets.page,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -40,14 +41,14 @@ class NetworkPage extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: AppSpacing.sm),
               Text(
                 'Connect with coaches to get support and guidance.',
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: AppSpacing.xxl),
 
               // Links list using reusable component
               LinkList(

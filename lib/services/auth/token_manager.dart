@@ -101,7 +101,7 @@ class TokenManager {
 
       return true;
     } catch (e) {
-      logDebug('[TokenManager] Failed to refresh token: $e');
+      logWarning('[TokenManager] Failed to refresh token', e);
       clearAccessToken();
       return false;
     }

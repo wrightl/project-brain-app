@@ -16,6 +16,15 @@ class GoalsRealtimeService {
   void Function()? _onGoalsUpdated;
   bool _running = false;
 
+  /// True once [stop] is called, to prevent auto-reconnect after teardown.
+  bool _stopped = false;
+  int _reconnectAttempts = 0;
+  Timer? _reconnectTimer;
+
+  static const Duration _minReconnectDelay = Duration(seconds: 2);
+  static const Duration _maxReconnectDelay = Duration(seconds: 60);
+  static const Duration _connectTimeout = Duration(seconds: 15);
+
   GoalsRealtimeService({required this.authService});
 
   bool get isRunning => _running;
@@ -24,6 +33,10 @@ class GoalsRealtimeService {
   /// (e.g. event: goals-updated), [onGoalsUpdated] is called.
   /// Only one connection is active; call [stop] before starting again.
   Future<void> start(void Function() onGoalsUpdated) async {
+    _stopped = false;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+
     if (_running) {
       logDebug('[GoalsRealtimeService] Already running');
       return;
@@ -39,15 +52,24 @@ class GoalsRealtimeService {
         ..headers['Authorization'] = 'Bearer $token';
 
       _client = http.Client();
-      final response = await _client!.send(request);
+      final response = await _client!.send(request).timeout(_connectTimeout);
 
-      if (response.statusCode == 401 ||
-          response.statusCode == 404 ||
-          response.statusCode >= 500) {
+      // Auth/not-found are terminal; reconnecting will not help.
+      if (response.statusCode == 401 || response.statusCode == 404) {
         logDebug(
-            '[GoalsRealtimeService] Stream failed: ${response.statusCode}');
+            '[GoalsRealtimeService] Stream terminal failure: ${response.statusCode}');
         _client?.close();
         _client = null;
+        return;
+      }
+
+      // Server errors are transient: back off and retry.
+      if (response.statusCode >= 500) {
+        logDebug(
+            '[GoalsRealtimeService] Stream server error: ${response.statusCode}');
+        _client?.close();
+        _client = null;
+        _scheduleReconnect();
         return;
       }
 
@@ -60,6 +82,7 @@ class GoalsRealtimeService {
       }
 
       _running = true;
+      _reconnectAttempts = 0;
       logDebug('[GoalsRealtimeService] SSE connection opened');
 
       String buffer = '';
@@ -76,18 +99,21 @@ class GoalsRealtimeService {
         onDone: () {
           _running = false;
           logDebug('[GoalsRealtimeService] SSE stream closed');
+          _scheduleReconnect();
         },
         onError: (e, st) {
           _running = false;
-          logDebug('[GoalsRealtimeService] SSE error: $e');
+          logWarning('[GoalsRealtimeService] SSE error', e);
+          _scheduleReconnect();
         },
         cancelOnError: true,
       );
     } catch (e, st) {
-      logDebug('[GoalsRealtimeService] Failed to start: $e');
-      logDebug('[GoalsRealtimeService] $st');
+      logWarning('[GoalsRealtimeService] Failed to start', e, st);
       _client?.close();
       _client = null;
+      _running = false;
+      _scheduleReconnect();
     }
   }
 
@@ -100,13 +126,38 @@ class GoalsRealtimeService {
         break;
       }
     }
-    if (eventType == 'goals-updated' || eventType != null) {
+    // Only react to the goals-updated event (the previous `|| eventType != null`
+    // fired on every event, including unrelated keep-alives/comments).
+    if (eventType == 'goals-updated') {
       _onGoalsUpdated?.call();
     }
   }
 
+  /// Schedule a reconnect with exponential backoff, unless [stop] was called.
+  void _scheduleReconnect() {
+    if (_stopped) return;
+    final callback = _onGoalsUpdated;
+    if (callback == null) return;
+    _reconnectTimer?.cancel();
+
+    final delaySeconds = (_minReconnectDelay.inSeconds * (1 << _reconnectAttempts))
+        .clamp(_minReconnectDelay.inSeconds, _maxReconnectDelay.inSeconds);
+    _reconnectAttempts =
+        (_reconnectAttempts + 1).clamp(0, 6); // cap so the shift stays bounded
+
+    logDebug('[GoalsRealtimeService] Reconnecting in ${delaySeconds}s');
+    _reconnectTimer = Timer(Duration(seconds: delaySeconds), () {
+      if (_stopped) return;
+      start(callback);
+    });
+  }
+
   /// Stop the SSE connection and release resources.
   Future<void> stop() async {
+    _stopped = true;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _reconnectAttempts = 0;
     await _subscription?.cancel();
     _subscription = null;
     _client?.close();

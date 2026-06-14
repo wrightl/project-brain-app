@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Model for a navigation link
 class NavigationLink {
@@ -25,7 +26,7 @@ class LinkList extends StatelessWidget {
     super.key,
     required this.links,
     this.sectionTitle,
-    this.spacing = 12.0,
+    this.spacing = AppSpacing.md,
   });
 
   @override
@@ -42,7 +43,7 @@ class LinkList extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppSpacing.lg),
         ],
         ...links.asMap().entries.map((entry) {
           final index = entry.key;
@@ -76,10 +77,10 @@ class LinkList extends StatelessWidget {
     return Card(
       child: ListTile(
         leading: Container(
-          padding: const EdgeInsets.all(8),
+          padding: EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
             color: theme.colorScheme.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.circularSm,
           ),
           child: Icon(
             icon,
@@ -105,8 +106,8 @@ class LinkList extends StatelessWidget {
         ),
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 8,
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
         ),
       ),
     );

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:projectbrain/services/auth/auth_service.dart';
 import 'package:projectbrain/models/auth0_user.dart';
@@ -6,6 +8,8 @@ import 'package:projectbrain/services/user_service.dart';
 import 'package:projectbrain/services/feature_flag_service.dart';
 import 'package:projectbrain/services/push_notification_service.dart';
 import 'package:projectbrain/services/error_reporting_service.dart';
+import 'package:projectbrain/services/goals_realtime_service.dart';
+import 'package:projectbrain/goals/egg_goals_provider.dart';
 import 'package:projectbrain/services/api_http_cache_coordinator.dart';
 import 'package:projectbrain/core/session/session_cleanup_service.dart';
 import 'package:projectbrain/core/di/injection_container.dart';
@@ -75,19 +79,20 @@ class AuthProvider extends ChangeNotifier {
         if (userId != null) {
           await sl<ErrorReportingService>().setUserId(userId);
         }
+        await sl<ErrorReportingService>().logEvent('login');
       } catch (e) {
         logError('[AuthProvider] Error setting analytics user ID', e);
         // Don't fail login if analytics user ID setting fails
       }
 
-      // Register push notification token after successful login
-      try {
-        await sl<PushNotificationService>().ensurePermissionsAndConfigure();
-        await sl<PushNotificationService>().registerToken();
-      } catch (e) {
-        logError('[AuthProvider] Error registering push token after login', e);
-        // Don't fail login if push token registration fails
-      }
+      // Register push notification token after successful login (non-blocking).
+      unawaited(_registerPushTokenAfterLogin());
+
+      // Open the realtime goals stream for the freshly logged-in session (non-blocking).
+      unawaited(
+        sl<GoalsRealtimeService>()
+            .start(() => sl<EggGoalsProvider>().syncFromAPI()),
+      );
     } catch (e) {
       logError('[AuthProvider] Error during login', e);
       _errorMessage = e.toString().replaceAll('AuthException: ', '');
@@ -123,6 +128,7 @@ class AuthProvider extends ChangeNotifier {
 
       // Clear user ID in analytics after logout
       try {
+        await sl<ErrorReportingService>().logEvent('logout');
         await sl<ErrorReportingService>().setUserId(null);
       } catch (e) {
         logError('[AuthProvider] Error clearing analytics user ID', e);
@@ -146,6 +152,11 @@ class AuthProvider extends ChangeNotifier {
     try {
       await userService.completeOnboarding(formData);
       await _fetchUserData();
+      try {
+        await sl<ErrorReportingService>().logEvent('onboarding_complete');
+      } catch (_) {
+        // Analytics failure must not affect onboarding.
+      }
     } catch (e) {
       logError('[AuthProvider] Error during onboarding', e);
       _errorMessage = 'Failed to complete onboarding';
@@ -225,5 +236,14 @@ class AuthProvider extends ChangeNotifier {
   void clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  Future<void> _registerPushTokenAfterLogin() async {
+    try {
+      await sl<PushNotificationService>().ensurePermissionsAndConfigure();
+      await sl<PushNotificationService>().registerToken();
+    } catch (e) {
+      logError('[AuthProvider] Error registering push token after login', e);
+    }
   }
 }

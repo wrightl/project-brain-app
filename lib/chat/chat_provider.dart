@@ -14,11 +14,13 @@ class ChatProvider extends ChangeNotifier {
   final List<ChatMessage> _messages = [];
   Conversation? _conversation;
   bool _isLoading = false;
+  bool _isSending = false;
   String? _errorMessage;
 
   List<ChatMessage> get messages => List.unmodifiable(_messages);
   Conversation? get activeConversation => _conversation;
   bool get isLoading => _isLoading;
+  bool get isSending => _isSending;
   String? get errorMessage => _errorMessage;
   bool get hasError => _errorMessage != null;
 
@@ -29,6 +31,12 @@ class ChatProvider extends ChangeNotifier {
 
   /// Send a message and stream the response
   Future<void> sendMessage(String text) async {
+    // Guard against concurrent sends (double-tap / fire-without-await callers).
+    if (_isSending) {
+      logDebug('[ChatProvider] Send ignored; a message is already in flight');
+      return;
+    }
+    _isSending = true;
     _errorMessage = null;
     _messages.add(
         const ChatMessage(role: 'user', content: '').copyWith(content: text));
@@ -39,6 +47,7 @@ class ChatProvider extends ChangeNotifier {
     final assistantMessageIndex = _messages.length - 1;
     notifyListeners();
 
+    StreamSubscription<List<Citation>>? citationsSubscription;
     try {
       final response = await aiService.streamChatResponse(
         text,
@@ -63,7 +72,7 @@ class ChatProvider extends ChangeNotifier {
 
       // Collect citations from stream
       final List<Citation> collectedCitations = [];
-      final citationsSubscription = citationsStream.listen((citations) {
+      citationsSubscription = citationsStream.listen((citations) {
         collectedCitations.clear();
         collectedCitations.addAll(citations);
         // Update message with current citations
@@ -74,16 +83,22 @@ class ChatProvider extends ChangeNotifier {
         notifyListeners();
       });
 
+      // Throttle per-token notifications: rebuilding the whole list on every
+      // token is expensive. Coalesce updates to ~16fps; the final state is
+      // always flushed by the notifyListeners() after the loop.
+      var lastNotify = DateTime.fromMillisecondsSinceEpoch(0);
+      const notifyInterval = Duration(milliseconds: 60);
       await for (final chunk in stream) {
         final currentMessage = _messages[assistantMessageIndex];
         _messages[assistantMessageIndex] = currentMessage.copyWith(
           content: currentMessage.content + chunk,
         );
-        notifyListeners();
+        final now = DateTime.now();
+        if (now.difference(lastNotify) >= notifyInterval) {
+          lastNotify = now;
+          notifyListeners();
+        }
       }
-
-      // Cancel citations subscription
-      await citationsSubscription.cancel();
 
       // Final update: ensure citations are set on the message
       final finalMessage = _messages[assistantMessageIndex];
@@ -104,6 +119,11 @@ class ChatProvider extends ChangeNotifier {
         content: 'Error: $_errorMessage',
       );
       notifyListeners();
+    } finally {
+      // Always release the citation subscription, even on error/cancel, so it
+      // does not leak across sends.
+      await citationsSubscription?.cancel();
+      _isSending = false;
     }
   }
 
@@ -160,5 +180,15 @@ class ChatProvider extends ChangeNotifier {
   void clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  /// Reset all chat state so it does not leak into the next logged-in session.
+  void resetOnLogout() {
+    _messages.clear();
+    _conversation = null;
+    _errorMessage = null;
+    _isLoading = false;
+    notifyListeners();
+    logDebug('[ChatProvider] Reset on logout');
   }
 }

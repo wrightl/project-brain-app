@@ -4,6 +4,7 @@ import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/models/quiz.dart';
 import 'package:projectbrain/services/quiz_service.dart';
 import 'package:projectbrain/user/widgets/quiz_question_widget.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Page for taking a quiz with swipe navigation
 class QuizTakingPage extends StatefulWidget {
@@ -178,7 +179,7 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
             content: const Row(
               children: [
                 Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 8),
+                SizedBox(width: AppSpacing.sm),
                 Text('Quiz submitted successfully!'),
               ],
             ),
@@ -236,7 +237,7 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
         actions: [
           if (_visibleQuestions.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Center(
                 child: Text(
                   '${_currentQuestionIndex + 1} / ${_visibleQuestions.length}',
@@ -260,7 +261,7 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
                         size: 64,
                         color: theme.colorScheme.error,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: AppSpacing.lg),
                       Text(
                         _errorMessage ?? 'Failed to load quiz',
                         style: theme.textTheme.titleMedium?.copyWith(
@@ -268,7 +269,7 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: AppSpacing.lg),
                       ElevatedButton(
                         onPressed: () => context.pop(),
                         child: const Text('Go Back'),
@@ -288,7 +289,7 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
                               alpha: 0.3,
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: AppSpacing.lg),
                           Text(
                             'No questions available',
                             style: theme.textTheme.titleMedium,
@@ -302,7 +303,7 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
                         if (_errorMessage != null)
                           Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.all(12),
+                            padding: EdgeInsets.all(AppSpacing.md),
                             color: theme.colorScheme.errorContainer,
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -312,13 +313,12 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
                                   color: theme.colorScheme.onErrorContainer,
                                   size: 20,
                                 ),
-                                const SizedBox(width: 8),
+                                SizedBox(width: AppSpacing.sm),
                                 Expanded(
                                   child: Text(
                                     _errorMessage!,
-                                    style: TextStyle(
+                                    style: theme.textTheme.bodyMedium?.copyWith(
                                       color: theme.colorScheme.onErrorContainer,
-                                      fontSize: 13,
                                     ),
                                   ),
                                 ),
@@ -340,7 +340,7 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
                         if (_successMessage != null)
                           Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.all(12),
+                            padding: EdgeInsets.all(AppSpacing.md),
                             color: theme.colorScheme.primaryContainer,
                             child: Row(
                               children: [
@@ -349,14 +349,13 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
                                   color: theme.colorScheme.onPrimaryContainer,
                                   size: 20,
                                 ),
-                                const SizedBox(width: 8),
+                                SizedBox(width: AppSpacing.sm),
                                 Expanded(
                                   child: Text(
                                     _successMessage!,
-                                    style: TextStyle(
+                                    style: theme.textTheme.bodyMedium?.copyWith(
                                       color:
                                           theme.colorScheme.onPrimaryContainer,
-                                      fontSize: 13,
                                     ),
                                   ),
                                 ),
@@ -387,7 +386,7 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
                               final answer = _answers[question.id];
 
                               return SingleChildScrollView(
-                                padding: const EdgeInsets.all(24.0),
+                                padding: AppInsets.page,
                                 child: QuizQuestionWidget(
                                   question: question,
                                   value: answer,
@@ -401,7 +400,7 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
 
                         // Navigation buttons
                         Container(
-                          padding: const EdgeInsets.all(16),
+                          padding: AppInsets.screen,
                           decoration: BoxDecoration(
                             color: theme.colorScheme.surface,
                             border: Border(
@@ -429,7 +428,7 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
                                     width: 8,
                                     height: 8,
                                     margin: const EdgeInsets.symmetric(
-                                      horizontal: 4,
+                                      horizontal: AppSpacing.xs,
                                     ),
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,

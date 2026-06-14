@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -16,8 +17,16 @@ import 'dart:convert';
 /// Must be a top-level function, not a class method
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Note: Firebase is already initialized during app bootstrap
-  // This handler is called when app is in background
+  // Background handlers run in a separate isolate, so Firebase must be
+  // initialized here before any Firebase API is used.
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp();
+    }
+  } catch (e) {
+    // Without a logger isolate we keep this minimal; avoid throwing.
+    return;
+  }
   logInfo('[PushNotification] Background message received: ${message.messageId}');
   // Handle background message here if needed
 }
@@ -357,7 +366,7 @@ class PushNotificationService {
 
   /// Handle token refresh
   Future<void> _handleTokenRefresh(String newToken) async {
-    logInfo('[PushNotification] Token refreshed: $newToken');
+    logInfo('[PushNotification] Token refreshed');
     
     // Store new token
     await sharedPreferences.setString(_tokenStorageKey, newToken);
@@ -385,9 +394,10 @@ class PushNotificationService {
         return true;
       }
 
-      // Unregister from backend
+      // Unregister from backend. The token can contain reserved characters,
+      // so URL-encode it; never log the raw token value.
       final response = await httpService.delete(
-        '/push-notifications/remove-token?token=$token',
+        '/push-notifications/remove-token?token=${Uri.encodeQueryComponent(token)}',
       );
 
       if (response.statusCode == 200) {

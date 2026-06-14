@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:projectbrain/helpers/theme.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Compact card for displaying a streak (e.g. journal or goal streak).
 /// Shows current streak, optional "best" streak, and optional CTA.
@@ -30,7 +31,7 @@ class StreakCard extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppInsets.screen,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -38,14 +39,14 @@ class StreakCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
                     color: streakColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppRadius.circularSm,
                   ),
                   child: Icon(Icons.local_fire_department, color: streakColor, size: 24),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,7 +58,7 @@ class StreakCard extends StatelessWidget {
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: AppSpacing.micro),
                       Text(
                         hasStreak
                             ? '$currentStreak day${currentStreak == 1 ? '' : 's'} streak'
@@ -80,7 +81,7 @@ class StreakCard extends StatelessWidget {
               ],
             ),
             if (ctaLabel != null && onCtaTap != null) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: AppSpacing.md),
               TextButton(
                 onPressed: onCtaTap,
                 child: Text(ctaLabel!),

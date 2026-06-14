@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:projectbrain/core/logging/app_logger.dart';
+import 'package:projectbrain/core/security/url_security.dart';
 import 'package:projectbrain/models/citation.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// A collapsible popout widget that displays citations at the bottom of the chat
 class CitationsPopout extends StatefulWidget {
@@ -61,8 +64,12 @@ class _CitationsPopoutState extends State<CitationsPopout>
   }
 
   Future<void> _launchUrl(String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri != null && await canLaunchUrl(uri)) {
+    if (!UrlSecurity.isSafeExternalUrl(url)) {
+      logWarning('[CitationsPopout] Blocked unsafe link: $url');
+      return;
+    }
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
@@ -93,7 +100,7 @@ class _CitationsPopoutState extends State<CitationsPopout>
           InkWell(
             onTap: _toggleExpanded,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: AppInsets.card,
               child: Row(
                 children: [
                   Icon(
@@ -101,7 +108,7 @@ class _CitationsPopoutState extends State<CitationsPopout>
                     size: 20,
                     color: theme.colorScheme.onSurface,
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: AppSpacing.sm),
                   Text(
                     'Citations (${widget.citations.length})',
                     style: theme.textTheme.titleSmall?.copyWith(
@@ -164,7 +171,7 @@ class _CitationItem extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: AppInsets.card,
         decoration: BoxDecoration(
           border: Border(
             top: BorderSide(
@@ -181,7 +188,7 @@ class _CitationItem extends StatelessWidget {
               height: 24,
               decoration: BoxDecoration(
                 color: theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(AppSpacing.xs),
               ),
               child: Center(
                 child: Text(
@@ -193,7 +200,7 @@ class _CitationItem extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,7 +217,7 @@ class _CitationItem extends StatelessWidget {
                   if (citation.description != null &&
                       citation.description!.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.only(top: 4),
+                      padding: EdgeInsets.only(top: AppSpacing.xs),
                       child: Text(
                         citation.description!,
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -221,7 +228,7 @@ class _CitationItem extends StatelessWidget {
                       ),
                     ),
                   Padding(
-                    padding: const EdgeInsets.only(top: 4),
+                    padding: EdgeInsets.only(top: AppSpacing.xs),
                     child: Text(
                       citation.url,
                       style: theme.textTheme.bodySmall?.copyWith(

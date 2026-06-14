@@ -1,3 +1,4 @@
+import 'package:projectbrain/core/util/json_parsing.dart';
 import 'package:projectbrain/models/journal/journal_tag.dart';
 import 'package:projectbrain/models/journal/journal_entry_system_tag.dart';
 
@@ -25,21 +26,22 @@ class JournalEntry {
 
   factory JournalEntry.fromJson(Map<String, dynamic> json) {
     return JournalEntry(
-      id: json['id'] as String,
-      userId: json['userId'] as String,
-      content: json['content'] as String,
-      summary: json['summary'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
-      tags: json['tags'] != null
+      id: JsonParse.asString(json['id']),
+      userId: JsonParse.asString(json['userId']),
+      content: JsonParse.asString(json['content']),
+      summary: JsonParse.asStringOrNull(json['summary']),
+      createdAt: JsonParse.asDateTime(json['createdAt']),
+      updatedAt: JsonParse.asDateTime(json['updatedAt']),
+      tags: json['tags'] is List
           ? (json['tags'] as List<dynamic>)
-              .map((e) => JournalTag.fromJson(e as Map<String, dynamic>))
+              .whereType<Map<String, dynamic>>()
+              .map((e) => JournalTag.fromJson(e))
               .toList()
           : null,
-      systemTags: json['systemTags'] != null
+      systemTags: json['systemTags'] is List
           ? (json['systemTags'] as List<dynamic>)
-              .map((e) =>
-                  JournalEntrySystemTag.fromJson(e as Map<String, dynamic>))
+              .whereType<Map<String, dynamic>>()
+              .map((e) => JournalEntrySystemTag.fromJson(e))
               .toList()
           : null,
     );

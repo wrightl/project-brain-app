@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:projectbrain/models/location.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 class CountrySearchField extends StatelessWidget {
   final List<CountryOption> countries;
@@ -49,7 +50,7 @@ class CountrySearchField extends StatelessWidget {
             prefixIcon: const Icon(Icons.public),
             suffixIcon: isLoading
                 ? const Padding(
-                    padding: EdgeInsets.all(12),
+                    padding: EdgeInsets.all(AppSpacing.md),
                     child: SizedBox(
                       width: 18,
                       height: 18,

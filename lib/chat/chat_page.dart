@@ -22,12 +22,39 @@ class _ChatPageState extends State<ChatPage> {
   final _scrollController = ScrollController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late Future<List<Conversation>> _conversationsFuture;
+  ChatProvider? _chatProvider;
+  bool _scrollScheduled = false;
 
   @override
   void initState() {
     super.initState();
     // Fetch conversations once during initialization
     _loadConversations();
+    // Auto-scroll on chat changes (new message / streamed content) instead of
+    // scheduling a scroll on every widget build.
+    _chatProvider = context.read<ChatProvider>();
+    _chatProvider!.addListener(_handleChatChanged);
+  }
+
+  @override
+  void dispose() {
+    _chatProvider?.removeListener(_handleChatChanged);
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  /// Coalesce scroll-to-bottom requests into a single post-frame jump so rapid
+  /// streaming updates don't queue many callbacks.
+  void _handleChatChanged() {
+    if (_scrollScheduled) return;
+    _scrollScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollScheduled = false;
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      }
+    });
   }
 
   void _loadConversations() {
@@ -38,25 +65,9 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   @override
-  void didUpdateWidget(covariant ChatPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-      }
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     // Only watch specific parts to avoid rebuilding TextField
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-      }
-    });
 
     return Scaffold(
       key: _scaffoldKey,
@@ -121,6 +132,11 @@ class _ChatPageState extends State<ChatPage> {
           Expanded(
             child: Consumer<ChatProvider>(
               builder: (context, chatProvider, child) {
+                // Loading a previous conversation (not token streaming, which
+                // appends to messages): show a spinner instead of a blank list.
+                if (chatProvider.isLoading && chatProvider.messages.isEmpty) {
+                  return const Center(child: CircularProgressIndicator());
+                }
                 return ListView.builder(
                   controller: _scrollController,
                   itemCount: chatProvider.messages.length,

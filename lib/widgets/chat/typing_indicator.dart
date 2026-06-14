@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Animated typing indicator with three bouncing dots
 class TypingIndicator extends StatefulWidget {
@@ -16,8 +17,8 @@ class TypingIndicator extends StatefulWidget {
   const TypingIndicator({
     super.key,
     this.dotColor,
-    this.dotSize = 8.0,
-    this.dotSpacing = 4.0,
+    this.dotSize = AppSpacing.sm,
+    this.dotSpacing = AppSpacing.xs,
   });
 
   @override

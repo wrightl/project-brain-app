@@ -11,6 +11,7 @@ import 'package:projectbrain/utils/coach_message_utils.dart';
 import 'package:intl/intl.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Chat page for communicating with connected coaches.
 class CoachChatPage extends StatefulWidget {
@@ -65,6 +66,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
 
     try {
       final connections = await _connectionService.getAcceptedConnections();
+      if (!mounted) return;
       final selectedId = _resolveInitialConnectionId(connections);
 
       setState(() {
@@ -79,6 +81,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
         await _loadMessages();
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Failed to load coaches: ${e.toString()}';
         _isLoading = false;
@@ -126,10 +129,12 @@ class _CoachChatPageState extends State<CoachChatPage> {
     try {
       final connection =
           await _connectionService.getConnectionById(connectionId);
+      if (!mounted) return;
       setState(() {
         _headerName = connection.coachName ?? 'Coach';
       });
     } catch (e) {
+      if (!mounted) return;
       String? fallback;
       for (final connection in _connections) {
         if (connection.id == connectionId) {
@@ -148,6 +153,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
     if (oldId != null) {
       await _signalRService.leaveConversation(oldId);
     }
+    if (!mounted) return;
 
     setState(() {
       _selectedConnectionId = connection.id;
@@ -167,6 +173,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
 
     try {
       final messages = await _coachService.getMessages(connectionId);
+      if (!mounted) return;
       setState(() {
         _messages = mergeCoachMessages([], messages);
       });
@@ -178,6 +185,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
         // Non-fatal if read receipt fails.
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Failed to load messages: ${e.toString()}';
       });
@@ -198,19 +206,23 @@ class _CoachChatPageState extends State<CoachChatPage> {
         connectionId,
         _textController.text.trim(),
       );
+      if (!mounted) return;
       setState(() {
         _messages = mergeCoachMessages(_messages, [message]);
         _textController.clear();
       });
       _scrollToBottom();
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Failed to send message: ${e.toString()}';
       });
     } finally {
-      setState(() {
-        _isSending = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+        });
+      }
     }
   }
 
@@ -228,6 +240,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
         ),
         path: path,
       );
+      if (!mounted) return;
 
       setState(() {
         _isRecording = true;
@@ -237,6 +250,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
 
       _updateRecordingDuration();
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         final errorMsg = e.toString().toLowerCase();
         if (errorMsg.contains('permission') || errorMsg.contains('denied')) {
@@ -264,6 +278,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
   Future<void> _stopRecording() async {
     try {
       final path = await _audioRecorder.stop();
+      if (!mounted) return;
       setState(() {
         _isRecording = false;
       });
@@ -271,6 +286,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
         _sendAudioMessage(File(path));
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Failed to stop recording: ${e.toString()}';
         _isRecording = false;
@@ -292,19 +308,23 @@ class _CoachChatPageState extends State<CoachChatPage> {
         connectionId,
         audioFile,
       );
+      if (!mounted) return;
       setState(() {
         _messages = mergeCoachMessages(_messages, [message]);
         _recordingDuration = Duration.zero;
       });
       _scrollToBottom();
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Failed to send audio: ${e.toString()}';
       });
     } finally {
-      setState(() {
-        _isSending = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+        });
+      }
     }
   }
 
@@ -357,11 +377,13 @@ class _CoachChatPageState extends State<CoachChatPage> {
           if (_errorMessage != null)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
+              padding: AppInsets.screen,
               color: theme.colorScheme.errorContainer,
               child: Text(
                 _errorMessage!,
-                style: TextStyle(color: theme.colorScheme.onErrorContainer),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onErrorContainer,
+                ),
               ),
             ),
           if (_isLoading)
@@ -384,7 +406,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
                     )
                   : ListView.builder(
                       controller: _scrollController,
-                      padding: const EdgeInsets.all(16),
+                      padding: AppInsets.screen,
                       itemCount: _messages.length,
                       itemBuilder: (context, index) {
                         final message = _messages[index];
@@ -393,8 +415,8 @@ class _CoachChatPageState extends State<CoachChatPage> {
                               ? Alignment.centerLeft
                               : Alignment.centerRight,
                           child: Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.all(12),
+                            margin: EdgeInsets.only(bottom: AppSpacing.sm),
+                            padding: EdgeInsets.all(AppSpacing.md),
                             constraints: BoxConstraints(
                               maxWidth: MediaQuery.of(context).size.width * 0.7,
                             ),
@@ -402,7 +424,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
                               color: message.isFromCoach
                                   ? theme.colorScheme.surfaceContainerHighest
                                   : theme.colorScheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: AppRadius.circularMd,
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,11 +438,11 @@ class _CoachChatPageState extends State<CoachChatPage> {
                                   const Row(
                                     children: [
                                       Icon(Icons.mic, size: 20),
-                                      SizedBox(width: 8),
+                                      SizedBox(width: AppSpacing.sm),
                                       Text('Audio message'),
                                     ],
                                   ),
-                                const SizedBox(height: 4),
+                                SizedBox(height: AppSpacing.xs),
                                 Text(
                                   _formatTime(message.createdAt),
                                   style: theme.textTheme.bodySmall?.copyWith(
@@ -437,21 +459,21 @@ class _CoachChatPageState extends State<CoachChatPage> {
             ),
           if (_isRecording)
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: AppInsets.screen,
               color: theme.colorScheme.errorContainer,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.mic, color: theme.colorScheme.onErrorContainer),
-                  const SizedBox(width: 8),
+                  SizedBox(width: AppSpacing.sm),
                   Text(
                     _formatDuration(_recordingDuration),
-                    style: TextStyle(
+                    style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onErrorContainer,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppSpacing.lg),
                   ElevatedButton(
                     onPressed: _stopRecording,
                     child: const Text('Stop & Send'),
@@ -460,49 +482,53 @@ class _CoachChatPageState extends State<CoachChatPage> {
               ),
             ),
           if (_selectedConnectionId != null)
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                border: Border(
-                  top: BorderSide(color: theme.dividerColor),
+            SafeArea(
+              top: false,
+              child: Container(
+                padding: EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  border: Border(
+                    top: BorderSide(color: theme.dividerColor),
+                  ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.mic),
-                    onPressed:
-                        _isSending || _isRecording ? null : _startRecording,
-                    tooltip: 'Record audio',
-                  ),
-                  Expanded(
-                    child: TextField(
-                      controller: _textController,
-                      decoration: const InputDecoration(
-                        hintText: 'Type a message...',
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                      ),
-                      maxLines: null,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _sendTextMessage(),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.mic),
+                      onPressed:
+                          _isSending || _isRecording ? null : _startRecording,
+                      tooltip: 'Record audio',
                     ),
-                  ),
-                  IconButton(
-                    icon: _isSending
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.send),
-                    onPressed: _isSending ? null : _sendTextMessage,
-                  ),
-                ],
+                    Expanded(
+                      child: TextField(
+                        controller: _textController,
+                        decoration: const InputDecoration(
+                          hintText: 'Type a message...',
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg,
+                            vertical: AppSpacing.sm,
+                          ),
+                        ),
+                        maxLines: null,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _sendTextMessage(),
+                      ),
+                    ),
+                    IconButton(
+                      icon: _isSending
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child:
+                                  CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.send),
+                      onPressed: _isSending ? null : _sendTextMessage,
+                    ),
+                  ],
+                ),
               ),
             ),
         ],

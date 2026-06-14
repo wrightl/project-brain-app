@@ -1,6 +1,9 @@
+import 'package:projectbrain/chat/chat_provider.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:projectbrain/goals/egg_goals_provider.dart';
+import 'package:projectbrain/journal/journal_provider.dart';
 import 'package:projectbrain/services/api_http_cache_coordinator.dart';
+import 'package:projectbrain/services/coach_message_signalr_service.dart';
 import 'package:projectbrain/services/feature_flag_service.dart';
 import 'package:projectbrain/services/goals_realtime_service.dart';
 import 'package:projectbrain/strategies/strategies_chat_provider.dart';
@@ -18,13 +21,19 @@ class SessionCleanupService {
     required StrategiesProvider strategiesProvider,
     required StrategiesChatProvider strategiesChatProvider,
     required GoalsRealtimeService goalsRealtimeService,
+    required CoachMessageSignalRService coachMessageSignalRService,
+    required ChatProvider chatProvider,
+    required JournalProvider journalProvider,
   })  : _httpCacheCoordinator = httpCacheCoordinator,
         _featureFlagService = featureFlagService,
         _subscriptionProvider = subscriptionProvider,
         _eggGoalsProvider = eggGoalsProvider,
         _strategiesProvider = strategiesProvider,
         _strategiesChatProvider = strategiesChatProvider,
-        _goalsRealtimeService = goalsRealtimeService;
+        _goalsRealtimeService = goalsRealtimeService,
+        _coachMessageSignalRService = coachMessageSignalRService,
+        _chatProvider = chatProvider,
+        _journalProvider = journalProvider;
 
   final ApiHttpCacheCoordinator _httpCacheCoordinator;
   final FeatureFlagService _featureFlagService;
@@ -33,6 +42,9 @@ class SessionCleanupService {
   final StrategiesProvider _strategiesProvider;
   final StrategiesChatProvider _strategiesChatProvider;
   final GoalsRealtimeService _goalsRealtimeService;
+  final CoachMessageSignalRService _coachMessageSignalRService;
+  final ChatProvider _chatProvider;
+  final JournalProvider _journalProvider;
 
   Future<void> clearAfterLogout() async {
     try {
@@ -41,12 +53,20 @@ class SessionCleanupService {
       logError('[SessionCleanupService] Error stopping goals realtime', e, st);
     }
 
+    try {
+      await _coachMessageSignalRService.stop();
+    } catch (e, st) {
+      logError('[SessionCleanupService] Error stopping coach SignalR', e, st);
+    }
+
     _httpCacheCoordinator.clearAllCaches();
     _featureFlagService.resetForNewSession();
     await _subscriptionProvider.resetOnLogout();
     await _eggGoalsProvider.resetOnLogout();
     _strategiesProvider.resetOnLogout();
     _strategiesChatProvider.resetOnLogout();
+    _chatProvider.resetOnLogout();
+    _journalProvider.resetOnLogout();
     logDebug('[SessionCleanupService] Logout cleanup complete');
   }
 }

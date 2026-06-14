@@ -4,6 +4,7 @@ import 'package:projectbrain/subscription/subscription_provider.dart';
 import 'package:projectbrain/subscription/widgets/upgrade_prompt.dart';
 import 'package:projectbrain/models/subscription.dart';
 import 'package:provider/provider.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Reusable chat input field with send button
 class ChatInputField extends StatelessWidget {
@@ -65,8 +66,8 @@ class ChatInputField extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: 8.0,
-                vertical: 4.0,
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xs,
               ),
               child: TextField(
                 controller: controller,

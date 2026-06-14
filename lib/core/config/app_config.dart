@@ -97,7 +97,16 @@ class AppConfig {
   // LaunchDarkly Configuration
   static String get launchDarklyClientSideId =>
       _getEnv('LAUNCHDARKLY_CLIENT_SIDE_ID');
-  static String get launchDarklyMobileKey => _getEnv('LAUNCHDARKLY_MOBILE_KEY');
+
+  /// LaunchDarkly server-side mobile key.
+  ///
+  /// Deprecated: feature flags are resolved by the backend, so this key is not
+  /// used in the app. It is intentionally optional (no longer required at
+  /// startup) and should be removed from bundled `.env.*` assets so a
+  /// server-capable secret is not shipped in the binary.
+  @Deprecated('Unused: flags come from the backend. Do not bundle this key.')
+  static String get launchDarklyMobileKey =>
+      getEnvOrDefault('LAUNCHDARKLY_MOBILE_KEY', '');
 
   // App Configuration
   static const String bundleIdentifier = 'com.dotdash.projectbrain';
@@ -109,8 +118,15 @@ class AppConfig {
       getEnvOrDefault('SUBSCRIPTION_BILLING_WEB_URL', '');
 
   /// Google Maps API key for coach results map view.
-  static String get googleMapsApiKey =>
-      getEnvOrDefault('GOOGLE_MAPS_API_KEY', '');
+  static String get googleMapsApiKey {
+    final raw = getEnvOrDefault('GOOGLE_MAPS_API_KEY', '');
+    var trimmed = raw.trim();
+    if ((trimmed.startsWith("'") && trimmed.endsWith("'")) ||
+        (trimmed.startsWith('"') && trimmed.endsWith('"'))) {
+      trimmed = trimmed.substring(1, trimmed.length - 1).trim();
+    }
+    return trimmed;
+  }
 
   // Environment Detection
   static bool get isDebug => kDebugMode;

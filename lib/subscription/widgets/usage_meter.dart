@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Widget that displays usage vs limit with a progress bar
 class UsageMeter extends StatelessWidget {
@@ -61,9 +62,9 @@ class UsageMeter extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: AppSpacing.sm),
         ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(AppSpacing.xs),
           child: LinearProgressIndicator(
             value: isUnlimited ? null : percentage,
             minHeight: 8,
@@ -73,7 +74,7 @@ class UsageMeter extends StatelessWidget {
         ),
         if (isError)
           Padding(
-            padding: const EdgeInsets.only(top: 4),
+            padding: EdgeInsets.only(top: AppSpacing.xs),
             child: Text(
               'Limit reached',
               style: theme.textTheme.bodySmall?.copyWith(
@@ -83,7 +84,7 @@ class UsageMeter extends StatelessWidget {
           )
         else if (isWarning)
           Padding(
-            padding: const EdgeInsets.only(top: 4),
+            padding: EdgeInsets.only(top: AppSpacing.xs),
             child: Text(
               'Approaching limit',
               style: theme.textTheme.bodySmall?.copyWith(

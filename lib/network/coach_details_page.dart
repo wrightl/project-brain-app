@@ -7,6 +7,7 @@ import 'package:projectbrain/services/coach_service.dart';
 import 'package:projectbrain/subscription/subscription_provider.dart';
 import 'package:projectbrain/subscription/widgets/upgrade_prompt.dart';
 import 'package:projectbrain/models/subscription.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Page showing detailed information about a coach
 class CoachDetailsPage extends StatefulWidget {
@@ -198,7 +199,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                     
                     if (isAtLimit) {
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
+                        padding: EdgeInsets.only(bottom: AppSpacing.sm),
                         child: Text(
                           'Connection limit reached ($currentCount/$connectionLimit)',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -210,7 +211,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                     }
                     
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
+                      padding: EdgeInsets.only(bottom: AppSpacing.sm),
                       child: Text(
                         '$currentCount/$connectionLimit connections',
                         style: Theme.of(context).textTheme.bodySmall,
@@ -232,7 +233,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                   icon: const Icon(Icons.person_add),
                   label: const Text('Connect'),
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: AppInsets.button,
                   ),
                 ),
               ],
@@ -245,7 +246,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
           icon: const Icon(Icons.pending),
           label: const Text('Pending'),
           style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: AppInsets.button,
           ),
         );
       case ConnectionStatus.connected:
@@ -258,7 +259,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
           icon: const Icon(Icons.chat),
           label: const Text('Message'),
           style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: AppInsets.button,
             backgroundColor: Colors.green,
           ),
         );
@@ -271,9 +272,9 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
   }) {
     final theme = Theme.of(context);
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: AppSpacing.lg),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppInsets.screen,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -283,7 +284,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: AppSpacing.md),
             content,
           ],
         ),
@@ -311,7 +312,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                         size: 64,
                         color: theme.colorScheme.error,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: AppSpacing.lg),
                       Text(
                         _errorMessage ?? 'Failed to load coach details',
                         style: theme.textTheme.titleMedium?.copyWith(
@@ -319,7 +320,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: AppSpacing.lg),
                       ElevatedButton(
                         onPressed: _loadCoachDetails,
                         child: const Text('Retry'),
@@ -328,7 +329,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                   ),
                 )
               : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
+                  padding: AppInsets.screen,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -336,15 +337,15 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                       if (_errorMessage != null)
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.all(12),
-                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: EdgeInsets.all(AppSpacing.md),
+                          margin: EdgeInsets.only(bottom: AppSpacing.lg),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.errorContainer,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: AppRadius.circularSm,
                           ),
                           child: Text(
                             _errorMessage!,
-                            style: TextStyle(
+                            style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.onErrorContainer,
                             ),
                           ),
@@ -356,7 +357,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                             ? theme.colorScheme.primaryContainer
                             : theme.colorScheme.surfaceContainerHighest,
                         child: Padding(
-                          padding: const EdgeInsets.all(16),
+                          padding: AppInsets.screen,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -370,7 +371,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                           .withValues(alpha: 0.7),
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
+                                  SizedBox(height: AppSpacing.xs),
                                   Text(
                                     _connectionStatus.displayName,
                                     style: theme.textTheme.titleMedium?.copyWith(
@@ -384,7 +385,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: AppSpacing.lg),
 
                       // Profile header
                       _buildInfoSection(
@@ -404,7 +405,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                     color: theme.colorScheme.onPrimaryContainer,
                                   ),
                                 ),
-                                const SizedBox(width: 16),
+                                const SizedBox(width: AppSpacing.lg),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -417,7 +418,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                         ),
                                       ),
                                       if (_coach!.email != null) ...[
-                                        const SizedBox(height: 4),
+                                        SizedBox(height: AppSpacing.xs),
                                         Row(
                                           children: [
                                             Icon(
@@ -426,7 +427,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                               color: theme.colorScheme.onSurface
                                                   .withValues(alpha: 0.6),
                                             ),
-                                            const SizedBox(width: 4),
+                                            SizedBox(width: AppSpacing.xs),
                                             Expanded(
                                               child: Text(
                                                 _coach!.email!,
@@ -447,7 +448,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                               ],
                             ),
                             if (_coach!.phone != null) ...[
-                              const SizedBox(height: 12),
+                              SizedBox(height: AppSpacing.md),
                               Row(
                                 children: [
                                   Icon(
@@ -456,7 +457,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                     color: theme.colorScheme.onSurface
                                         .withValues(alpha: 0.6),
                                   ),
-                                  const SizedBox(width: 4),
+                                  SizedBox(width: AppSpacing.xs),
                                   Text(
                                     _coach!.phone!,
                                     style: theme.textTheme.bodyMedium?.copyWith(
@@ -490,7 +491,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                       color: theme.colorScheme.onSurface
                                           .withValues(alpha: 0.6),
                                     ),
-                                    const SizedBox(width: 4),
+                                    SizedBox(width: AppSpacing.xs),
                                     Expanded(
                                       child: Text(
                                         _coach!.streetAddress!,
@@ -500,7 +501,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                   ],
                                 ),
                               if (_coach!.city != null) ...[
-                                const SizedBox(height: 4),
+                                SizedBox(height: AppSpacing.xs),
                                 Row(
                                   children: [
                                     Icon(
@@ -509,7 +510,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                       color: theme.colorScheme.onSurface
                                           .withValues(alpha: 0.6),
                                     ),
-                                    const SizedBox(width: 4),
+                                    SizedBox(width: AppSpacing.xs),
                                     Text(
                                       _coach!.city!,
                                       style: theme.textTheme.bodyMedium,
@@ -518,7 +519,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                 ),
                               ],
                               if (_coach!.postalCode != null) ...[
-                                const SizedBox(height: 4),
+                                SizedBox(height: AppSpacing.xs),
                                 Row(
                                   children: [
                                     Icon(
@@ -527,7 +528,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                       color: theme.colorScheme.onSurface
                                           .withValues(alpha: 0.6),
                                     ),
-                                    const SizedBox(width: 4),
+                                    SizedBox(width: AppSpacing.xs),
                                     Text(
                                       _coach!.postalCode!,
                                       style: theme.textTheme.bodyMedium,
@@ -545,14 +546,14 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                         _buildInfoSection(
                           title: 'Specialisms',
                           content: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
+                            spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
                             children: _coach!.specialisms!.map((spec) {
                               return Chip(
                                 label: Text(spec),
                                 backgroundColor:
                                     theme.colorScheme.primaryContainer,
-                                labelStyle: TextStyle(
+                                labelStyle: theme.textTheme.labelLarge?.copyWith(
                                   color: theme.colorScheme.onPrimaryContainer,
                                 ),
                               );
@@ -569,7 +570,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: _coach!.qualifications!.map((qual) {
                               return Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
+                                padding: EdgeInsets.only(bottom: AppSpacing.sm),
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -579,7 +580,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                       color: theme.colorScheme.onSurface
                                           .withValues(alpha: 0.6),
                                     ),
-                                    const SizedBox(width: 8),
+                                    SizedBox(width: AppSpacing.sm),
                                     Expanded(
                                       child: Text(
                                         qual,
@@ -599,14 +600,14 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                         _buildInfoSection(
                           title: 'Age Groups',
                           content: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
+                            spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
                             children: _coach!.ageGroups!.map((ageGroup) {
                               return Chip(
                                 label: Text(ageGroup),
                                 backgroundColor:
                                     theme.colorScheme.secondaryContainer,
-                                labelStyle: TextStyle(
+                                labelStyle: theme.textTheme.labelLarge?.copyWith(
                                   color: theme.colorScheme.onSecondaryContainer,
                                 ),
                               );

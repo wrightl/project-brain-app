@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:projectbrain/models/subscription.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Widget that displays an upgrade prompt
 class UpgradePrompt extends StatelessWidget {
@@ -34,10 +35,10 @@ class UpgradePrompt extends StatelessWidget {
       return InkWell(
         onTap: () => context.push('/subscriptions/pricing'),
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.circularSm,
             border: Border.all(
               color: theme.colorScheme.primary,
               width: 1,
@@ -51,10 +52,10 @@ class UpgradePrompt extends StatelessWidget {
                 size: 16,
                 color: theme.colorScheme.primary,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: AppSpacing.sm),
               Text(
                 'Upgrade to $_getTierName()',
-                style: TextStyle(
+                style: theme.textTheme.titleSmall?.copyWith(
                   color: theme.colorScheme.primary,
                   fontWeight: FontWeight.bold,
                 ),
@@ -66,10 +67,10 @@ class UpgradePrompt extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: AppInsets.screen,
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.circularMd,
         border: Border.all(
           color: theme.colorScheme.primary.withValues(alpha: 0.3),
           width: 1,
@@ -83,7 +84,7 @@ class UpgradePrompt extends StatelessWidget {
             size: 48,
             color: theme.colorScheme.primary,
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: AppSpacing.md),
           Text(
             '$featureName requires $_getTierName() tier',
             style: theme.textTheme.titleMedium?.copyWith(
@@ -91,13 +92,13 @@ class UpgradePrompt extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: AppSpacing.sm),
           Text(
             'Upgrade to unlock this feature and more',
             style: theme.textTheme.bodySmall,
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppSpacing.lg),
           ElevatedButton(
             onPressed: () => context.push('/subscriptions/pricing'),
             child: const Text('Upgrade Now'),
@@ -141,7 +142,7 @@ class UpgradePromptDialog extends StatelessWidget {
             Icons.lock_outline,
             color: theme.colorScheme.primary,
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: AppSpacing.sm),
           const Text('Upgrade Required'),
         ],
       ),
@@ -153,7 +154,7 @@ class UpgradePromptDialog extends StatelessWidget {
             style: theme.textTheme.bodyLarge,
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: AppSpacing.sm),
           Text(
             'Upgrade to unlock this feature and more',
             style: theme.textTheme.bodySmall,

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:projectbrain/subscription/subscription_provider.dart';
 import 'package:projectbrain/subscription/widgets/usage_meter.dart';
 import 'package:projectbrain/models/subscription.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Usage dashboard page showing detailed usage statistics
 class UsageDashboardPage extends StatelessWidget {
@@ -42,13 +43,13 @@ class UsageDashboardPage extends StatelessWidget {
                     size: 64,
                     color: theme.colorScheme.error,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: AppSpacing.lg),
                   Text(
                     subscriptionProvider.errorMessage ?? 'Error loading usage',
                     style: theme.textTheme.bodyLarge,
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: AppSpacing.lg),
                   ElevatedButton(
                     onPressed: () => subscriptionProvider.refresh(),
                     child: const Text('Retry'),
@@ -64,7 +65,7 @@ class UsageDashboardPage extends StatelessWidget {
           }
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: AppInsets.screen,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -80,7 +81,7 @@ class UsageDashboardPage extends StatelessWidget {
                       limit: subscriptionProvider.getDailyAIQueryLimit(),
                       unit: '',
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: AppSpacing.lg),
                     UsageMeter(
                       label: 'Monthly Queries',
                       current: usage.aiQueries.monthly,
@@ -90,7 +91,7 @@ class UsageDashboardPage extends StatelessWidget {
                   ],
                 ),
 
-                const SizedBox(height: 24),
+                SizedBox(height: AppSpacing.xl),
 
                 // Coach Messages Section
                 _buildSection(
@@ -107,7 +108,7 @@ class UsageDashboardPage extends StatelessWidget {
                   ],
                 ),
 
-                const SizedBox(height: 24),
+                SizedBox(height: AppSpacing.xl),
 
                 // File Storage Section
                 _buildSection(
@@ -121,7 +122,7 @@ class UsageDashboardPage extends StatelessWidget {
                       limit: subscriptionProvider.getFileStorageLimitMB()?.toInt(),
                       unit: ' MB',
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: AppSpacing.sm),
                     Text(
                       '${usage.fileStorage.bytes} bytes total',
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -131,7 +132,7 @@ class UsageDashboardPage extends StatelessWidget {
                   ],
                 ),
 
-                const SizedBox(height: 24),
+                SizedBox(height: AppSpacing.xl),
 
                 // Research Reports Section (if applicable)
                 if (subscriptionProvider.canUseResearchReports())
@@ -149,14 +150,14 @@ class UsageDashboardPage extends StatelessWidget {
                     ],
                   ),
 
-                const SizedBox(height: 24),
+                SizedBox(height: AppSpacing.xl),
 
                 // Upgrade prompt if on free tier
                 if (subscriptionProvider.currentTier == SubscriptionTier.free)
                   Card(
                     color: theme.colorScheme.primaryContainer,
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: AppInsets.screen,
                       child: Column(
                         children: [
                           Icon(
@@ -164,7 +165,7 @@ class UsageDashboardPage extends StatelessWidget {
                             size: 48,
                             color: theme.colorScheme.onPrimaryContainer,
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: AppSpacing.md),
                           Text(
                             'Upgrade to unlock unlimited usage',
                             style: theme.textTheme.titleMedium?.copyWith(
@@ -173,7 +174,7 @@ class UsageDashboardPage extends StatelessWidget {
                             ),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: AppSpacing.sm),
                           Text(
                             'Get unlimited AI queries, coach connections, and more',
                             style: theme.textTheme.bodySmall?.copyWith(
@@ -181,7 +182,7 @@ class UsageDashboardPage extends StatelessWidget {
                             ),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: AppSpacing.lg),
                           ElevatedButton(
                             onPressed: () {
                               // Navigate to pricing page
@@ -215,14 +216,14 @@ class UsageDashboardPage extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppInsets.screen,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Icon(icon, color: theme.colorScheme.primary),
-                const SizedBox(width: 8),
+                SizedBox(width: AppSpacing.sm),
                 Text(
                   title,
                   style: theme.textTheme.titleLarge?.copyWith(
@@ -231,7 +232,7 @@ class UsageDashboardPage extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             ...children,
           ],
         ),

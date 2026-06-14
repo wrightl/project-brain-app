@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/goals/egg_goals_provider.dart';
 import 'package:projectbrain/services/egg_goals_service.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Page for entering/editing daily goals
 class GoalEntryPage extends StatefulWidget {
@@ -55,7 +56,7 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(24.0),
+            padding: AppInsets.page,
             child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -65,14 +66,14 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: AppSpacing.sm),
               Text(
                 'Set up to 3 goals for today. You can mark them as complete as you finish them.',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: AppSpacing.lg),
 
               OutlinedButton.icon(
                 onPressed: (goalsProvider.isLoading || _suggestingGoals)
@@ -124,7 +125,7 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
                 label: Text(_suggestingGoals ? 'Suggesting…' : 'Suggest goals for today'),
               ),
 
-              const SizedBox(height: 24),
+              SizedBox(height: AppSpacing.xl),
 
               // Goal input fields
               for (int i = 0; i < 3; i++) ...[
@@ -134,16 +135,16 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
                     labelText: 'Goal ${i + 1}',
                     hintText: 'Enter your goal here...',
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.circularMd,
                     ),
                     prefixIcon: const Icon(Icons.check_circle_outline),
                   ),
                   maxLines: 2,
                 ),
-                if (i < 2) const SizedBox(height: 16),
+                if (i < 2) SizedBox(height: AppSpacing.lg),
               ],
 
-              const SizedBox(height: 32),
+              SizedBox(height: AppSpacing.xxl),
 
               // Save button
               SizedBox(
@@ -177,7 +178,7 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
                           }
                         },
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
                   ),
                   child: goalsProvider.isLoading
                       ? const SizedBox(
@@ -185,10 +186,7 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text(
-                          'Save Goals',
-                          style: TextStyle(fontSize: 16),
-                        ),
+                      : const Text('Save Goals'),
                 ),
               ),
             ],

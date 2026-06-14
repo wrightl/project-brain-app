@@ -3,11 +3,14 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:projectbrain/authentication/auth_provider.dart';
+import 'package:projectbrain/core/logging/app_logger.dart';
+import 'package:projectbrain/core/security/url_security.dart';
 import 'package:projectbrain/models/strategies/suggested_strategy.dart';
 import 'package:projectbrain/strategies/strategies_chat_provider.dart';
 import 'package:projectbrain/strategies/strategies_localizations.dart';
 import 'package:projectbrain/strategies/strategies_provider.dart';
 import 'package:projectbrain/widgets/chat/typing_indicator.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Strategies chat screen: greeting, example prompts, send message, show suggested strategies, select & save.
 class StrategiesChatPage extends StatefulWidget {
@@ -68,7 +71,7 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
                 }
                 if (chatProvider.turns.isEmpty) {
                   return SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
+                    padding: AppInsets.page,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -76,24 +79,24 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
                           l10n.formatGreeting(name),
                           style: theme.textTheme.bodyLarge,
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: AppSpacing.xl),
                         Text(
                           'Try one of these:',
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: AppSpacing.md),
                         _ExampleChip(
                           label: l10n.examplePrompt1,
                           onTap: () => chatProvider.sendMessage(l10n.examplePrompt1),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: AppSpacing.sm),
                         _ExampleChip(
                           label: l10n.examplePrompt2,
                           onTap: () => chatProvider.sendMessage(l10n.examplePrompt2),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: AppSpacing.sm),
                         _ExampleChip(
                           label: l10n.examplePrompt3,
                           onTap: () => chatProvider.sendMessage(l10n.examplePrompt3),
@@ -104,7 +107,7 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
                 }
                 return ListView.builder(
                   controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
+                  padding: AppInsets.screen,
                   itemCount: chatProvider.turns.length,
                   itemBuilder: (context, index) {
                     final turn = chatProvider.turns[index];
@@ -121,7 +124,7 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
           ),
           if (context.watch<StrategiesChatProvider>().isLoading)
             const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
               child: TypingIndicator(),
             ),
           Consumer<StrategiesChatProvider>(
@@ -132,7 +135,7 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
                 children: [
                   if (hasSelection)
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
                       child: FilledButton.icon(
                         onPressed: chatProvider.isLoading
                             ? null
@@ -148,7 +151,7 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
                     ),
                   SafeArea(
                     child: Padding(
-                      padding: const EdgeInsets.all(8),
+                      padding: EdgeInsets.all(AppSpacing.sm),
                       child: Row(
                         children: [
                           Expanded(
@@ -162,7 +165,7 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
                               onSubmitted: (text) => _send(context, text),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: AppSpacing.sm),
                           IconButton.filled(
                             onPressed: chatProvider.isLoading
                                 ? null
@@ -209,8 +212,12 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
   }
 
   Future<void> _openLink(String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri != null && await canLaunchUrl(uri)) {
+    if (!UrlSecurity.isSafeExternalUrl(url)) {
+      logWarning('[StrategiesChatPage] Blocked unsafe link: $url');
+      return;
+    }
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
@@ -227,19 +234,19 @@ class _ExampleChip extends StatelessWidget {
     final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: AppRadius.circularPill,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: AppInsets.card,
         decoration: BoxDecoration(
           border: Border.all(
             color: theme.colorScheme.outline.withValues(alpha: 0.5),
           ),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: AppRadius.circularPill,
         ),
         child: Row(
           children: [
             Icon(Icons.chat_bubble_outline, size: 20, color: theme.colorScheme.primary),
-            const SizedBox(width: 12),
+            SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(
                 label,
@@ -277,11 +284,11 @@ class _TurnTile extends StatelessWidget {
         Align(
           alignment: Alignment.centerRight,
           child: Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            margin: EdgeInsets.only(bottom: AppSpacing.sm),
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.s10),
             decoration: BoxDecoration(
               color: theme.colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppRadius.circularLg,
             ),
             child: Text(
               turn.userMessage,
@@ -292,11 +299,11 @@ class _TurnTile extends StatelessWidget {
         // Assistant text
         if (turn.assistantText.isNotEmpty)
           Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(12),
+            margin: AppInsets.listItemBottom,
+            padding: EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadius.circularMd,
             ),
             child: Text(
               turn.assistantText,
@@ -314,7 +321,7 @@ class _TurnTile extends StatelessWidget {
                     : null,
                 l10n: l10n,
               )),
-        const SizedBox(height: 16),
+        SizedBox(height: AppSpacing.lg),
       ],
     );
   }
@@ -340,14 +347,14 @@ class _StrategyCard extends StatelessWidget {
     final theme = Theme.of(context);
     final icon = _iconFor(strategy.iconKey);
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: EdgeInsets.only(bottom: AppSpacing.sm),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.circularMd,
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: AppInsets.screen,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadius.circularMd,
             border: isSelected
                 ? Border.all(color: theme.colorScheme.primary, width: 2)
                 : null,
@@ -359,7 +366,7 @@ class _StrategyCard extends StatelessWidget {
                 children: [
                   if (icon != null)
                     Padding(
-                      padding: const EdgeInsets.only(right: 12),
+                      padding: EdgeInsets.only(right: AppSpacing.md),
                       child: Icon(icon, color: theme.colorScheme.primary),
                     ),
                   Expanded(
@@ -374,7 +381,7 @@ class _StrategyCard extends StatelessWidget {
                     Icon(Icons.check_circle, color: theme.colorScheme.primary),
                 ],
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: AppSpacing.sm),
               Text(
                 strategy.description,
                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -382,7 +389,7 @@ class _StrategyCard extends StatelessWidget {
                 ),
               ),
               if (onLearnMore != null) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: AppSpacing.sm),
                 TextButton(
                   onPressed: onLearnMore,
                   child: Text(l10n.learnMore),

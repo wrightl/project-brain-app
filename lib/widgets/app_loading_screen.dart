@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Brand-aligned splash colors (match native [launch_background] / LaunchScreen).
 const Color kSplashGradientTop = Color(0xFFF2ECFC);
@@ -141,13 +142,13 @@ class _AppLoadingScreenState extends State<AppLoadingScreen>
           ),
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.error_outline,
                       size: 48, color: kSplashAccent.withValues(alpha: 0.9)),
-                  const SizedBox(height: 16),
+                  SizedBox(height: AppSpacing.lg),
                   Text(
                     'Couldn\'t start the app',
                     textAlign: TextAlign.center,
@@ -156,7 +157,7 @@ class _AppLoadingScreenState extends State<AppLoadingScreen>
                           fontWeight: FontWeight.w600,
                         ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: AppSpacing.sm),
                   Text(
                     'Check your connection and try again.',
                     textAlign: TextAlign.center,
@@ -164,7 +165,7 @@ class _AppLoadingScreenState extends State<AppLoadingScreen>
                           color: const Color(0xFF49454F),
                         ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: AppSpacing.xl),
                   FilledButton(
                     onPressed: widget.onRetry,
                     child: const Text('Retry'),
@@ -225,9 +226,9 @@ class _AppLoadingScreenState extends State<AppLoadingScreen>
                           ),
                         ),
                       ),
-                      const SizedBox(height: 28),
+                      SizedBox(height: AppSpacing.s28),
                       _LoadingDots(phase: _gradientController.value * 2 * math.pi),
-                      const SizedBox(height: 20),
+                      SizedBox(height: AppSpacing.s20),
                       Text(
                         'Getting things ready…',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -291,7 +292,7 @@ class _LoadingDots extends StatelessWidget {
         final y = 4.0 * math.sin(t);
         final o = 0.35 + 0.65 * (0.5 + 0.5 * math.sin(t));
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 5),
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.s5),
           child: Transform.translate(
             offset: Offset(0, -y),
             child: Container(

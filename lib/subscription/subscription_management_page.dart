@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:projectbrain/subscription/subscription_provider.dart';
 import 'package:projectbrain/subscription/widgets/tier_badge.dart';
 import 'package:projectbrain/models/subscription.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Subscription management page showing current subscription details
 class SubscriptionManagementPage extends StatelessWidget {
@@ -45,14 +46,14 @@ class SubscriptionManagementPage extends StatelessWidget {
                     size: 64,
                     color: theme.colorScheme.error,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: AppSpacing.lg),
                   Text(
                     subscriptionProvider.errorMessage ??
                         'Error loading subscription',
                     style: theme.textTheme.bodyLarge,
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: AppSpacing.lg),
                   ElevatedButton(
                     onPressed: () => subscriptionProvider.refresh(),
                     child: const Text('Retry'),
@@ -70,7 +71,7 @@ class SubscriptionManagementPage extends StatelessWidget {
           }
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: AppInsets.screen,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -78,22 +79,22 @@ class SubscriptionManagementPage extends StatelessWidget {
                 _buildCurrentTierCard(
                     context, subscription, subscriptionProvider),
 
-                const SizedBox(height: 16),
+                SizedBox(height: AppSpacing.lg),
 
                 // Subscription status
                 _buildStatusCard(context, subscription),
 
-                const SizedBox(height: 16),
+                SizedBox(height: AppSpacing.lg),
 
                 // Quick actions
                 _buildQuickActions(context, subscription, subscriptionProvider),
 
-                const SizedBox(height: 16),
+                SizedBox(height: AppSpacing.lg),
 
                 // Usage summary
                 if (usage != null) ...[
                   _buildUsageSummary(context, usage, subscriptionProvider),
-                  const SizedBox(height: 16),
+                  SizedBox(height: AppSpacing.lg),
                 ],
 
                 // View usage dashboard button
@@ -102,11 +103,11 @@ class SubscriptionManagementPage extends StatelessWidget {
                   icon: const Icon(Icons.bar_chart),
                   label: const Text('View Usage Dashboard'),
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                SizedBox(height: AppSpacing.lg),
 
                 // Upgrade button
                 if (subscription.tier != SubscriptionTier.ultimate)
@@ -115,7 +116,7 @@ class SubscriptionManagementPage extends StatelessWidget {
                     icon: const Icon(Icons.upgrade),
                     label: const Text('Upgrade Plan'),
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
                     ),
                   ),
               ],
@@ -135,7 +136,7 @@ class SubscriptionManagementPage extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppInsets.screen,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -146,32 +147,31 @@ class SubscriptionManagementPage extends StatelessWidget {
                 if (subscription.isTrialing)
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+                      horizontal: AppSpacing.sm,
+                                vertical: AppSpacing.xs,
                     ),
                     decoration: BoxDecoration(
                       color: Colors.orange,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.circularMd,
                     ),
-                    child: const Text(
+                    child: Text(
                       'Trial',
-                      style: TextStyle(
+                      style: theme.textTheme.labelMedium?.copyWith(
                         color: Colors.white,
-                        fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
               ],
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: AppSpacing.sm),
             Text(
               'Current Plan',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: AppSpacing.xs),
             Text(
               _getTierDescription(subscription.tier),
               style: theme.textTheme.bodyMedium?.copyWith(
@@ -193,7 +193,7 @@ class SubscriptionManagementPage extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppInsets.screen,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -203,7 +203,7 @@ class SubscriptionManagementPage extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: AppSpacing.md),
             _StatusRow(
               label: 'Status',
               value: subscription.status.displayName,
@@ -247,7 +247,7 @@ class SubscriptionManagementPage extends StatelessWidget {
   ) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppInsets.screen,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -257,7 +257,7 @@ class SubscriptionManagementPage extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: AppSpacing.md),
             if (subscription.tier != SubscriptionTier.free &&
                 !subscription.isCanceled)
               ListTile(
@@ -287,7 +287,7 @@ class SubscriptionManagementPage extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppInsets.screen,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -306,7 +306,7 @@ class SubscriptionManagementPage extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: AppSpacing.md),
             _UsageSummaryRow(
               label: 'AI Queries (Today)',
               value: '${usage.aiQueries.daily}',
@@ -398,9 +398,11 @@ class SubscriptionManagementPage extends StatelessWidget {
                 }
               }
             },
-            child: const Text(
+            child: Text(
               'Cancel Subscription',
-              style: TextStyle(color: Colors.red),
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
             ),
           ),
         ],
@@ -425,7 +427,7 @@ class _StatusRow extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -464,7 +466,7 @@ class _UsageSummaryRow extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

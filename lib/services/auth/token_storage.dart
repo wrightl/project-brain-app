@@ -6,8 +6,19 @@ import 'package:projectbrain/core/config/app_config.dart';
 class TokenStorage {
   final FlutterSecureStorage _secureStorage;
 
+  // Android: flutter_secure_storage v10 encrypts the backing store by default
+  // (the old encryptedSharedPreferences flag is deprecated and ignored), so no
+  // Android-specific options are needed. iOS: keep the refresh token in the
+  // keychain, available after first unlock but never synced to iCloud.
+  static const IOSOptions _iosOptions = IOSOptions(
+    accessibility: KeychainAccessibility.first_unlock_this_device,
+  );
+
   TokenStorage({FlutterSecureStorage? secureStorage})
-      : _secureStorage = secureStorage ?? const FlutterSecureStorage();
+      : _secureStorage = secureStorage ??
+            const FlutterSecureStorage(
+              iOptions: _iosOptions,
+            );
 
   /// Store a refresh token securely
   Future<void> saveRefreshToken(String refreshToken) async {

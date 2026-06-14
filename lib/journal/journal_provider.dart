@@ -243,4 +243,24 @@ class JournalProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
   }
+
+  /// Reset all journal state so it does not leak into the next session.
+  void resetOnLogout() {
+    _items = [];
+    _page = 1;
+    _totalCount = 0;
+    _totalPages = 0;
+    _hasNextPage = false;
+    _isLoading = false;
+    _isLoadingMore = false;
+    _errorMessage = null;
+    _currentEntry = null;
+    _systemTags = [];
+    _userTags = [];
+    _streakSummary = null;
+    _entryCount = null;
+    _recentEntries = [];
+    notifyListeners();
+    logDebug('[JournalProvider] Reset on logout');
+  }
 }

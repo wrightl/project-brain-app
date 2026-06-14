@@ -5,6 +5,7 @@ import 'package:projectbrain/journal/journal_provider.dart';
 import 'package:projectbrain/journal/journal_localizations.dart';
 import 'package:projectbrain/models/journal/journal_entry.dart';
 import 'package:intl/intl.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Journal list screen with pagination, pull-to-refresh, and FAB.
 class JournalListPage extends StatefulWidget {
@@ -64,10 +65,43 @@ class _JournalListPageState extends State<JournalListPage> {
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyLarge,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: AppSpacing.lg),
                   FilledButton(
                     onPressed: () => provider.refresh(),
                     child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+          if (provider.items.isEmpty) {
+            // Successful fetch with no entries: show a friendly empty state
+            // (still scrollable so pull-to-refresh works).
+            return RefreshIndicator(
+              onRefresh: () => provider.refresh(),
+              child: ListView(
+                controller: _scrollController,
+                padding: AppInsets.page,
+                children: [
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+                  Icon(
+                    Icons.menu_book_outlined,
+                    size: 64,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  SizedBox(height: AppSpacing.lg),
+                  Text(
+                    'No journal entries yet',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Tap the button below to write your first entry.',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -77,12 +111,12 @@ class _JournalListPageState extends State<JournalListPage> {
             onRefresh: () => provider.refresh(),
             child: ListView.builder(
               controller: _scrollController,
-              padding: const EdgeInsets.all(16),
+              padding: AppInsets.screen,
               itemCount: provider.items.length + (provider.hasNextPage ? 1 : 0),
               itemBuilder: (context, index) {
                 if (index >= provider.items.length) {
                   return const Padding(
-                    padding: EdgeInsets.all(16),
+                    padding: AppInsets.screen,
                     child: Center(child: CircularProgressIndicator()),
                   );
                 }
@@ -115,12 +149,12 @@ class _JournalListItem extends StatelessWidget {
     final dateStr = DateFormat.yMMMd().add_Hm().format(entry.createdAt);
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: AppInsets.listItemBottom,
       child: InkWell(
         onTap: () => context.push('/journal/${entry.id}'),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.circularMd,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: AppInsets.screen,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -130,7 +164,7 @@ class _JournalListItem extends StatelessWidget {
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: AppSpacing.sm),
               Text(
                 dateStr,
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -139,10 +173,10 @@ class _JournalListItem extends StatelessWidget {
               ),
               if ((entry.tags?.isNotEmpty ?? false) ||
                   (entry.systemTags?.isNotEmpty ?? false)) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: AppSpacing.sm),
                 Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
+                  spacing: AppSpacing.s6,
+                  runSpacing: AppSpacing.xs,
                   children: [
                     ...?entry.tags?.map((t) => Chip(
                           label: Text(t.name),

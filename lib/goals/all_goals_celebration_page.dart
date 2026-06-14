@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:confetti/confetti.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Celebration page shown when user completes all goals for the day
 class AllGoalsCelebrationPage extends StatefulWidget {
@@ -38,7 +39,7 @@ class _AllGoalsCelebrationPageState extends State<AllGoalsCelebrationPage> {
         children: [
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: AppInsets.page,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -56,7 +57,7 @@ class _AllGoalsCelebrationPageState extends State<AllGoalsCelebrationPage> {
                       color: Colors.green,
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: AppSpacing.xxl),
 
                   // Congratulations message
                   Text(
@@ -67,14 +68,14 @@ class _AllGoalsCelebrationPageState extends State<AllGoalsCelebrationPage> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: AppSpacing.lg),
 
                   Text(
                     'You completed all your goals for today!',
                     style: theme.textTheme.titleLarge,
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: AppSpacing.sm),
 
                   Text(
                     'You\'re on fire! Keep up this amazing momentum!',
@@ -83,7 +84,7 @@ class _AllGoalsCelebrationPageState extends State<AllGoalsCelebrationPage> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 48),
+                  SizedBox(height: AppSpacing.xxxl),
 
                   // Back to goals button
                   SizedBox(
@@ -93,13 +94,10 @@ class _AllGoalsCelebrationPageState extends State<AllGoalsCelebrationPage> {
                         context.go('/');
                       },
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
                         backgroundColor: Colors.green,
                       ),
-                      child: const Text(
-                        'Home',
-                        style: TextStyle(fontSize: 16),
-                      ),
+                      child: const Text('Home'),
                     ),
                   ),
                 ],

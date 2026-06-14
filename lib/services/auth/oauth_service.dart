@@ -55,7 +55,9 @@ class OAuthService {
     try {
       logDebug('[OAuthService] Logging out');
       if (defaultTargetPlatform == TargetPlatform.iOS) {
-        await _auth0.credentialsManager.clearCredentials();
+        // iOS intentionally skips hosted logout so ASWebAuthenticationSession
+        // does not show the system credential sheet.
+        await clearLocalCredentials();
       } else {
         await _auth0.webAuthentication().logout(
               returnTo: AppConfig.authRedirectUri,
@@ -63,11 +65,27 @@ class OAuthService {
               // mismatch often causes Auth0 "Oops" and leaves the hosted session active.
               useHTTPS: true,
             );
+        // Federated web logout clears the SSO session; also drop the locally
+        // persisted native credentials so they cannot be silently restored.
+        await clearLocalCredentials();
       }
       logDebug('[OAuthService] Logout complete');
     } catch (e, stackTrace) {
       logDebug('[OAuthService] Error during logout: $e');
       throw AuthException('Error during logout', e, stackTrace);
+    }
+  }
+
+  /// Clear credentials persisted by the native Auth0 SDK (CredentialsManager).
+  ///
+  /// Safe to call repeatedly; never throws so it can run during session
+  /// teardown on every platform.
+  Future<void> clearLocalCredentials() async {
+    try {
+      await _auth0.credentialsManager.clearCredentials();
+      logDebug('[OAuthService] Cleared CredentialsManager');
+    } catch (e) {
+      logDebug('[OAuthService] CredentialsManager clear failed: $e');
     }
   }
 

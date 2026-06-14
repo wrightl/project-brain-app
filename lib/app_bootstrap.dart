@@ -7,7 +7,9 @@ import 'package:projectbrain/core/network/http_overrides.dart';
 import 'package:projectbrain/authentication/auth_provider.dart';
 import 'package:projectbrain/goals/egg_goals_provider.dart';
 import 'package:projectbrain/subscription/subscription_provider.dart';
+import 'package:projectbrain/services/connectivity_service.dart';
 import 'package:projectbrain/services/feature_flag_service.dart';
+import 'package:projectbrain/services/goals_realtime_service.dart';
 import 'package:projectbrain/services/push_notification_service.dart';
 import 'package:projectbrain/services/error_reporting_service.dart';
 import 'package:projectbrain/my_app.dart';
@@ -58,6 +60,9 @@ Future<void> _runDeferredBootstrap({required bool isLoggedIn}) async {
     _runDeferredTask('featureFlags.init', () async {
       await sl<FeatureFlagService>().init();
     }),
+    _runDeferredTask('connectivity.init', () async {
+      await sl<ConnectivityService>().init();
+    }),
     _runDeferredTask('push.init', () async {
       await sl<PushNotificationService>().init(requestPermissionsOnInit: false);
     }),
@@ -78,6 +83,14 @@ Future<void> _runDeferredBootstrap({required bool isLoggedIn}) async {
     tasks.add(
       _runDeferredTask('eggGoals.syncFromAPI', () async {
         await sl<EggGoalsProvider>().syncFromAPI();
+      }),
+    );
+    // Open the goals SSE stream on cold launch (previously only started on
+    // app resume, so updates were missed until the first background/resume).
+    tasks.add(
+      _runDeferredTask('goalsRealtime.start', () async {
+        await sl<GoalsRealtimeService>()
+            .start(() => sl<EggGoalsProvider>().syncFromAPI());
       }),
     );
   }

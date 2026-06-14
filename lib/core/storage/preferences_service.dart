@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:projectbrain/helpers/app_themes.dart';
 
 /// Service for managing application preferences
 class PreferencesService {
@@ -13,8 +14,12 @@ class PreferencesService {
   /// Get the last visited route
   String? get lastRoute => _prefs.getString(_lastRouteKey);
 
-  /// Get the selected theme mode: 'light' | 'colorful' | 'dark' | 'system'
-  String get themeMode => _prefs.getString(_themeModeKey) ?? 'system';
+  /// Get the selected theme mode id from [AppThemes].
+  String get themeMode {
+    final stored = _prefs.getString(_themeModeKey);
+    if (stored == null) return AppThemes.defaultId;
+    return AppThemes.isValid(stored) ? stored : AppThemes.defaultId;
+  }
 
   /// Set the selected theme mode
   Future<bool> setThemeMode(String value) async {

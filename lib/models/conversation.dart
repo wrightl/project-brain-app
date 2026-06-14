@@ -1,3 +1,4 @@
+import 'package:projectbrain/core/util/json_parsing.dart';
 import 'package:projectbrain/models/chatmessage.dart';
 
 class Conversation {
@@ -19,16 +20,17 @@ class Conversation {
 
   factory Conversation.fromJson(Map<String, dynamic> json) {
     return Conversation(
-      id: json['id'] as String,
-      userId: json['userId'] as String,
-      title: json['title'] as String,
-      messages: json['messages'] != null
+      id: JsonParse.asString(json['id']),
+      userId: JsonParse.asString(json['userId']),
+      title: JsonParse.asString(json['title']),
+      messages: json['messages'] is List
           ? (json['messages'] as List<dynamic>)
-              .map((m) => ChatMessage.fromJson(m as Map<String, dynamic>))
+              .whereType<Map<String, dynamic>>()
+              .map((m) => ChatMessage.fromJson(m))
               .toList()
           : [],
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      createdAt: JsonParse.asDateTime(json['createdAt']),
+      updatedAt: JsonParse.asDateTime(json['updatedAt']),
     );
   }
 }

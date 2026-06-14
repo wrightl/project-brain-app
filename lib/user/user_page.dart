@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:projectbrain/widgets/link_list.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// User page that provides navigation to user-related sections
 class UserPage extends StatelessWidget {
@@ -54,7 +55,7 @@ class UserPage extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: AppInsets.page,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -64,17 +65,17 @@ class UserPage extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: AppSpacing.sm),
               Text(
                 'Manage your account and resources.',
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: AppSpacing.xxl),
 
               LinkList(links: todayLinks, sectionTitle: 'Today'),
-              const SizedBox(height: 24),
+              SizedBox(height: AppSpacing.xl),
               LinkList(links: accountLinks, sectionTitle: 'Account & tools'),
             ],
           ),

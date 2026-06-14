@@ -11,6 +11,7 @@ import 'package:projectbrain/services/user_service.dart';
 import 'package:projectbrain/widgets/location/city_search_field.dart';
 import 'package:projectbrain/widgets/location/country_search_field.dart';
 import 'package:projectbrain/widgets/maps/coach_results_map.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 enum ResultsView { list, map }
 
@@ -47,20 +48,9 @@ class _FindCoachPageState extends State<FindCoachPage> {
   final Set<String> _selectedSpecialisms = {};
   final Set<String> _selectedAgeGroups = {};
 
-  final List<String> _specialisms = [
-    'ADHD',
-    'Autism',
-    'Dyslexia',
-    'Dyscalculia',
-    'Dyspraxia',
-    'Dysgraphia',
-    'Tourette Syndrome',
-    'OCD',
-    'Anxiety',
-    'Depression',
-    'Bipolar Disorder',
-    'Other',
-  ];
+  List<String> _specialisms = [];
+  bool _isLoadingSpecialisms = true;
+  String? _specialismsLoadError;
 
   final List<String> _ageGroups = [
     'Children (5-12)',
@@ -79,6 +69,7 @@ class _FindCoachPageState extends State<FindCoachPage> {
   void initState() {
     super.initState();
     _loadCountries();
+    _loadSpecialisms();
   }
 
   @override
@@ -117,6 +108,26 @@ class _FindCoachPageState extends State<FindCoachPage> {
       setState(() {
         _isLoadingCountries = false;
         _errorMessage = 'Failed to load countries. Please try again.';
+      });
+    }
+  }
+
+  Future<void> _loadSpecialisms() async {
+    try {
+      final specialisms = await _coachService.getSpecialisms();
+      if (!mounted) return;
+      setState(() {
+        _specialisms = specialisms;
+        _isLoadingSpecialisms = false;
+        _specialismsLoadError = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _specialisms = [];
+        _isLoadingSpecialisms = false;
+        _specialismsLoadError =
+            'Failed to load specialisms. Please try again later.';
       });
     }
   }
@@ -375,36 +386,46 @@ class _FindCoachPageState extends State<FindCoachPage> {
         title: const Text('Find a Coach'),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: CustomScrollView(
           controller: _scrollController,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildFiltersCard(theme),
-              const SizedBox(height: 16),
-              _buildLocationCard(theme),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _handleSearch,
-                  icon: const Icon(Icons.search),
-                  label: const Text('Search Coaches'),
-                ),
+          slivers: [
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.lg,
+                0,
               ),
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 16),
-                _buildErrorBanner(theme),
-              ],
-              if (_isLoading)
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-              if (_hasSearched && !_isLoading) _buildResults(theme),
-            ],
-          ),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  _buildFiltersCard(theme),
+                  SizedBox(height: AppSpacing.lg),
+                  _buildLocationCard(theme),
+                  SizedBox(height: AppSpacing.lg),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _isLoading ? null : _handleSearch,
+                      icon: const Icon(Icons.search),
+                      label: const Text('Search Coaches'),
+                    ),
+                  ),
+                  if (_errorMessage != null) ...[
+                    SizedBox(height: AppSpacing.lg),
+                    _buildErrorBanner(theme),
+                  ],
+                  if (_isLoading)
+                    const Padding(
+                      padding: AppInsets.screen,
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  if (_hasSearched && !_isLoading) _buildResultsHeader(theme),
+                ]),
+              ),
+            ),
+            if (_hasSearched && !_isLoading) _buildResultsSliver(theme),
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+          ],
         ),
       ),
     );
@@ -413,7 +434,7 @@ class _FindCoachPageState extends State<FindCoachPage> {
   Widget _buildFiltersCard(ThemeData theme) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppInsets.screen,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -435,46 +456,86 @@ class _FindCoachPageState extends State<FindCoachPage> {
                   ),
               ],
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: AppSpacing.sm),
             Text(
               'Select specialisms to find coaches who specialise in them',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _specialisms.map((specialism) {
-                final isSelected = _selectedSpecialisms.contains(specialism);
-                return FilterChip(
-                  label: Text(specialism),
-                  selected: isSelected,
-                  onSelected: (_) => _toggleSpecialism(specialism),
-                  selectedColor: theme.colorScheme.primaryContainer,
-                  checkmarkColor: theme.colorScheme.onPrimaryContainer,
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 20),
+            SizedBox(height: AppSpacing.md),
+            if (_isLoadingSpecialisms)
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    SizedBox(width: AppSpacing.md),
+                    Text(
+                      'Loading specialisms...',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.7,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else if (_specialismsLoadError != null)
+              Text(
+                _specialismsLoadError!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              )
+            else if (_specialisms.isEmpty)
+              Text(
+                'No specialisms available.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              )
+            else
+              Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
+                children: _specialisms.map((specialism) {
+                  final isSelected = _selectedSpecialisms.contains(specialism);
+                  return FilterChip(
+                    label: Text(specialism),
+                    selected: isSelected,
+                    onSelected: (_) => _toggleSpecialism(specialism),
+                    selectedColor: theme.colorScheme.primaryContainer,
+                    checkmarkColor: theme.colorScheme.onPrimaryContainer,
+                  );
+                }).toList(),
+              ),
+            SizedBox(height: AppSpacing.s20),
             Text(
               'Filter by Age Groups',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: AppSpacing.sm),
             Text(
               'Select age groups to find coaches who work with them',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: AppSpacing.md),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
               children: _ageGroups.map((ageGroup) {
                 final isSelected = _selectedAgeGroups.contains(ageGroup);
                 return FilterChip(
@@ -495,7 +556,7 @@ class _FindCoachPageState extends State<FindCoachPage> {
   Widget _buildLocationCard(ThemeData theme) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppInsets.screen,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -505,14 +566,14 @@ class _FindCoachPageState extends State<FindCoachPage> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: AppSpacing.md),
             CountrySearchField(
               countries: _countries,
               value: _selectedCountry,
               onChanged: _onCountryChanged,
               isLoading: _isLoadingCountries,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: AppSpacing.md),
             CitySearchField(
               key: ValueKey(_selectedCountry?.code ?? 'no-country'),
               locationService: _locationService,
@@ -520,7 +581,7 @@ class _FindCoachPageState extends State<FindCoachPage> {
               value: _selectedCity,
               onChanged: _onCityChanged,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: AppSpacing.md),
             DropdownButtonFormField<int>(
               initialValue: _distanceMiles,
               decoration: InputDecoration(
@@ -547,7 +608,7 @@ class _FindCoachPageState extends State<FindCoachPage> {
                       }
                     },
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: AppSpacing.md),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
@@ -577,21 +638,23 @@ class _FindCoachPageState extends State<FindCoachPage> {
   Widget _buildErrorBanner(ThemeData theme) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: AppInsets.screen,
       decoration: BoxDecoration(
         color: theme.colorScheme.errorContainer,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.circularSm,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             _errorMessage!,
-            style: TextStyle(color: theme.colorScheme.onErrorContainer),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onErrorContainer,
+            ),
           ),
           if (_errorMessage != null &&
               _errorMessage!.contains('Settings')) ...[
-            const SizedBox(height: 8),
+            SizedBox(height: AppSpacing.sm),
             TextButton(
               onPressed: openAppSettings,
               child: const Text('Open Settings'),
@@ -602,69 +665,93 @@ class _FindCoachPageState extends State<FindCoachPage> {
     );
   }
 
-  Widget _buildResults(ThemeData theme) {
-    return Builder(
+  /// Results header (title + list/map toggle). Carries [_resultsKey] so
+  /// `_scrollToResults` can bring it into view.
+  Widget _buildResultsHeader(ThemeData theme) {
+    return Column(
       key: _resultsKey,
-      builder: (context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Results (${_coaches.length})',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              SegmentedButton<ResultsView>(
-                segments: const [
-                  ButtonSegment(
-                    value: ResultsView.list,
-                    label: Text('List'),
-                    icon: Icon(Icons.list),
-                  ),
-                  ButtonSegment(
-                    value: ResultsView.map,
-                    label: Text('Map'),
-                    icon: Icon(Icons.map),
-                  ),
-                ],
-                selected: {_resultsView},
-                onSelectionChanged: (selection) {
-                  final next = selection.first;
-                  if (next == ResultsView.map && !_canShowMap) return;
-                  setState(() => _resultsView = next);
-                },
-                emptySelectionAllowed: false,
-              ),
-            ],
-          ),
-          if (!_canShowMap)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(height: AppSpacing.xl),
+        Row(
+          children: [
+            Expanded(
               child: Text(
-                'Map view is available after a location-based search.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                'Results (${_coaches.length})',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-          const SizedBox(height: 16),
-          if (_coaches.isEmpty)
-            _buildEmptyResults(theme)
-          else if (_resultsView == ResultsView.map && _canShowMap)
-            CoachResultsMap(
-              coaches: _coaches,
-              searchOrigin: _searchCenter,
-              searchRadiusMiles: _distanceMiles,
-              onSelectCoach: _scrollToCoach,
-            )
-          else
-            ..._coaches.map((coach) => _buildCoachCard(theme, coach)),
-        ],
+            SegmentedButton<ResultsView>(
+              segments: const [
+                ButtonSegment(
+                  value: ResultsView.list,
+                  label: Text('List'),
+                  icon: Icon(Icons.list),
+                ),
+                ButtonSegment(
+                  value: ResultsView.map,
+                  label: Text('Map'),
+                  icon: Icon(Icons.map),
+                ),
+              ],
+              selected: {_resultsView},
+              onSelectionChanged: (selection) {
+                final next = selection.first;
+                if (next == ResultsView.map && !_canShowMap) return;
+                setState(() => _resultsView = next);
+              },
+              emptySelectionAllowed: false,
+            ),
+          ],
+        ),
+        if (!_canShowMap)
+          Padding(
+            padding: EdgeInsets.only(top: AppSpacing.sm),
+            child: Text(
+              'Map view is available after a location-based search.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ),
+        SizedBox(height: AppSpacing.lg),
+      ],
+    );
+  }
+
+  /// Results body as a sliver: empty state, map, or a lazily-built coach list.
+  Widget _buildResultsSliver(ThemeData theme) {
+    if (_coaches.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: _buildEmptyResults(theme),
+        ),
+      );
+    }
+
+    if (_resultsView == ResultsView.map && _canShowMap) {
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: CoachResultsMap(
+            coaches: _coaches,
+            searchOrigin: _searchCenter,
+            searchRadiusMiles: _distanceMiles,
+            onSelectCoach: _scrollToCoach,
+          ),
+        ),
+      );
+    }
+
+    return SliverPadding(
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      sliver: SliverList.builder(
+        itemCount: _coaches.length,
+        itemBuilder: (context, index) =>
+            _buildCoachCard(theme, _coaches[index]),
       ),
     );
   }
@@ -678,14 +765,14 @@ class _FindCoachPageState extends State<FindCoachPage> {
             size: 64,
             color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppSpacing.lg),
           Text(
             'No coaches found',
             style: theme.textTheme.titleMedium?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: AppSpacing.sm),
           Text(
             'Try a different location or adjust your filters',
             style: theme.textTheme.bodySmall?.copyWith(
@@ -702,9 +789,9 @@ class _FindCoachPageState extends State<FindCoachPage> {
     final isHighlighted = _highlightedCoachId == coach.profileId;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: AppInsets.listItemBottom,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.circularMd,
         side: isHighlighted
             ? BorderSide(color: theme.colorScheme.primary, width: 2)
             : BorderSide.none,
@@ -728,7 +815,7 @@ class _FindCoachPageState extends State<FindCoachPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (locationLabel != null) ...[
-              const SizedBox(height: 4),
+              SizedBox(height: AppSpacing.xs),
               Row(
                 children: [
                   Icon(
@@ -737,7 +824,7 @@ class _FindCoachPageState extends State<FindCoachPage> {
                     color:
                         theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(width: AppSpacing.xs),
                   Expanded(
                     child: Text(
                       locationLabel,
@@ -751,9 +838,9 @@ class _FindCoachPageState extends State<FindCoachPage> {
               ),
             ],
             if (coach.specialisms != null && coach.specialisms!.isNotEmpty) ...[
-              const SizedBox(height: 4),
+              SizedBox(height: AppSpacing.xs),
               Wrap(
-                spacing: 4,
+                spacing: AppSpacing.xs,
                 children: coach.specialisms!.take(3).map((spec) {
                   return Chip(
                     label: Text(spec),

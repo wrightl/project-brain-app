@@ -6,6 +6,7 @@ import 'package:projectbrain/journal/journal_localizations.dart';
 import 'package:projectbrain/journal/widgets/system_tag_field_builder.dart';
 import 'package:projectbrain/models/journal/journal_request_dtos.dart';
 import 'package:projectbrain/models/journal/system_tag.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Create or edit journal entry (same form).
 class JournalEntryFormPage extends StatefulWidget {
@@ -168,7 +169,7 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
                 final sortedSystemTags = List<SystemTag>.from(systemTags)
                   ..sort((a, b) => a.name.compareTo(b.name));
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
+                  padding: AppInsets.screen,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -182,17 +183,17 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
                           alignLabelWithHint: true,
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: AppSpacing.xl),
                       Text(
                         l10n.suggestedTags,
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: AppSpacing.sm),
                       Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
+                        spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
                         children: sortedSystemTags.map((st) {
                           final selected = _selectedSystemTagIds.contains(st.id);
                           return FilterChip(
@@ -217,7 +218,7 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
                         final defs = List.of(st.fieldDefinitions)
                           ..sort((a, b) => a.fieldOrder.compareTo(b.fieldOrder));
                         return Padding(
-                          padding: const EdgeInsets.only(top: 16),
+                          padding: EdgeInsets.only(top: AppSpacing.lg),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -231,7 +232,7 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
                                 final resp = _systemTagResponses[st.id];
                                 final value = resp?[def.fieldKey];
                                 return Padding(
-                                  padding: const EdgeInsets.only(top: 12),
+                                  padding: EdgeInsets.only(top: AppSpacing.md),
                                   child: SystemTagFieldBuilder(
                                     definition: def,
                                     value: value,
@@ -244,17 +245,17 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
                           ),
                         );
                       }),
-                      const SizedBox(height: 24),
+                      SizedBox(height: AppSpacing.xl),
                       Text(
                         l10n.customTags,
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: AppSpacing.sm),
                       Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
+                        spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
                         children: userTags.map((t) {
                           final selected = _selectedUserTagIds.contains(t.id);
                           return FilterChip(
@@ -272,7 +273,7 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
                           );
                         }).toList(),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: AppSpacing.md),
                       Row(
                         children: [
                           Expanded(
@@ -287,14 +288,14 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
                               onSubmitted: (_) => _addNewTag(),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: AppSpacing.sm),
                           FilledButton(
                             onPressed: _addNewTag,
                             child: Text(l10n.addTag),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 32),
+                      SizedBox(height: AppSpacing.xxl),
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton(

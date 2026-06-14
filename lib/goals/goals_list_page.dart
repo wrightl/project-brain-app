@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:projectbrain/goals/egg_goals_provider.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Page displaying the list of daily goals with checkboxes and progress
 class GoalsListPage extends StatelessWidget {
@@ -32,21 +33,7 @@ class GoalsListPage extends StatelessWidget {
               child: RefreshIndicator(
                 onRefresh: () =>
                     context.read<EggGoalsProvider>().syncFromAPI(),
-                child: ListView.builder(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16.0),
-                  itemCount: goalsProvider.goals.length,
-                  itemBuilder: (context, index) {
-                    final goal = goalsProvider.goals[index];
-                    if (goal.message.isEmpty ||
-                        goal.message == 'No Egg Goal Set') {
-                      return const SizedBox.shrink();
-                    }
-
-                    return _buildGoalItem(
-                        context, goal, index, goalsProvider);
-                  },
-                ),
+                child: _buildBody(context, goalsProvider),
               ),
             ),
 
@@ -55,6 +42,93 @@ class GoalsListPage extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context, EggGoalsProvider provider) {
+    final theme = Theme.of(context);
+
+    // Keep the original index so toggleGoalCompletion targets the right goal.
+    final visibleGoals = <({int index, EggGoal goal})>[];
+    for (var i = 0; i < provider.goals.length; i++) {
+      final g = provider.goals[i];
+      if (g.message.isNotEmpty && g.message != 'No Egg Goal Set') {
+        visibleGoals.add((index: i, goal: g));
+      }
+    }
+
+    // First load with nothing cached yet.
+    if (provider.isLoading && visibleGoals.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          SizedBox(height: AppSpacing.emptyStateTop),
+          Center(child: CircularProgressIndicator()),
+        ],
+      );
+    }
+
+    // Error with nothing to show.
+    if (provider.hasError && visibleGoals.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: AppInsets.page,
+        children: [
+          SizedBox(height: AppSpacing.emptyStateOffset),
+          Icon(Icons.error_outline,
+              size: 56, color: theme.colorScheme.error),
+          SizedBox(height: AppSpacing.lg),
+          Text(
+            provider.errorMessage ?? 'Failed to load goals',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyLarge,
+          ),
+          SizedBox(height: AppSpacing.lg),
+          Center(
+            child: FilledButton(
+              onPressed: () => context.read<EggGoalsProvider>().syncFromAPI(),
+              child: const Text('Retry'),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Empty state after a successful fetch.
+    if (visibleGoals.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: AppInsets.page,
+        children: [
+          SizedBox(height: AppSpacing.emptyStateOffset),
+          Icon(Icons.flag_outlined,
+              size: 64, color: theme.colorScheme.onSurfaceVariant),
+          SizedBox(height: AppSpacing.lg),
+          Text(
+            'No goals set yet',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleMedium,
+          ),
+          SizedBox(height: AppSpacing.sm),
+          Text(
+            'Tap the edit icon to set your daily goals.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: AppInsets.screen,
+      itemCount: visibleGoals.length,
+      itemBuilder: (context, index) {
+        final entry = visibleGoals[index];
+        return _buildGoalItem(context, entry.goal, entry.index, provider);
+      },
     );
   }
 
@@ -67,7 +141,7 @@ class GoalsListPage extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: AppInsets.listItemBottom,
       child: InkWell(
         onTap: () async {
           await provider.toggleGoalCompletion(index);
@@ -89,9 +163,9 @@ class GoalsListPage extends StatelessWidget {
             }
           }
         },
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.circularMd,
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: AppInsets.screen,
           child: Row(
             children: [
               // Custom checkbox with egg theme
@@ -116,7 +190,7 @@ class GoalsListPage extends StatelessWidget {
                       )
                     : null,
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.lg),
               Expanded(
                 child: Text(
                   goal.message,
@@ -156,7 +230,7 @@ class GoalsListPage extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(24.0),
+      padding: AppInsets.page,
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         boxShadow: [
@@ -172,7 +246,7 @@ class GoalsListPage extends StatelessWidget {
         children: [
           // Progress bar
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.circularSm,
             child: LinearProgressIndicator(
               value: percentage,
               minHeight: 8,
@@ -182,7 +256,7 @@ class GoalsListPage extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: AppSpacing.md),
           // Progress text
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -202,7 +276,7 @@ class GoalsListPage extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: AppSpacing.sm),
           // Encouraging message
           Text(
             message,

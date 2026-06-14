@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:projectbrain/authentication/auth_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -23,11 +24,11 @@ class LoginPage extends StatelessWidget {
           children: [
             if (authProvider.hasError) ...[
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                padding: EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.lg),
                 child: Text(
                   authProvider.errorMessage!,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.error,
                   ),
                 ),

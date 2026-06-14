@@ -27,6 +27,10 @@ class CoachMessageSignalRService {
   void Function(CoachMessage)? _onMessageDelivered;
   void Function(CoachMessage)? _onMessageRead;
 
+  /// In-flight connection attempt, so concurrent callers await the same start
+  /// instead of racing ahead to [joinConversation] before the hub is up.
+  Future<void>? _starting;
+
   bool get isConnected => _hub?.state == HubConnectionState.Connected;
 
   Future<void> start({
@@ -39,14 +43,27 @@ class CoachMessageSignalRService {
     _onMessageRead = onMessageRead;
 
     if (_hub != null) {
-      if (_hub!.state == HubConnectionState.Connected ||
-          _hub!.state == HubConnectionState.Connecting) {
+      if (_hub!.state == HubConnectionState.Connected) {
+        return;
+      }
+      if (_hub!.state == HubConnectionState.Connecting) {
+        // Another caller is mid-connect; wait for it rather than no-op.
+        await _starting;
         return;
       }
       await _hub!.stop();
       _hub = null;
     }
 
+    _starting = _connect();
+    try {
+      await _starting;
+    } finally {
+      _starting = null;
+    }
+  }
+
+  Future<void> _connect() async {
     final hubUrl = '${AppConfig.apiBaseUrl}/hubs/coach-messages';
     logDebug('[CoachMessageSignalRService] Connecting to $hubUrl');
 
@@ -107,6 +124,24 @@ class CoachMessageSignalRService {
     logDebug('[CoachMessageSignalRService] Connected');
   }
 
+  /// Wait until the hub reaches the Connected state, or the timeout elapses.
+  Future<void> _ensureConnected({
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
+    // If a connect is in flight, await it first.
+    if (_starting != null) {
+      await _starting;
+    }
+    if (isConnected) return;
+
+    final deadline = DateTime.now().add(timeout);
+    while (DateTime.now().isBefore(deadline)) {
+      if (isConnected) return;
+      if (_hub == null) return;
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
+  }
+
   Future<void> joinConversation(String connectionId) async {
     if (_joinedConnectionId != null &&
         _joinedConnectionId != connectionId) {
@@ -115,7 +150,13 @@ class CoachMessageSignalRService {
 
     _joinedConnectionId = connectionId;
 
+    // Wait for the connection to be established; the previous early-return
+    // silently dropped joins issued while the hub was still Connecting.
+    await _ensureConnected();
     if (_hub?.state != HubConnectionState.Connected) {
+      logDebug(
+        '[CoachMessageSignalRService] Not connected; join deferred to reconnect',
+      );
       return;
     }
 
@@ -160,8 +201,8 @@ class CoachMessageSignalRService {
       try {
         await _hub!.stop();
       } catch (e, stackTrace) {
-        logDebug('[CoachMessageSignalRService] Error stopping hub: $e');
-        logDebug('[CoachMessageSignalRService] Stack trace: $stackTrace');
+        logError('[CoachMessageSignalRService] Error stopping hub', e,
+            stackTrace);
       }
       _hub = null;
     }

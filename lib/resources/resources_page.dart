@@ -8,6 +8,7 @@ import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/subscription/subscription_provider.dart';
 import 'package:projectbrain/subscription/widgets/upgrade_prompt.dart';
 import 'package:projectbrain/models/subscription.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Resources page for managing user files
 class ResourcesPage extends StatefulWidget {
@@ -262,7 +263,7 @@ class _ResourcesPageState extends State<ResourcesPage> {
         actions: [
           if (_isUploading)
             const Padding(
-              padding: EdgeInsets.all(16.0),
+              padding: AppInsets.screen,
               child: SizedBox(
                 width: 20,
                 height: 20,
@@ -292,15 +293,15 @@ class _ResourcesPageState extends State<ResourcesPage> {
                       Icon(
                         Icons.error_outline,
                         size: 64,
-                        color: Colors.red[300],
+                        color: Theme.of(context).colorScheme.error,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: AppSpacing.lg),
                       Text(
                         _errorMessage!,
                         style: Theme.of(context).textTheme.bodyLarge,
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: AppSpacing.lg),
                       ElevatedButton(
                         onPressed: _loadResources,
                         child: const Text('Retry'),
@@ -316,24 +317,26 @@ class _ResourcesPageState extends State<ResourcesPage> {
                           Icon(
                             Icons.folder_open,
                             size: 64,
-                            color: Colors.grey[400],
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: AppSpacing.lg),
                           Text(
                             'No resources found',
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: AppSpacing.sm),
                           Text(
                             'Upload files to get started',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyMedium
                                 ?.copyWith(
-                                  color: Colors.grey[600],
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
                                 ),
                           ),
-                          const SizedBox(height: 24),
+                          SizedBox(height: AppSpacing.xl),
                           ElevatedButton.icon(
                             onPressed: _uploadFiles,
                             icon: const Icon(Icons.upload_file),
@@ -352,7 +355,8 @@ class _ResourcesPageState extends State<ResourcesPage> {
                             leading: const Icon(Icons.insert_drive_file),
                             title: Text(resource.fileName),
                             trailing: IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
+                              icon: Icon(Icons.delete,
+                                  color: Theme.of(context).colorScheme.error),
                               onPressed: () => _deleteResource(resource),
                               tooltip: 'Delete',
                             ),

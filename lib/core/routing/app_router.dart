@@ -53,29 +53,39 @@ class AppRouter {
     required this.errorReportingService,
   });
 
-  /// Create and configure the GoRouter instance
+  /// Create and configure the GoRouter instance.
+  ///
+  /// Idempotent: the router and its delegate listener are created once. Calling
+  /// this repeatedly (e.g. from a widget build) returns the same instance,
+  /// avoiding a new router per rebuild and duplicate delegate listeners.
   GoRouter createRouter() {
-    _router = GoRouter(
+    final existing = _router;
+    if (existing != null) return existing;
+
+    final router = GoRouter(
       refreshListenable: authProvider,
       redirect: _handleRedirect,
       routes: _routes,
       initialLocation: '/',
     );
+    _router = router;
 
-    // Save route changes to preferences and track screen views
-    _router!.routerDelegate.addListener(() {
-      final currentRoute =
-          _router!.routerDelegate.currentConfiguration.uri.toString();
-      preferencesService.setLastRoute(currentRoute);
-
-      // Log screen view to analytics
-      _logScreenView(currentRoute);
-    });
+    // Save route changes to preferences and track screen views.
+    router.routerDelegate.addListener(_onRouteChanged);
 
     // Check for pending notification after router is ready
     _checkPendingNotification();
 
-    return _router!;
+    return router;
+  }
+
+  void _onRouteChanged() {
+    final router = _router;
+    if (router == null) return;
+    final currentRoute =
+        router.routerDelegate.currentConfiguration.uri.toString();
+    preferencesService.setLastRoute(currentRoute);
+    _logScreenView(currentRoute);
   }
 
   /// Check for pending notification and navigate if needed
@@ -420,15 +430,34 @@ class AppRouter {
     // e.g., /goals/list -> goals_list
     final segments = cleanRoute.split('/').where((s) => s.isNotEmpty).toList();
 
-    // Replace parameter placeholders with descriptive names
+    // Replace parameter placeholders with descriptive names, and scrub dynamic
+    // id segments (UUIDs/numbers) so analytics screen names don't leak PII or
+    // explode cardinality. e.g. /network/chat/<guid> -> network_chat_id
     final readableSegments = segments.map((segment) {
-      // Handle parameterized routes
       if (segment.startsWith(':')) {
         return segment.substring(1); // Remove ':' prefix
+      }
+      if (_looksLikeId(segment)) {
+        return 'id';
       }
       return segment;
     }).toList();
 
     return readableSegments.join('_');
+  }
+
+  static final RegExp _uuidPattern = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
+  static final RegExp _numericPattern = RegExp(r'^\d+$');
+
+  /// True when a path segment is a dynamic identifier (UUID, all-digits, or a
+  /// long opaque token) rather than a static route name.
+  bool _looksLikeId(String segment) {
+    if (_uuidPattern.hasMatch(segment)) return true;
+    if (_numericPattern.hasMatch(segment)) return true;
+    // Long tokens with no spaces are almost certainly ids (e.g. auth0 sub).
+    if (segment.length >= 20 && !segment.contains(RegExp(r'\s'))) return true;
+    return false;
   }
 }

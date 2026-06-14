@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Generate ios/Flutter/Secrets.xcconfig from .env.<env> or GOOGLE_MAPS_API_KEY.
+# Sync Google Maps API key from .env.<env> into native iOS and Android config.
 #
 # Usage:
 #   ./scripts/sync_ios_secrets.sh [dev|staging|production]
@@ -41,13 +41,23 @@ if [[ -z "$MAPS_KEY" && -n "${GOOGLE_MAPS_API_KEY:-}" ]]; then
   MAPS_KEY="${GOOGLE_MAPS_API_KEY}"
 fi
 
-OUT="${ROOT}/ios/Flutter/Secrets.xcconfig"
-mkdir -p "$(dirname "$OUT")"
-printf 'GOOGLE_MAPS_API_KEY=%s\n' "$MAPS_KEY" >"$OUT"
+IOS_OUT="${ROOT}/ios/Flutter/Secrets.xcconfig"
+mkdir -p "$(dirname "$IOS_OUT")"
+printf 'GOOGLE_MAPS_API_KEY=%s\n' "$MAPS_KEY" >"$IOS_OUT"
+
+ANDROID_LOCAL_PROPS="${ROOT}/android/local.properties"
+if [[ -f "$ANDROID_LOCAL_PROPS" ]]; then
+  grep -v '^googleMapsApiKey=' "$ANDROID_LOCAL_PROPS" >"${ANDROID_LOCAL_PROPS}.tmp" || true
+  mv "${ANDROID_LOCAL_PROPS}.tmp" "$ANDROID_LOCAL_PROPS"
+fi
+if [[ -n "$MAPS_KEY" ]]; then
+  printf 'googleMapsApiKey=%s\n' "$MAPS_KEY" >>"$ANDROID_LOCAL_PROPS"
+fi
 
 if [[ -z "$MAPS_KEY" ]]; then
   echo "warning: GOOGLE_MAPS_API_KEY is empty (checked ${ENV_FILE} and env var)."
-  echo "         iOS builds will succeed but the coach map view will not work."
+  echo "         Native map tiles will not load until a key is configured."
 else
   echo "Wrote ios/Flutter/Secrets.xcconfig from ${ENV_FILE:-GOOGLE_MAPS_API_KEY env var}."
+  echo "Wrote android/local.properties googleMapsApiKey from ${ENV_FILE:-GOOGLE_MAPS_API_KEY env var}."
 fi

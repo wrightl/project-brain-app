@@ -1,14 +1,19 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:projectbrain/core/config/app_config.dart';
 import 'package:projectbrain/models/coach.dart';
 import 'package:projectbrain/models/location.dart';
+import 'package:projectbrain/services/google_maps_native_service.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 class CoachResultsMap extends StatefulWidget {
   final List<Coach> coaches;
   final SearchCenter? searchOrigin;
   final int? searchRadiusMiles;
   final ValueChanged<String>? onSelectCoach;
+  final double height;
 
   const CoachResultsMap({
     super.key,
@@ -16,6 +21,7 @@ class CoachResultsMap extends StatefulWidget {
     this.searchOrigin,
     this.searchRadiusMiles,
     this.onSelectCoach,
+    this.height = 420,
   });
 
   @override
@@ -26,11 +32,33 @@ class _CoachResultsMapState extends State<CoachResultsMap> {
   GoogleMapController? _mapController;
   Set<Marker> _markers = {};
   Set<Circle> _circles = {};
+  bool _nativeMapsReady = false;
+  bool _nativeMapsFailed = false;
+
+  static const double _minZoom = 3;
+  static const double _maxZoom = 20;
 
   @override
   void initState() {
     super.initState();
     _rebuildMapOverlays();
+    _ensureNativeMapsReady();
+  }
+
+  Future<void> _ensureNativeMapsReady() async {
+    final apiKey = AppConfig.googleMapsApiKey;
+    if (apiKey.isEmpty) {
+      if (!mounted) return;
+      setState(() => _nativeMapsFailed = true);
+      return;
+    }
+
+    await GoogleMapsNativeService.configureApiKey(apiKey);
+    if (!mounted) return;
+    setState(() {
+      _nativeMapsReady = true;
+      _nativeMapsFailed = false;
+    });
   }
 
   @override
@@ -84,7 +112,8 @@ class _CoachResultsMapState extends State<CoachResultsMap> {
         Marker(
           markerId: const MarkerId('search-origin'),
           position: LatLng(origin.latitude, origin.longitude),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          icon:
+              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
           infoWindow: const InfoWindow(title: 'Search origin'),
           zIndexInt: 999,
         ),
@@ -159,6 +188,95 @@ class _CoachResultsMapState extends State<CoachResultsMap> {
     }
   }
 
+  Future<void> _zoomBy(double delta) async {
+    final controller = _mapController;
+    if (controller == null) return;
+
+    final currentZoom = await controller.getZoomLevel();
+    final nextZoom = (currentZoom + delta).clamp(_minZoom, _maxZoom);
+    await controller.animateCamera(CameraUpdate.zoomTo(nextZoom));
+  }
+
+  Widget _buildMapSurface() {
+    return ClipRRect(
+      borderRadius: AppRadius.circularMd,
+      child: Stack(
+        children: [
+          GoogleMap(
+            gestureRecognizers: {
+              Factory<OneSequenceGestureRecognizer>(
+                () => EagerGestureRecognizer(),
+              ),
+            },
+            initialCameraPosition: CameraPosition(
+              target: widget.searchOrigin != null
+                  ? LatLng(
+                      widget.searchOrigin!.latitude,
+                      widget.searchOrigin!.longitude,
+                    )
+                  : _mappableCoaches.isNotEmpty
+                      ? LatLng(
+                          _mappableCoaches.first.latitude!,
+                          _mappableCoaches.first.longitude!,
+                        )
+                      : const LatLng(51.5072, -0.1276),
+              zoom: 8,
+            ),
+            markers: _markers,
+            circles: _circles,
+            mapType: MapType.normal,
+            mapToolbarEnabled: false,
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: false,
+            onMapCreated: (controller) {
+              _mapController = controller;
+              _fitBounds();
+            },
+          ),
+          Positioned(
+            right: AppSpacing.md,
+            bottom: AppSpacing.md,
+            child: _buildZoomControls(Theme.of(context)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return SizedBox(
+      height: widget.height,
+      child: const Center(child: CircularProgressIndicator()),
+    );
+  }
+
+  Widget _buildZoomControls(ThemeData theme) {
+    final surface = theme.colorScheme.surface;
+    final onSurface = theme.colorScheme.onSurface;
+
+    return Material(
+      elevation: 2,
+      borderRadius: AppRadius.circularSm,
+      color: surface.withValues(alpha: 0.95),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: 'Zoom in',
+            icon: Icon(Icons.add, color: onSurface),
+            onPressed: () => _zoomBy(1),
+          ),
+          const Divider(height: 1),
+          IconButton(
+            tooltip: 'Zoom out',
+            icon: Icon(Icons.remove, color: onSurface),
+            onPressed: () => _zoomBy(-1),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final apiKey = AppConfig.googleMapsApiKey;
@@ -169,19 +287,31 @@ class _CoachResultsMapState extends State<CoachResultsMap> {
       );
     }
 
-    final missingCoordsCount =
-        widget.coaches.length - _mappableCoaches.length;
+    if (_nativeMapsFailed) {
+      return _buildMessageCard(
+        context,
+        'Google Maps could not be initialized on this device.',
+      );
+    }
+
+    if (!_nativeMapsReady) {
+      return _buildLoadingState();
+    }
+
+    final missingCoordsCount = widget.coaches.length - _mappableCoaches.length;
+
+    final mapSurface = _buildMapSurface();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (missingCoordsCount > 0)
           Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(12),
+            margin: AppInsets.listItemBottom,
+            padding: EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.tertiaryContainer,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadius.circularSm,
             ),
             child: Text(
               '$missingCoordsCount coach${missingCoordsCount == 1 ? '' : 'es'} '
@@ -189,37 +319,7 @@ class _CoachResultsMapState extends State<CoachResultsMap> {
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
-        SizedBox(
-          height: 420,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: GoogleMap(
-              initialCameraPosition: CameraPosition(
-                target: widget.searchOrigin != null
-                    ? LatLng(
-                        widget.searchOrigin!.latitude,
-                        widget.searchOrigin!.longitude,
-                      )
-                    : _mappableCoaches.isNotEmpty
-                        ? LatLng(
-                            _mappableCoaches.first.latitude!,
-                            _mappableCoaches.first.longitude!,
-                          )
-                        : const LatLng(51.5072, -0.1276),
-                zoom: 8,
-              ),
-              markers: _markers,
-              circles: _circles,
-              mapToolbarEnabled: false,
-              myLocationButtonEnabled: false,
-              zoomControlsEnabled: true,
-              onMapCreated: (controller) {
-                _mapController = controller;
-                _fitBounds();
-              },
-            ),
-          ),
-        ),
+        SizedBox(height: widget.height, child: mapSurface),
       ],
     );
   }
@@ -228,10 +328,10 @@ class _CoachResultsMapState extends State<CoachResultsMap> {
     return Container(
       height: 200,
       alignment: Alignment.center,
-      padding: const EdgeInsets.all(16),
+      padding: AppInsets.screen,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.circularMd,
       ),
       child: Text(
         message,

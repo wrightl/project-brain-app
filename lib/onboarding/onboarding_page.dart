@@ -4,6 +4,7 @@ import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:projectbrain/onboarding/onboarding_provider.dart';
 import 'package:projectbrain/onboarding/onboarding_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -179,7 +180,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   Widget _buildProgressIndicator(
       OnboardingProvider provider, int totalSteps, OnboardingLocalizations localizations) {
     return Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: AppInsets.screen,
       child: Column(
         children: [
           // Progress bar
@@ -194,7 +195,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         ? SystemMouseCursors.click
                         : SystemMouseCursors.basic,
                     child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 2.0),
+                      margin: EdgeInsets.symmetric(horizontal: AppSpacing.micro),
                       height: 4.0,
                       decoration: BoxDecoration(
                         color: index <= provider.currentStep
@@ -202,7 +203,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                             : Theme.of(context)
                                 .colorScheme
                                 .surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(2.0),
+                        borderRadius: BorderRadius.circular(AppRadius.xs),
                       ),
                     ),
                   ),
@@ -210,7 +211,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: AppSpacing.sm),
           // Step indicator text
           Text(
             'Step ${provider.currentStep + 1} of $totalSteps',
@@ -228,7 +229,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     OnboardingLocalizations localizations,
   ) {
     return Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: AppInsets.screen,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -301,7 +302,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
+      padding: AppInsets.page,
       child: Form(
         key: formKey,
         child: Column(
@@ -311,12 +312,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
               'Welcome ${authProvider.profile?.name ?? 'there'}!',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: AppSpacing.sm),
             Text(
               'Please complete your profile.',
               style: Theme.of(context).textTheme.bodyLarge,
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: AppSpacing.xxl),
             TextFormField(
               decoration: InputDecoration(
                 labelText: localizations.fullName,
@@ -329,7 +330,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   val == null || val.isEmpty ? localizations.required : null,
               onSaved: (val) => provider.setFullName(val ?? ''),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             TextFormField(
               controller: dobController,
               readOnly: true,
@@ -357,7 +358,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   ? localizations.selectDateOfBirth
                   : null,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             DropdownButtonFormField<String>(
               decoration: InputDecoration(
                 labelText: localizations.preferredPronoun,
@@ -406,7 +407,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     ];
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
+      padding: AppInsets.page,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -414,15 +415,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
             localizations.stepNeurodiverseTraits,
             style: Theme.of(context).textTheme.headlineSmall,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: AppSpacing.sm),
           Text(
             localizations.selectTraits,
             style: Theme.of(context).textTheme.bodyLarge,
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: AppSpacing.xxl),
           Wrap(
-            spacing: 12,
-            runSpacing: 12,
+            spacing: AppSpacing.md,
+                runSpacing: AppSpacing.md,
             children: traits.map((trait) {
               final isSelected = provider.selectedTraits.contains(trait);
               return FilterChip(
@@ -445,7 +446,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     OnboardingLocalizations localizations,
   ) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
+      padding: AppInsets.page,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -453,7 +454,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             localizations.stepWelcome,
             style: Theme.of(context).textTheme.headlineSmall,
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: AppSpacing.xxl),
           TextFormField(
             decoration: InputDecoration(
               labelText: localizations.preferredName,
@@ -463,7 +464,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             initialValue: provider.preferredName,
             onChanged: (value) => provider.setPreferredName(value.isEmpty ? null : value),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppSpacing.lg),
           TextFormField(
             decoration: InputDecoration(
               labelText: localizations.inspiration,
@@ -474,7 +475,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             maxLines: 4,
             onChanged: (value) => provider.setInspiration(value.isEmpty ? null : value),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppSpacing.lg),
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: localizations.currentFeeling,
@@ -499,7 +500,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     OnboardingLocalizations localizations,
   ) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
+      padding: AppInsets.page,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -507,15 +508,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
             localizations.stepAboutYou,
             style: Theme.of(context).textTheme.headlineSmall,
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: AppSpacing.xxl),
           Text(
             localizations.selfDescription,
             style: Theme.of(context).textTheme.titleMedium,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: AppSpacing.sm),
           Wrap(
-            spacing: 12,
-            runSpacing: 12,
+            spacing: AppSpacing.md,
+                runSpacing: AppSpacing.md,
             children: localizations.selfDescriptionOptions.map((option) {
               final isSelected = provider.selfDescription.contains(option);
               return FilterChip(
@@ -528,7 +529,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               );
             }).toList(),
           ),
-            const SizedBox(height: 24),
+            SizedBox(height: AppSpacing.xl),
           TextFormField(
             decoration: InputDecoration(
               labelText: localizations.businessType,
@@ -539,7 +540,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             maxLines: 3,
             onChanged: (value) => provider.setBusinessType(value.isEmpty ? null : value),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppSpacing.lg),
           TextFormField(
             decoration: InputDecoration(
               labelText: localizations.proudMoment,
@@ -550,15 +551,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
             maxLines: 3,
             onChanged: (value) => provider.setProudMoment(value.isEmpty ? null : value),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppSpacing.lg),
             Text(
             localizations.challenge,
             style: Theme.of(context).textTheme.titleMedium,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: AppSpacing.sm),
           Wrap(
-            spacing: 12,
-            runSpacing: 12,
+            spacing: AppSpacing.md,
+                runSpacing: AppSpacing.md,
             children: localizations.challengeOptions.map((option) {
               final isSelected = provider.challenges.contains(option);
               return FilterChip(
@@ -581,7 +582,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     OnboardingLocalizations localizations,
   ) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
+      padding: AppInsets.page,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -589,7 +590,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             localizations.stepPreferences,
             style: Theme.of(context).textTheme.headlineSmall,
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: AppSpacing.xxl),
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: localizations.learningStyle,
@@ -604,7 +605,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             }).toList(),
             onChanged: (value) => provider.setLearningStyle(value),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppSpacing.lg),
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: localizations.informationDepth,
@@ -619,7 +620,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             }).toList(),
             onChanged: (value) => provider.setInformationDepth(value),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppSpacing.lg),
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: localizations.celebrationStyle,
@@ -644,7 +645,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     OnboardingLocalizations localizations,
   ) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
+      padding: AppInsets.page,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -652,15 +653,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
             localizations.stepProfile,
             style: Theme.of(context).textTheme.headlineSmall,
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: AppSpacing.xxl),
           Text(
             localizations.strengths,
             style: Theme.of(context).textTheme.titleMedium,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: AppSpacing.sm),
           Wrap(
-            spacing: 12,
-            runSpacing: 12,
+            spacing: AppSpacing.md,
+                runSpacing: AppSpacing.md,
             children: localizations.strengthsOptions.map((option) {
               final isSelected = provider.strengths.contains(option);
               return FilterChip(
@@ -673,15 +674,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
               );
             }).toList(),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: AppSpacing.xl),
           Text(
             localizations.supportAreas,
             style: Theme.of(context).textTheme.titleMedium,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: AppSpacing.sm),
           Wrap(
-            spacing: 12,
-            runSpacing: 12,
+            spacing: AppSpacing.md,
+                runSpacing: AppSpacing.md,
             children: localizations.supportAreasOptions.map((option) {
               final isSelected = provider.supportAreas.contains(option);
               return FilterChip(
@@ -694,7 +695,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               );
             }).toList(),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: AppSpacing.xl),
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: localizations.motivationStyle,
@@ -709,7 +710,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             }).toList(),
             onChanged: (value) => provider.setMotivationStyle(value),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppSpacing.lg),
           TextFormField(
             decoration: InputDecoration(
               labelText: localizations.neurodivergentUnderstanding,
@@ -720,7 +721,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             maxLines: 3,
             onChanged: (value) => provider.setNeurodivergentUnderstanding(value.isEmpty ? null : value),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppSpacing.lg),
           TextFormField(
             decoration: InputDecoration(
               labelText: localizations.biggestGoal,
@@ -741,7 +742,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     OnboardingLocalizations localizations,
   ) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
+      padding: AppInsets.page,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -749,15 +750,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
             localizations.stepCoachingBuddy,
             style: Theme.of(context).textTheme.headlineSmall,
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: AppSpacing.xxl),
           Text(
             localizations.tasks,
             style: Theme.of(context).textTheme.titleMedium,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: AppSpacing.sm),
           Wrap(
-            spacing: 12,
-            runSpacing: 12,
+            spacing: AppSpacing.md,
+                runSpacing: AppSpacing.md,
             children: localizations.tasksOptions.map((option) {
               final isSelected = provider.tasks.contains(option);
               return FilterChip(
@@ -770,7 +771,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               );
             }).toList(),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: AppSpacing.xl),
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: localizations.communicationStyle,
@@ -785,7 +786,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             }).toList(),
             onChanged: (value) => provider.setCommunicationStyle(value),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppSpacing.lg),
           TextFormField(
             decoration: InputDecoration(
               labelText: localizations.toolsIntegration,
@@ -796,7 +797,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             maxLines: 3,
             onChanged: (value) => provider.setToolsIntegration(value.isEmpty ? null : value),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppSpacing.lg),
           TextFormField(
             decoration: InputDecoration(
               labelText: localizations.workingStyle,
@@ -807,7 +808,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             maxLines: 3,
             onChanged: (value) => provider.setWorkingStyle(value.isEmpty ? null : value),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppSpacing.lg),
           TextFormField(
             decoration: InputDecoration(
               labelText: localizations.additionalInfo,
@@ -828,7 +829,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     OnboardingLocalizations localizations,
   ) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
+      padding: AppInsets.page,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -836,7 +837,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             localizations.stepClosing,
             style: Theme.of(context).textTheme.headlineSmall,
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: AppSpacing.xxl),
           TextFormField(
             decoration: InputDecoration(
               labelText: localizations.safeSpace,
@@ -847,7 +848,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             maxLines: 4,
             onChanged: (value) => provider.setSafeSpace(value.isEmpty ? null : value),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: AppSpacing.xl),
           CheckboxListTile(
             title: Text(localizations.tipsOptInLabel),
             value: provider.tipsOptIn ?? false,
@@ -863,7 +864,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     OnboardingLocalizations localizations,
   ) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
+      padding: AppInsets.page,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -871,7 +872,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             localizations.stepFollowOnQuestions,
             style: Theme.of(context).textTheme.headlineSmall,
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: AppSpacing.xxl),
           // Strengths Questions
           if (provider.shouldShowStrengthsQuestions) ...[
             _buildSectionTitle(localizations.strengthsQuestions),
@@ -884,7 +885,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['strengths']?['howDoYouUseStrengths'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.whatHelpsTapStrengths,
               (value) => provider.setFollowOnQuestion(
@@ -894,7 +895,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['strengths']?['whatHelpsTapStrengths'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.howBuildOnStrengths,
               (value) => provider.setFollowOnQuestion(
@@ -904,7 +905,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['strengths']?['howBuildOnStrengths'] ?? '',
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: AppSpacing.xl),
           ],
           // Challenges Questions
           if (provider.shouldShowChallengesQuestions) ...[
@@ -918,7 +919,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['challenges']?['whatsHardestToManage'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.whatToolsHaveHelped,
               (value) => provider.setFollowOnQuestion(
@@ -928,7 +929,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['challenges']?['whatToolsHaveHelped'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildCheckbox(
               localizations.wouldLikeToolSuggestions,
               (value) => provider.setFollowOnQuestion(
@@ -938,7 +939,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['challenges']?['wouldLikeToolSuggestions'] ?? false,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.whatHelpsRecharge,
               (value) => provider.setFollowOnQuestion(
@@ -948,7 +949,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['challenges']?['whatHelpsRecharge'] ?? '',
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: AppSpacing.xl),
           ],
           // Learning Questions
           if (provider.shouldShowLearningQuestions) ...[
@@ -962,7 +963,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['learning']?['shareLearningExample'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildCheckbox(
               localizations.preferSpecificFormat,
               (value) => provider.setFollowOnQuestion(
@@ -972,7 +973,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['learning']?['preferSpecificFormat'] ?? false,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.howBreakDownTasks,
               (value) => provider.setFollowOnQuestion(
@@ -982,7 +983,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['learning']?['howBreakDownTasks'] ?? '',
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: AppSpacing.xl),
           ],
           // Motivation Questions
           if (provider.shouldShowMotivationQuestions) ...[
@@ -996,7 +997,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['motivation']?['whatMotivatesYou'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.howSetGoals,
               (value) => provider.setFollowOnQuestion(
@@ -1006,7 +1007,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['motivation']?['howSetGoals'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.whatRemindersWork,
               (value) => provider.setFollowOnQuestion(
@@ -1016,7 +1017,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['motivation']?['whatRemindersWork'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.howCelebrateProgress,
               (value) => provider.setFollowOnQuestion(
@@ -1026,7 +1027,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['motivation']?['howCelebrateProgress'] ?? '',
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: AppSpacing.xl),
           ],
           // Coping Questions
           if (provider.shouldShowCopingQuestions) ...[
@@ -1040,7 +1041,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['coping']?['sensoryFriendlyEnvironment'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.howManageTime,
               (value) => provider.setFollowOnQuestion(
@@ -1050,7 +1051,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['coping']?['howManageTime'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.whatHelpsOverwhelmed,
               (value) => provider.setFollowOnQuestion(
@@ -1060,7 +1061,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['coping']?['whatHelpsOverwhelmed'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildCheckbox(
               localizations.exploreCopingStrategies,
               (value) => provider.setFollowOnQuestion(
@@ -1070,7 +1071,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['coping']?['exploreCopingStrategies'] ?? false,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: AppSpacing.xl),
           ],
           // Support Questions
           if (provider.shouldShowSupportQuestions) ...[
@@ -1084,7 +1085,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['support']?['whatWouldMakeDifference'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.whatDoesSupportLookLike,
               (value) => provider.setFollowOnQuestion(
@@ -1094,7 +1095,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['support']?['whatDoesSupportLookLike'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.specificSkillsToDevelop,
               (value) => provider.setFollowOnQuestion(
@@ -1104,7 +1105,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['support']?['specificSkillsToDevelop'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.howBalanceWorkSelfCare,
               (value) => provider.setFollowOnQuestion(
@@ -1114,7 +1115,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['support']?['howBalanceWorkSelfCare'] ?? '',
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: AppSpacing.xl),
           ],
           // Coaching Buddy Questions
           if (provider.shouldShowCoachingBuddyQuestions) ...[
@@ -1128,7 +1129,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['coachingBuddy']?['whatTaskTakeOffPlate'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.whatWouldLikeHelpWith,
               (value) => provider.setFollowOnQuestion(
@@ -1138,7 +1139,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['coachingBuddy']?['whatWouldLikeHelpWith'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.howAdaptCommunication,
               (value) => provider.setFollowOnQuestion(
@@ -1148,7 +1149,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['coachingBuddy']?['howAdaptCommunication'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.specificRemindersPrompts,
               (value) => provider.setFollowOnQuestion(
@@ -1158,7 +1159,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['coachingBuddy']?['specificRemindersPrompts'] ?? '',
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: AppSpacing.xl),
           ],
           // Emotional Questions
           if (provider.shouldShowEmotionalQuestions) ...[
@@ -1172,7 +1173,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['emotional']?['whatHelpsGrounded'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.howProcessChallenges,
               (value) => provider.setFollowOnQuestion(
@@ -1182,7 +1183,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['emotional']?['howProcessChallenges'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.whatHelpsBuildCalm,
               (value) => provider.setFollowOnQuestion(
@@ -1192,7 +1193,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['emotional']?['whatHelpsBuildCalm'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.whatWouldHelpSupported,
               (value) => provider.setFollowOnQuestion(
@@ -1202,7 +1203,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['emotional']?['whatWouldHelpSupported'] ?? '',
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: AppSpacing.xl),
           ],
           // Celebrating Questions
           if (provider.shouldShowCelebratingQuestions) ...[
@@ -1216,7 +1217,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['celebrating']?['recentWinToCelebrate'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.howAcknowledgeProgress,
               (value) => provider.setFollowOnQuestion(
@@ -1226,7 +1227,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['celebrating']?['howAcknowledgeProgress'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildCheckbox(
               localizations.wouldLikeCelebrationIdeas,
               (value) => provider.setFollowOnQuestion(
@@ -1236,7 +1237,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['celebrating']?['wouldLikeCelebrationIdeas'] ?? false,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.howRecognizeProgress,
               (value) => provider.setFollowOnQuestion(
@@ -1246,7 +1247,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['celebrating']?['howRecognizeProgress'] ?? '',
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: AppSpacing.xl),
           ],
           // Customization Questions
           if (provider.shouldShowCustomizationQuestions) ...[
@@ -1260,7 +1261,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['customization']?['specificToolsToIntegrate'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.howCustomizeCommunication,
               (value) => provider.setFollowOnQuestion(
@@ -1270,7 +1271,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['customization']?['howCustomizeCommunication'] ?? '',
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.tailoredNeeds,
               (value) => provider.setFollowOnQuestion(
@@ -1288,7 +1289,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
+      padding: EdgeInsets.only(bottom: AppSpacing.lg),
       child: Text(
         title,
         style: Theme.of(context).textTheme.titleLarge?.copyWith(

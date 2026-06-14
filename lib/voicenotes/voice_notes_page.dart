@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:projectbrain/core/di/injection_container.dart';
@@ -9,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_session/audio_session.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Voice notes page for managing recorded voice notes
 class VoiceNotesPage extends StatefulWidget {
@@ -41,6 +43,9 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
   File? _downloadedAudioFile; // Cache downloaded audio file
   String? _downloadingVoiceNoteId; // Track which voice note is being downloaded
 
+  // Audio player stream subscriptions, cancelled in dispose to avoid leaks.
+  final List<StreamSubscription<dynamic>> _audioSubscriptions = [];
+
   @override
   void initState() {
     super.initState();
@@ -64,6 +69,10 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
 
   @override
   void dispose() {
+    for (final subscription in _audioSubscriptions) {
+      subscription.cancel();
+    }
+    _audioSubscriptions.clear();
     _audioRecorder.dispose();
     _audioPlayer.dispose();
     _descriptionController.dispose();
@@ -91,21 +100,21 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
         androidWillPauseWhenDucked: false,
       ));
 
-      _audioPlayer.positionStream.listen((position) {
+      _audioSubscriptions.add(_audioPlayer.positionStream.listen((position) {
         if (mounted) {
           setState(() {
             _playbackPosition = position;
           });
         }
-      });
-      _audioPlayer.durationStream.listen((duration) {
+      }));
+      _audioSubscriptions.add(_audioPlayer.durationStream.listen((duration) {
         if (mounted) {
           setState(() {
             _playbackDuration = duration ?? Duration.zero;
           });
         }
-      });
-      _audioPlayer.playerStateStream.listen((state) {
+      }));
+      _audioSubscriptions.add(_audioPlayer.playerStateStream.listen((state) {
         if (mounted) {
           setState(() {
             _isPlaying = state.playing;
@@ -115,7 +124,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
             }
           });
         }
-      });
+      }));
     } catch (e) {
       logError('[VoiceNotesPage] Error setting up audio player: $e');
       // Audio player setup failed - this usually means the plugin isn't registered
@@ -128,6 +137,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
       // If already playing this note, pause it
       if (_currentlyPlayingId == voiceNote.id && _isPlaying) {
         await _audioPlayer.pause();
+        if (!mounted) return;
         setState(() {
           _isPlaying = false;
         });
@@ -137,6 +147,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
       // If paused, resume playback
       if (_currentlyPlayingId == voiceNote.id && !_isPlaying) {
         await _audioPlayer.play();
+        if (!mounted) return;
         setState(() {
           _isPlaying = true;
         });
@@ -154,6 +165,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
       // Download the audio file if we don't have it cached
       File? audioFile = _downloadedAudioFile;
       if (audioFile == null || !await audioFile.exists()) {
+        if (!mounted) return;
         setState(() {
           _errorMessage = null; // Clear any previous errors
           _downloadingVoiceNoteId = voiceNote.id;
@@ -167,6 +179,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
           _downloadedAudioFile = audioFile;
           logDebug('[VoiceNotesPage] Downloaded audio file: ${audioFile.path}');
         } catch (e) {
+          if (!mounted) return;
           setState(() {
             _downloadingVoiceNoteId = null;
             _errorMessage = 'Failed to download audio: ${e.toString()}';
@@ -184,6 +197,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
 
       // Stop any current playback before setting new source
       await _audioPlayer.stop();
+      if (!mounted) return;
 
       // Update UI first to show playback controls before audio starts
       setState(() {
@@ -200,6 +214,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
       // Play the audio
       await _audioPlayer.play();
       logDebug('[VoiceNotesPage] Playing voice note: ${voiceNote.id}');
+      if (!mounted) return;
 
       // Update playing state (the playerStateStream will also update this)
       setState(() {
@@ -238,6 +253,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
       // If already playing, pause it
       if (_currentlyPlayingId == 'local' && _isPlaying) {
         await _audioPlayer.pause();
+        if (!mounted) return;
         setState(() {
           _isPlaying = false;
         });
@@ -247,6 +263,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
       // If paused, resume playback
       if (_currentlyPlayingId == 'local' && !_isPlaying) {
         await _audioPlayer.play();
+        if (!mounted) return;
         setState(() {
           _isPlaying = true;
         });
@@ -257,6 +274,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
       if (_currentlyPlayingId != null && _currentlyPlayingId != 'local') {
         await _audioPlayer.stop();
       }
+      if (!mounted) return;
 
       // Update UI first to show playback controls before audio starts
       setState(() {
@@ -267,6 +285,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
       // Set audio source from local file
       await _audioPlayer.setFilePath(_recordingPath!);
       await _audioPlayer.play();
+      if (!mounted) return;
 
       // Update playing state (the playerStateStream will also update this)
       setState(() {
@@ -296,11 +315,13 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
 
     try {
       final voiceNotes = await _voiceNoteService.getVoiceNotes();
+      if (!mounted) return;
       setState(() {
         _voiceNotes = voiceNotes;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Failed to load voice notes: ${e.toString()}';
         _isLoading = false;
@@ -325,6 +346,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
         ),
         path: path,
       );
+      if (!mounted) return;
 
       setState(() {
         _isRecording = true;
@@ -337,6 +359,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
       // Update duration while recording
       _updateRecordingDuration();
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         final errorMsg = e.toString().toLowerCase();
         if (errorMsg.contains('permission') || errorMsg.contains('denied')) {
@@ -364,6 +387,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
   Future<void> _stopRecording() async {
     try {
       final path = await _audioRecorder.stop();
+      if (!mounted) return;
       setState(() {
         _isRecording = false;
         if (path != null) {
@@ -371,6 +395,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
         }
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Failed to stop recording: ${e.toString()}';
         _isRecording = false;
@@ -387,6 +412,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
           await file.delete();
         }
       }
+      if (!mounted) return;
       setState(() {
         _isRecording = false;
         _recordingPath = null;
@@ -418,6 +444,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
         file,
         description: description.isEmpty ? null : description,
       );
+      if (!mounted) return;
 
       setState(() {
         _successMessage = 'Voice note uploaded successfully';
@@ -438,13 +465,16 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
         }
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Failed to upload voice note: ${e.toString()}';
       });
     } finally {
-      setState(() {
-        _isUploading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
     }
   }
 
@@ -510,28 +540,32 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
             if (_errorMessage != null)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
+                padding: AppInsets.screen,
                 color: theme.colorScheme.errorContainer,
                 child: Text(
                   _errorMessage!,
-                  style: TextStyle(color: theme.colorScheme.onErrorContainer),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onErrorContainer,
+                  ),
                 ),
               ),
             if (_successMessage != null)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
+                padding: AppInsets.screen,
                 color: theme.colorScheme.primaryContainer,
                 child: Text(
                   _successMessage!,
-                  style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
                 ),
               ),
 
             // Recording controls
             if (_isRecording || _recordingPath != null)
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: AppInsets.screen,
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerHighest,
                   border: Border(bottom: BorderSide(color: theme.dividerColor)),
@@ -543,7 +577,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.mic, color: theme.colorScheme.error),
-                          const SizedBox(width: 8),
+                          SizedBox(width: AppSpacing.sm),
                           Text(
                             _formatDuration(_recordingDuration),
                             style: theme.textTheme.titleLarge?.copyWith(
@@ -557,7 +591,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                         'Recording complete',
                         style: theme.textTheme.bodyLarge,
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: AppSpacing.lg),
                       // Description input
                       TextField(
                         controller: _descriptionController,
@@ -565,17 +599,17 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                           labelText: 'Description (optional)',
                           hintText: 'Add a description for this voice note',
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: AppRadius.circularSm,
                           ),
                           contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
+                            horizontal: AppSpacing.lg,
+                            vertical: AppSpacing.md,
                           ),
                         ),
                         maxLines: 2,
                         maxLength: 200,
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: AppSpacing.sm),
                       // Playback controls for local recording
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -612,7 +646,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                                       },
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
+                                  SizedBox(width: AppSpacing.sm),
                                   Expanded(
                                     flex: 2,
                                     child: Text(
@@ -627,7 +661,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                         ],
                       ),
                     ],
-                    const SizedBox(height: 16),
+                    SizedBox(height: AppSpacing.lg),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -657,7 +691,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                               _isUploading ? 'Uploading...' : 'Upload',
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: AppSpacing.sm),
                           OutlinedButton.icon(
                             onPressed: _cancelRecording,
                             icon: const Icon(Icons.cancel),
@@ -686,7 +720,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                                   alpha: 0.3,
                                 ),
                               ),
-                              const SizedBox(height: 16),
+                              SizedBox(height: AppSpacing.lg),
                               Text(
                                 'No voice notes yet',
                                 style: theme.textTheme.titleMedium?.copyWith(
@@ -695,7 +729,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              SizedBox(height: AppSpacing.sm),
                               Text(
                                 'Tap the record button to create your first voice note',
                                 style: theme.textTheme.bodySmall?.copyWith(
@@ -709,7 +743,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                           ),
                         )
                       : ListView.builder(
-                          padding: const EdgeInsets.all(16),
+                          padding: AppInsets.screen,
                           itemCount: _voiceNotes.length,
                           itemBuilder: (context, index) {
                             final voiceNote = _voiceNotes[index];
@@ -718,7 +752,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                             final isDownloading =
                                 _downloadingVoiceNoteId == voiceNote.id;
                             return Card(
-                              margin: const EdgeInsets.only(bottom: 8),
+                              margin: EdgeInsets.only(bottom: AppSpacing.sm),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -746,7 +780,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                                             true)
                                           Padding(
                                             padding: const EdgeInsets.only(
-                                                bottom: 4),
+                                                bottom: AppSpacing.xs),
                                             child: Text(
                                               voiceNote.fileName,
                                               style: theme.textTheme.bodySmall
@@ -768,7 +802,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                                       children: [
                                         if (isDownloading)
                                           const Padding(
-                                            padding: EdgeInsets.all(16.0),
+                                            padding: AppInsets.screen,
                                             child: SizedBox(
                                               width: 20,
                                               height: 20,
@@ -802,8 +836,8 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                                   if (isCurrentlyPlaying)
                                     Padding(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 8,
+                                        horizontal: AppSpacing.lg,
+                            vertical: AppSpacing.sm,
                                       ),
                                       child: Row(
                                         children: [
@@ -830,7 +864,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                                               },
                                             ),
                                           ),
-                                          const SizedBox(width: 8),
+                                          SizedBox(width: AppSpacing.sm),
                                           Expanded(
                                             flex: 2,
                                             child: Text(

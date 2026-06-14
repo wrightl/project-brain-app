@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:projectbrain/models/quiz.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Widget for rendering quiz questions with appropriate input types
 class QuizQuestionWidget extends StatefulWidget {
@@ -88,12 +89,11 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
             ),
             if (widget.question.mandatory)
               Padding(
-                padding: const EdgeInsets.only(left: 8),
+                padding: EdgeInsets.only(left: AppSpacing.sm),
                 child: Text(
                   '*',
-                  style: TextStyle(
+                  style: theme.textTheme.headlineSmall?.copyWith(
                     color: theme.colorScheme.error,
-                    fontSize: theme.textTheme.headlineSmall?.fontSize,
                   ),
                 ),
               ),
@@ -102,7 +102,7 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
 
         // Hint text
         if (widget.question.hint != null && widget.question.hint!.isNotEmpty) ...[
-          const SizedBox(height: 8),
+          SizedBox(height: AppSpacing.sm),
           Text(
             widget.question.hint!,
             style: theme.textTheme.bodySmall?.copyWith(
@@ -111,7 +111,7 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
           ),
         ],
 
-        const SizedBox(height: 24),
+        SizedBox(height: AppSpacing.xl),
 
         // Input widget based on type
         _buildInputWidget(theme),
@@ -327,7 +327,7 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
           currentDate != null
               ? '${currentDate.year}-${currentDate.month.toString().padLeft(2, '0')}-${currentDate.day.toString().padLeft(2, '0')}'
               : 'Select a date',
-          style: TextStyle(
+          style: theme.textTheme.bodyLarge?.copyWith(
             color: currentDate != null
                 ? theme.colorScheme.onSurface
                 : theme.colorScheme.onSurface.withValues(alpha: 0.6),
@@ -342,7 +342,9 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
         widget.question.choices!.isEmpty) {
       return Text(
         'No choices available',
-        style: TextStyle(color: theme.colorScheme.error),
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.error,
+        ),
       );
     }
 
@@ -367,7 +369,9 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
         widget.question.choices!.isEmpty) {
       return Text(
         'No choices available',
-        style: TextStyle(color: theme.colorScheme.error),
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.error,
+        ),
       );
     }
 
@@ -409,7 +413,7 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
       children: [
         // Display current value prominently
         Padding(
-          padding: const EdgeInsets.only(bottom: 16),
+          padding: EdgeInsets.only(bottom: AppSpacing.lg),
           child: Center(
             child: Text(
               currentValue.toInt().toString(),

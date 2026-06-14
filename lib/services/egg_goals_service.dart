@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:projectbrain/services/http_service.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
+import 'package:projectbrain/models/goal_streak_summary.dart';
 
 /// Service for managing egg goals (daily goals) via API
 class EggGoalsService extends HttpService {
@@ -19,7 +20,8 @@ class EggGoalsService extends HttpService {
         }
         return [];
       } else {
-        logDebug('[EggGoalsService] Failed to fetch goals: ${res.statusCode}');
+        logWarning(
+            '[EggGoalsService] Failed to fetch goals: ${res.statusCode}');
         return [];
       }
     } catch (e) {
@@ -86,6 +88,18 @@ class EggGoalsService extends HttpService {
       logError('[EggGoalsService] Error fetching goal suggestions', e);
       return [];
     }
+  }
+
+  /// Goal completion streak summary (GET /eggs/streak-summary).
+  Future<GoalStreakSummary> getStreakSummary() async {
+    final res = await get('/eggs/streak-summary', useCache: false);
+    if (res.statusCode == 200) {
+      return GoalStreakSummary.fromJson(
+          jsonDecode(res.body) as Map<String, dynamic>);
+    }
+    logWarning(
+        '[EggGoalsService] Failed to fetch streak summary: ${res.statusCode}');
+    throw Exception('Failed to load goal streak summary');
   }
 
   /// Check if user has ever created goals via API

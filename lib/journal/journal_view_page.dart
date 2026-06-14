@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:projectbrain/journal/journal_provider.dart';
 import 'package:projectbrain/journal/journal_localizations.dart';
 import 'package:intl/intl.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// View a single journal entry (read-only) with Edit button.
 class JournalViewPage extends StatefulWidget {
@@ -51,7 +52,7 @@ class _JournalViewPageState extends State<JournalViewPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(provider.errorMessage!, textAlign: TextAlign.center),
-                  const SizedBox(height: 16),
+                  SizedBox(height: AppSpacing.lg),
                   FilledButton(
                     onPressed: () => provider.fetchEntry(widget.entryId),
                     child: const Text('Retry'),
@@ -64,7 +65,7 @@ class _JournalViewPageState extends State<JournalViewPage> {
             return Center(child: Text(l10n.entryNotFound));
           }
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: AppInsets.screen,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -75,13 +76,13 @@ class _JournalViewPageState extends State<JournalViewPage> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: AppSpacing.md),
                 ],
                 Text(
                   entry.content,
                   style: theme.textTheme.bodyLarge,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: AppSpacing.lg),
                 Text(
                   DateFormat.yMMMd().add_Hm().format(entry.createdAt),
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -90,10 +91,10 @@ class _JournalViewPageState extends State<JournalViewPage> {
                 ),
                 if ((entry.tags?.isNotEmpty ?? false) ||
                     (entry.systemTags?.isNotEmpty ?? false)) ...[
-                  const SizedBox(height: 12),
+                  SizedBox(height: AppSpacing.md),
                   Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
+                    spacing: AppSpacing.s6,
+                  runSpacing: AppSpacing.xs,
                     children: [
                       ...?entry.tags?.map((t) => Chip(
                             label: Text(t.name),
@@ -112,7 +113,7 @@ class _JournalViewPageState extends State<JournalViewPage> {
                   ...entry.systemTags!
                       .where((t) => t.responses != null && t.responses!.isNotEmpty)
                       .map((st) => Padding(
-                            padding: const EdgeInsets.only(top: 16),
+                            padding: EdgeInsets.only(top: AppSpacing.lg),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -122,9 +123,9 @@ class _JournalViewPageState extends State<JournalViewPage> {
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                SizedBox(height: AppSpacing.xs),
                                 ...st.responses!.entries.map((e) => Padding(
-                                      padding: const EdgeInsets.only(top: 2),
+                                      padding: EdgeInsets.only(top: AppSpacing.micro),
                                       child: Text(
                                         '${e.key}: ${e.value}',
                                         style: theme.textTheme.bodyMedium,

@@ -42,6 +42,11 @@ class StrategiesChatProvider extends ChangeNotifier {
 
   Future<void> sendMessage(String content) async {
     if (content.trim().isEmpty) return;
+    // Guard against concurrent sends while a response is still streaming.
+    if (_isLoading) {
+      logDebug('[StrategiesChatProvider] Send ignored; response in flight');
+      return;
+    }
     _errorMessage = null;
     _turns.add(StrategyChatTurn(
       userMessage: content.trim(),

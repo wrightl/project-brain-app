@@ -1,5 +1,3 @@
-import 'package:projectbrain/core/logging/app_logger.dart';
-
 class Coach {
   final String id;
   final String? coachProfileId;
@@ -48,10 +46,6 @@ class Coach {
   });
 
   factory Coach.fromJson(Map<String, dynamic> json) {
-    logDebug('[Coach] Coach: $json');
-    logDebug('[Coach] Connection status: ${json['connectionStatus']}');
-    logDebug('[Coach] full name: ${json['fullName']}');
-
     return Coach(
       id: json['id'] ?? json['Id'] ?? '',
       coachProfileId: json['coachProfileId'] ?? json['CoachProfileId'],

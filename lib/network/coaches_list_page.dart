@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/models/connection.dart';
 import 'package:projectbrain/services/connection_service.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Talk to a Coach — list connected coaches with message and manage actions.
 class CoachesListPage extends StatefulWidget {
@@ -162,7 +163,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
               child: Text(
                 'Your connected coaches. Send a message or manage your connections.',
                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -171,29 +172,30 @@ class _CoachesListPageState extends State<CoachesListPage> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: AppInsets.screen,
               child: OutlinedButton.icon(
                 onPressed: _navigateToFindCoach,
                 icon: const Icon(Icons.person_add),
                 label: const Text('Find a Coach'),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.s14),
                 ),
               ),
             ),
             if (_errorMessage != null)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 child: Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: AppInsets.screen,
                   decoration: BoxDecoration(
                     color: theme.colorScheme.errorContainer,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppRadius.circularSm,
                   ),
                   child: Text(
                     _errorMessage!,
-                    style:
-                        TextStyle(color: theme.colorScheme.onErrorContainer),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onErrorContainer,
+                    ),
                   ),
                 ),
               ),
@@ -205,7 +207,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
               Expanded(
                 child: Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(32),
+                    padding: EdgeInsets.all(AppSpacing.xxl),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -215,7 +217,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
                           color: theme.colorScheme.onSurface
                               .withValues(alpha: 0.3),
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: AppSpacing.lg),
                         Text(
                           'No coaches connected yet',
                           style: theme.textTheme.titleMedium?.copyWith(
@@ -223,7 +225,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
                                 .withValues(alpha: 0.6),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: AppSpacing.sm),
                         Text(
                           'Find and connect with a coach to start messaging.',
                           textAlign: TextAlign.center,
@@ -232,7 +234,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
                                 .withValues(alpha: 0.5),
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: AppSpacing.xl),
                         FilledButton.icon(
                           onPressed: _navigateToFindCoach,
                           icon: const Icon(Icons.search),
@@ -248,7 +250,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
                 child: RefreshIndicator(
                   onRefresh: _loadConnections,
                   child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                     itemCount: _connections.length,
                     itemBuilder: (context, index) {
                       final connection = _connections[index];
@@ -256,9 +258,9 @@ class _CoachesListPageState extends State<CoachesListPage> {
                       final statusColor = _statusColor(connection, theme);
 
                       return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
+                        margin: AppInsets.listItemBottom,
                         child: Padding(
-                          padding: const EdgeInsets.all(16),
+                          padding: AppInsets.screen,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -274,7 +276,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
                                           theme.colorScheme.onPrimaryContainer,
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
+                                  SizedBox(width: AppSpacing.md),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
@@ -287,18 +289,18 @@ class _CoachesListPageState extends State<CoachesListPage> {
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
-                                        const SizedBox(height: 4),
+                                        SizedBox(height: AppSpacing.xs),
                                         Container(
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 2,
+                                            horizontal: AppSpacing.sm,
+                                            vertical: AppSpacing.micro,
                                           ),
                                           decoration: BoxDecoration(
                                             color: statusColor.withValues(
                                               alpha: 0.15,
                                             ),
                                             borderRadius:
-                                                BorderRadius.circular(12),
+                                                AppRadius.circularMd,
                                           ),
                                           child: Text(
                                             _statusLabel(connection),
@@ -317,7 +319,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
                               if (connection.isAccepted &&
                                   connection.respondedAt != null)
                                 Padding(
-                                  padding: const EdgeInsets.only(top: 8),
+                                  padding: EdgeInsets.only(top: AppSpacing.sm),
                                   child: Text(
                                     'Connected on ${_formatDate(connection.respondedAt)}',
                                     style: theme.textTheme.bodySmall?.copyWith(
@@ -329,7 +331,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
                               if (connection.isPending &&
                                   connection.requestedAt != null)
                                 Padding(
-                                  padding: const EdgeInsets.only(top: 8),
+                                  padding: EdgeInsets.only(top: AppSpacing.sm),
                                   child: Text(
                                     'Requested on ${_formatDate(connection.requestedAt)}',
                                     style: theme.textTheme.bodySmall?.copyWith(
@@ -338,10 +340,10 @@ class _CoachesListPageState extends State<CoachesListPage> {
                                     ),
                                   ),
                                 ),
-                              const SizedBox(height: 12),
+                              SizedBox(height: AppSpacing.md),
                               Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
+                                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
                                 children: [
                                   if (connection.isAccepted)
                                     FilledButton.icon(
@@ -384,7 +386,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
                                       connection.isPending
                                           ? 'Cancel'
                                           : 'Remove',
-                                      style: TextStyle(
+                                      style: theme.textTheme.labelLarge?.copyWith(
                                         color: theme.colorScheme.error,
                                       ),
                                     ),

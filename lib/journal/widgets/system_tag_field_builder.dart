@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:projectbrain/models/journal/system_tag_field_definition.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 /// Builds a form field from a system tag field definition.
 class SystemTagFieldBuilder extends StatefulWidget {
@@ -92,9 +93,9 @@ class _SystemTagFieldBuilderState extends State<SystemTagFieldBuilder> {
               Text(definition.hint!,
                   style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.6))),
-            const SizedBox(height: 8),
+            SizedBox(height: AppSpacing.sm),
             Wrap(
-              spacing: 8,
+              spacing: AppSpacing.sm,
               children: List.generate(max - min + 1, (i) {
                 final v = min + i;
                 final selected = current == v;

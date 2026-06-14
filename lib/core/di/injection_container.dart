@@ -38,6 +38,7 @@ import 'package:projectbrain/services/error_reporting_service.dart';
 import 'package:projectbrain/subscription/subscription_provider.dart';
 import 'package:projectbrain/goals/egg_goals_provider.dart';
 import 'package:projectbrain/services/feature_flag_service.dart';
+import 'package:projectbrain/services/connectivity_service.dart';
 import 'package:projectbrain/services/http_service.dart';
 import 'package:projectbrain/services/api_http_cache_coordinator.dart';
 import 'package:projectbrain/core/session/session_cleanup_service.dart';
@@ -126,6 +127,11 @@ Future<void> initializeDependencies() async {
   // Feature Flag Service - manages feature flags from backend API
   sl.registerLazySingleton<FeatureFlagService>(
     () => FeatureFlagService(httpService: sl<HttpService>()),
+  );
+
+  // Connectivity Service - tracks online/offline state for UI messaging
+  sl.registerLazySingleton<ConnectivityService>(
+    () => ConnectivityService(),
   );
 
   // Auth Provider - manages authentication UI state
@@ -227,6 +233,8 @@ Future<void> initializeDependencies() async {
       sl<VoiceNoteService>(),
       sl<QuizService>(),
       sl<CoachService>(),
+      sl<ConnectionService>(),
+      sl<LocationService>(),
       sl<SubscriptionService>(),
       sl<EggGoalsService>(),
       sl<JournalService>(),
@@ -265,8 +273,9 @@ Future<void> initializeDependencies() async {
   );
 
   // ===== Providers =====
-  // Chat Provider - factory to create new instances when needed
-  sl.registerFactory<ChatProvider>(
+  // Chat Provider - single instance so session cleanup resets the same object
+  // the widget tree uses (provided via `.value` in MyApp).
+  sl.registerLazySingleton<ChatProvider>(
     () => ChatProvider(
       aiService: sl<AIService>(),
       conversationService: sl<ConversationService>(),
@@ -289,8 +298,9 @@ Future<void> initializeDependencies() async {
     ),
   );
 
-  // Journal Provider - factory so each consumer can get a fresh instance if needed
-  sl.registerFactory<JournalProvider>(
+  // Journal Provider - single instance so session cleanup resets the same
+  // object the widget tree uses (provided via `.value` in MyApp).
+  sl.registerLazySingleton<JournalProvider>(
     () => JournalProvider(
       journalService: sl<JournalService>(),
       tagService: sl<TagService>(),
@@ -320,6 +330,9 @@ Future<void> initializeDependencies() async {
       strategiesProvider: sl<StrategiesProvider>(),
       strategiesChatProvider: sl<StrategiesChatProvider>(),
       goalsRealtimeService: sl<GoalsRealtimeService>(),
+      coachMessageSignalRService: sl<CoachMessageSignalRService>(),
+      chatProvider: sl<ChatProvider>(),
+      journalProvider: sl<JournalProvider>(),
     ),
   );
 

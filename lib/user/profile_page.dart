@@ -1,12 +1,15 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:projectbrain/authentication/auth_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:projectbrain/core/config/app_config.dart';
+import 'package:projectbrain/helpers/app_themes.dart';
 import 'package:projectbrain/helpers/theme.dart';
 import 'package:projectbrain/helpers/theme_mode_provider.dart';
 import 'package:projectbrain/services/auth/auth_exception.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -89,11 +92,11 @@ class _ProfilePageState extends State<ProfilePage> {
       _pronoun = user.preferredPronoun ?? '';
 
       if (user.doB != null && user.doB!.isNotEmpty) {
-        try {
-          _doB = DateTime.parse(user.doB!);
-          _dobController.text = user.doB!.substring(0, 10);
-        } catch (e) {
-          // Invalid date format, ignore
+        final parsedDob = DateTime.tryParse(user.doB!);
+        if (parsedDob != null) {
+          _doB = parsedDob;
+          final raw = user.doB!;
+          _dobController.text = raw.length >= 10 ? raw.substring(0, 10) : raw;
         }
       }
 
@@ -222,32 +225,32 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: AppInsets.page,
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildEnvironmentBadge(colorScheme, appColors),
-                const SizedBox(height: 24),
+                _buildEnvironmentBadge(theme, colorScheme, appColors),
+                SizedBox(height: AppSpacing.xl),
                 _buildProfileAvatar(authProvider),
-                const SizedBox(height: 16),
+                SizedBox(height: AppSpacing.lg),
                 _buildProfileEmail(authProvider, theme, colorScheme),
-                const SizedBox(height: 32),
+                SizedBox(height: AppSpacing.xxl),
                 _buildFullNameField(theme),
-                const SizedBox(height: 16),
+                SizedBox(height: AppSpacing.lg),
                 _buildDateOfBirthField(theme),
-                const SizedBox(height: 16),
+                SizedBox(height: AppSpacing.lg),
                 _buildPronounField(theme),
                 if (_pronoun == 'Other') ...[
-                  const SizedBox(height: 16),
+                  SizedBox(height: AppSpacing.lg),
                   _buildCustomPronounField(theme),
                 ],
-                const SizedBox(height: 24),
+                SizedBox(height: AppSpacing.xl),
                 _buildThemeSection(theme),
-                const SizedBox(height: 24),
+                SizedBox(height: AppSpacing.xl),
                 _buildNeurodiverseTraitsSection(theme, colorScheme),
-                const SizedBox(height: 32),
+                SizedBox(height: AppSpacing.xxl),
                 if (_isEditing) ...[
                   Row(
                     children: [
@@ -257,7 +260,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           child: const Text('Cancel'),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: AppSpacing.lg),
                       Expanded(
                         child: ElevatedButton(
                           onPressed: _isSaving ? null : _saveProfile,
@@ -274,10 +277,10 @@ class _ProfilePageState extends State<ProfilePage> {
                     ],
                   ),
                 ],
-                const SizedBox(height: 24),
+                SizedBox(height: AppSpacing.xl),
                 _buildDebugTokenSection(
                     authProvider, theme, colorScheme, appColors, context),
-                const SizedBox(height: 16),
+                SizedBox(height: AppSpacing.lg),
                 _buildLogoutButton(authProvider, colorScheme),
               ],
             ),
@@ -289,24 +292,25 @@ class _ProfilePageState extends State<ProfilePage> {
 
   /// Environment badge widget
   Widget _buildEnvironmentBadge(
+    ThemeData theme,
     ColorScheme colorScheme,
     AppThemeExtension? appColors,
   ) {
     if (AppConfig.isProduction) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: AppSpacing.lg),
       child: Center(
         child: Container(
           padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 8,
+            horizontal: AppSpacing.lg,
+                            vertical: AppSpacing.sm,
           ),
           decoration: BoxDecoration(
             color: AppConfig.isDev
                 ? appColors?.devBadgeColor ?? Colors.orange
                 : appColors?.stagingBadgeColor ?? Colors.blue,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: AppRadius.circularPill,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -316,13 +320,12 @@ class _ProfilePageState extends State<ProfilePage> {
                 color: colorScheme.onPrimary,
                 size: 16,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: AppSpacing.sm),
               Text(
                 AppConfig.environmentName.toUpperCase(),
-                style: TextStyle(
+                style: theme.textTheme.labelMedium?.copyWith(
                   color: colorScheme.onPrimary,
                   fontWeight: FontWeight.bold,
-                  fontSize: 12,
                 ),
               ),
             ],
@@ -332,17 +335,10 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  /// Theme mode selector (Light / Colorful / Dark / System)
+  /// Theme mode selector (from [AppThemes] registry)
   Widget _buildThemeSection(ThemeData theme) {
     return Consumer<ThemeModeProvider>(
       builder: (context, themeModeProvider, _) {
-        const options = ['light', 'colorful', 'dark', 'system'];
-        const labels = {
-          'light': 'Light',
-          'colorful': 'Colorful',
-          'dark': 'Dark',
-          'system': 'System'
-        };
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -353,18 +349,18 @@ class _ProfilePageState extends State<ProfilePage> {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: AppSpacing.sm),
             Card(
               child: Column(
-                children: options.map((value) {
-                  final isSelected = themeModeProvider.mode == value;
+                children: AppThemes.all.map((option) {
+                  final isSelected = themeModeProvider.mode == option.id;
                   return ListTile(
-                    leading: Icon(_iconForThemeMode(value)),
-                    title: Text(labels[value]!),
+                    leading: Icon(option.icon),
+                    title: Text(option.label),
                     trailing: isSelected
                         ? Icon(Icons.check, color: theme.colorScheme.primary)
                         : null,
-                    onTap: () => themeModeProvider.setMode(value),
+                    onTap: () => themeModeProvider.setMode(option.id),
                   );
                 }).toList(),
               ),
@@ -375,32 +371,17 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  IconData _iconForThemeMode(String mode) {
-    switch (mode) {
-      case 'light':
-        return Icons.light_mode;
-      case 'colorful':
-        return Icons.palette;
-      case 'dark':
-        return Icons.dark_mode;
-      default:
-        return Icons.brightness_auto;
-    }
-  }
-
   /// Profile avatar widget
   Widget _buildProfileAvatar(AuthProvider authProvider) {
+    final picture = authProvider.profile?.picture;
+    final hasPicture = picture != null && picture.isNotEmpty;
     return Center(
       child: CircleAvatar(
         radius: 50,
-        backgroundImage: authProvider.profile?.picture != null &&
-                authProvider.profile!.picture.isNotEmpty
-            ? NetworkImage(authProvider.profile!.picture)
-            : null,
-        child: authProvider.profile?.picture == null ||
-                authProvider.profile!.picture.isEmpty
-            ? const Icon(Icons.person, size: 50)
-            : null,
+        // CachedNetworkImageProvider caches avatars across rebuilds/sessions.
+        backgroundImage:
+            hasPicture ? CachedNetworkImageProvider(picture) : null,
+        child: hasPicture ? null : const Icon(Icons.person, size: 50),
       ),
     );
   }
@@ -508,17 +489,17 @@ class _ProfilePageState extends State<ProfilePage> {
           'Neurodiverse Traits',
           style: theme.textTheme.titleMedium,
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: AppSpacing.sm),
         Text(
           'Select any traits that apply to you.',
           style: theme.textTheme.bodySmall?.copyWith(
             color: colorScheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: AppSpacing.lg),
         Wrap(
-          spacing: 12,
-          runSpacing: 12,
+          spacing: AppSpacing.md,
+                runSpacing: AppSpacing.md,
           children: _neurodiverseTraits.map((trait) {
             final isSelected = _selectedTraits.contains(trait);
             return FilterChip(
@@ -531,7 +512,7 @@ class _ProfilePageState extends State<ProfilePage> {
           }).toList(),
         ),
         if (_selectedTraits.isNotEmpty) ...[
-          const SizedBox(height: 16),
+          SizedBox(height: AppSpacing.lg),
           Text(
             'Selected: ${_selectedTraits.join(', ')}',
             style: theme.textTheme.bodyMedium?.copyWith(
@@ -554,7 +535,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (!kDebugMode) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: AppSpacing.lg),
       child: FutureBuilder<String?>(
         future: _debugAccessTokenFuture(authProvider),
         builder: (context, snapshot) {
@@ -578,7 +559,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: AppSpacing.sm),
               ElevatedButton.icon(
                 icon: const Icon(Icons.copy),
                 label: const Text('Copy Full Token'),
