@@ -70,7 +70,8 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
     final content = _contentController.text.trim();
     if (content.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(JournalLocalizations.of(context).contentRequired)),
+        SnackBar(
+            content: Text(JournalLocalizations.of(context).contentRequired)),
       );
       return;
     }
@@ -80,7 +81,9 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
     final tagIds = _selectedUserTagIds.toList();
     final systemTagIds = _selectedSystemTagIds.toList();
     final systemTagResponses = _selectedSystemTagIds
-        .where((id) => _systemTagResponses[id] != null && _systemTagResponses[id]!.isNotEmpty)
+        .where((id) =>
+            _systemTagResponses[id] != null &&
+            _systemTagResponses[id]!.isNotEmpty)
         .map((id) => SystemTagResponseItem(
               systemTagId: id,
               responses: _systemTagResponses[id] ?? {},
@@ -94,7 +97,8 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
           content: content,
           tagIds: tagIds.isEmpty ? null : tagIds,
           systemTagIds: systemTagIds.isEmpty ? null : systemTagIds,
-          systemTagResponses: systemTagResponses.isEmpty ? null : systemTagResponses,
+          systemTagResponses:
+              systemTagResponses.isEmpty ? null : systemTagResponses,
         );
         await provider.updateEntry(widget.entryId!, request);
         if (!mounted) return;
@@ -107,7 +111,8 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
           content: content,
           tagIds: tagIds.isEmpty ? null : tagIds,
           systemTagIds: systemTagIds.isEmpty ? null : systemTagIds,
-          systemTagResponses: systemTagResponses.isEmpty ? null : systemTagResponses,
+          systemTagResponses:
+              systemTagResponses.isEmpty ? null : systemTagResponses,
         );
         final entry = await provider.createEntry(request);
         if (!mounted) return;
@@ -127,7 +132,8 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
     }
   }
 
-  void _setSystemTagResponse(String systemTagId, String fieldKey, dynamic value) {
+  void _setSystemTagResponse(
+      String systemTagId, String fieldKey, dynamic value) {
     setState(() {
       _systemTagResponses[systemTagId] ??= {};
       _systemTagResponses[systemTagId]![fieldKey] = value;
@@ -193,9 +199,10 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
                       SizedBox(height: AppSpacing.sm),
                       Wrap(
                         spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.sm,
                         children: sortedSystemTags.map((st) {
-                          final selected = _selectedSystemTagIds.contains(st.id);
+                          final selected =
+                              _selectedSystemTagIds.contains(st.id);
                           return FilterChip(
                             label: Text(st.name),
                             selected: selected,
@@ -216,7 +223,8 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
                           .where((st) => _selectedSystemTagIds.contains(st.id))
                           .map((st) {
                         final defs = List.of(st.fieldDefinitions)
-                          ..sort((a, b) => a.fieldOrder.compareTo(b.fieldOrder));
+                          ..sort(
+                              (a, b) => a.fieldOrder.compareTo(b.fieldOrder));
                         return Padding(
                           padding: EdgeInsets.only(top: AppSpacing.lg),
                           child: Column(
@@ -236,8 +244,8 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
                                   child: SystemTagFieldBuilder(
                                     definition: def,
                                     value: value,
-                                    onChanged: (v) =>
-                                        _setSystemTagResponse(st.id, def.fieldKey, v),
+                                    onChanged: (v) => _setSystemTagResponse(
+                                        st.id, def.fieldKey, v),
                                   ),
                                 );
                               }),
@@ -255,7 +263,7 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
                       SizedBox(height: AppSpacing.sm),
                       Wrap(
                         spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.sm,
                         children: userTags.map((t) {
                           final selected = _selectedUserTagIds.contains(t.id);
                           return FilterChip(
@@ -304,7 +312,8 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
                               ? const SizedBox(
                                   height: 20,
                                   width: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
                                 )
                               : Text(l10n.save),
                         ),

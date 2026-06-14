@@ -45,8 +45,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       sl<EggGoalsProvider>().syncFromAPI();
       if (sl<AuthProvider>().isLoggedIn) {
-        sl<GoalsRealtimeService>().start(
-            () => sl<EggGoalsProvider>().syncFromAPI());
+        sl<GoalsRealtimeService>()
+            .start(() => sl<EggGoalsProvider>().syncFromAPI());
       }
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {

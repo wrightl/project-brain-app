@@ -23,9 +23,8 @@ class ConversationListItem extends StatelessWidget {
         conversation.title,
         overflow: TextOverflow.ellipsis,
       ),
-      tileColor: isActive
-          ? theme.colorScheme.primary.withValues(alpha: 0.1)
-          : null,
+      tileColor:
+          isActive ? theme.colorScheme.primary.withValues(alpha: 0.1) : null,
       onTap: onTap,
     );
   }

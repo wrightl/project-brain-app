@@ -46,7 +46,8 @@ class JournalLocalizations {
   String get couldNotLoadEntry => 'Failed to load entry.';
   String get couldNotDeleteEntry => 'Could not delete entry.';
   String get entryNotFound => 'Entry not found.';
-  String get deleteEntryConfirm => 'Are you sure you want to delete this entry?';
+  String get deleteEntryConfirm =>
+      'Are you sure you want to delete this entry?';
 
   String formatYouHaveNEntries(int n) {
     return youHaveNEntries.replaceAll('%d', '$n');

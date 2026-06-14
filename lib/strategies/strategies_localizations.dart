@@ -47,7 +47,8 @@ class StrategiesLocalizations {
   // Messages
   String get strategiesSaved => 'Strategies saved';
   String get strategyDeleted => 'Strategy deleted';
-  String get couldNotSaveStrategies => 'Could not save strategies. Please try again.';
+  String get couldNotSaveStrategies =>
+      'Could not save strategies. Please try again.';
   String get couldNotDeleteStrategy => 'Could not delete strategy.';
   String get couldNotUpdateRating => 'Could not update rating.';
   String get failedToLoadLibrary => 'Failed to load strategies.';

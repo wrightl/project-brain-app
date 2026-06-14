@@ -44,7 +44,8 @@ class StreakCard extends StatelessWidget {
                     color: streakColor.withValues(alpha: 0.15),
                     borderRadius: AppRadius.circularSm,
                   ),
-                  child: Icon(Icons.local_fire_department, color: streakColor, size: 24),
+                  child: Icon(Icons.local_fire_department,
+                      color: streakColor, size: 24),
                 ),
                 SizedBox(width: AppSpacing.md),
                 Expanded(
@@ -65,14 +66,18 @@ class StreakCard extends StatelessWidget {
                             : (noStreakMessage ?? 'No streak yet'),
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: hasStreak ? streakColor : theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                          color: hasStreak
+                              ? streakColor
+                              : theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.7),
                         ),
                       ),
                       if (hasStreak && bestStreak > 0)
                         Text(
                           'Best: $bestStreak days',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.6),
                           ),
                         ),
                     ],

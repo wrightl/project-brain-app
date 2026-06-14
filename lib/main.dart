@@ -65,7 +65,8 @@ Future<void> _initializeCrashReporting() async {
     };
 
     // Forward every logError/logFatal call to Crashlytics as a non-fatal/fatal.
-    AppLogger.crashReporter = (message, error, stackTrace, {bool fatal = false}) {
+    AppLogger.crashReporter =
+        (message, error, stackTrace, {bool fatal = false}) {
       try {
         crashlytics.recordError(
           error ?? message,
@@ -82,7 +83,8 @@ Future<void> _initializeCrashReporting() async {
   }
 }
 
-void _recordToCrashlytics(Object error, StackTrace stack, {bool fatal = false}) {
+void _recordToCrashlytics(Object error, StackTrace stack,
+    {bool fatal = false}) {
   try {
     if (Firebase.apps.isNotEmpty) {
       FirebaseCrashlytics.instance.recordError(error, stack, fatal: fatal);

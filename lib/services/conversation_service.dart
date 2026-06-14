@@ -57,8 +57,9 @@ class ConversationService extends HttpService {
       final conv = Conversation.fromJson(data);
       if (conv.messages.isEmpty) {
         final List<dynamic> messagesData = jsonDecode(messagesResponse.body);
-        conv.messages.addAll(
-            messagesData.map((json) => ChatMessage.fromJson(json as Map<String, dynamic>)).toList());
+        conv.messages.addAll(messagesData
+            .map((json) => ChatMessage.fromJson(json as Map<String, dynamic>))
+            .toList());
       }
       return conv;
     } else {

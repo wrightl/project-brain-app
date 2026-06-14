@@ -22,7 +22,8 @@ class VoiceNote {
   factory VoiceNote.fromJson(Map<String, dynamic> json) {
     return VoiceNote(
       id: json['id']?.toString() ?? json['Id']?.toString() ?? '',
-      fileName: json['fileName']?.toString() ?? json['FileName']?.toString() ?? '',
+      fileName:
+          json['fileName']?.toString() ?? json['FileName']?.toString() ?? '',
       description: json['description']?.toString(),
       audioUrl: json['audioUrl']?.toString(),
       duration: (json['duration'] as num?)?.toDouble(),
@@ -71,4 +72,3 @@ class VoiceNote {
     );
   }
 }
-

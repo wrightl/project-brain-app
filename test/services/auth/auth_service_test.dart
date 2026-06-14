@@ -59,8 +59,8 @@ void main() {
     await initializeTestEnvironment();
     registerFallbackValue(
       testCredentials(
-        accessToken: makeTestJwt(
-            {'aud': AppConfig.authAudience, 'exp': 9999999999}),
+        accessToken:
+            makeTestJwt({'aud': AppConfig.authAudience, 'exp': 9999999999}),
         idToken: makeTestJwt({'sub': 'x'}),
       ),
     );
@@ -76,6 +76,7 @@ void main() {
     when(() => mockOAuth.tryRestoreCredentialsWithBiometric(
           minTtl: any(named: 'minTtl'),
         )).thenAnswer((_) async => null);
+    when(() => mockOAuth.clearLocalCredentials()).thenAnswer((_) async {});
     tokenManager = TokenManager(
       auth0: Auth0(AppConfig.authDomain, AppConfig.authClientId),
       tokenStorage: mockStorage,
@@ -93,7 +94,9 @@ void main() {
     test('uses CredentialsManager when it returns credentials', () async {
       final access = makeTestJwt({
         'aud': AppConfig.authAudience,
-        'exp': DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
+        'exp': DateTime.now()
+                .add(const Duration(hours: 1))
+                .millisecondsSinceEpoch ~/
             1000,
       });
       final id = makeTestJwt({'sub': 'auth0|cm', 'email': 'cm@test.com'});
@@ -115,7 +118,8 @@ void main() {
         updatedAt: '2024-01-01T00:00:00.000Z',
         sub: 'auth0|cm',
       );
-      when(() => mockProfile.getUserProfile(access)).thenAnswer((_) async => user);
+      when(() => mockProfile.getUserProfile(access))
+          .thenAnswer((_) async => user);
 
       final ok = await authService.init();
 
@@ -140,7 +144,9 @@ void main() {
 
       final access = makeTestJwt({
         'aud': AppConfig.authAudience,
-        'exp': DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
+        'exp': DateTime.now()
+                .add(const Duration(hours: 1))
+                .millisecondsSinceEpoch ~/
             1000,
       });
       final id = makeTestJwt({'sub': 'auth0|rt'});
@@ -174,12 +180,13 @@ void main() {
       when(() => mockOAuth.tryRestoreCredentialsFromCredentialsManager(
             minTtl: any(named: 'minTtl'),
           )).thenAnswer((_) async => null);
-      when(() => mockStorage.getRefreshToken())
-          .thenAnswer((_) async => 'rt');
+      when(() => mockStorage.getRefreshToken()).thenAnswer((_) async => 'rt');
 
       final access = makeTestJwt({
         'aud': AppConfig.authAudience,
-        'exp': DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
+        'exp': DateTime.now()
+                .add(const Duration(hours: 1))
+                .millisecondsSinceEpoch ~/
             1000,
       });
       final creds = testCredentials(
@@ -217,12 +224,13 @@ void main() {
       when(() => mockOAuth.tryRestoreCredentialsFromCredentialsManager(
             minTtl: any(named: 'minTtl'),
           )).thenAnswer((_) async => null);
-      when(() => mockStorage.getRefreshToken())
-          .thenAnswer((_) async => 'rt');
+      when(() => mockStorage.getRefreshToken()).thenAnswer((_) async => 'rt');
 
       final access = makeTestJwt({
         'aud': AppConfig.authAudience,
-        'exp': DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
+        'exp': DateTime.now()
+                .add(const Duration(hours: 1))
+                .millisecondsSinceEpoch ~/
             1000,
       });
       final idPayload = {
@@ -285,7 +293,9 @@ void main() {
     test('restores session from biometric-gated credentials', () async {
       final access = makeTestJwt({
         'aud': AppConfig.authAudience,
-        'exp': DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
+        'exp': DateTime.now()
+                .add(const Duration(hours: 1))
+                .millisecondsSinceEpoch ~/
             1000,
       });
       final creds = testCredentials(

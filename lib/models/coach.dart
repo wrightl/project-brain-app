@@ -161,10 +161,10 @@ class CoachMessage {
     final connectionId =
         json['connectionId']?.toString() ?? json['ConnectionId']?.toString();
 
-    final isFromCurrentUser = json['isFromCurrentUser'] == true ||
-        json['IsFromCurrentUser'] == true;
-    final isFromCoachLegacy = json['isFromCoach'] == true ||
-        json['IsFromCoach'] == true;
+    final isFromCurrentUser =
+        json['isFromCurrentUser'] == true || json['IsFromCurrentUser'] == true;
+    final isFromCoachLegacy =
+        json['isFromCoach'] == true || json['IsFromCoach'] == true;
 
     return CoachMessage(
       id: json['id']?.toString() ?? json['Id']?.toString() ?? '',

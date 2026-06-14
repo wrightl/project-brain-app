@@ -145,7 +145,8 @@ class _JournalListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final preview = entry.summary ?? entry.content;
-    final displayText = preview.length > 100 ? '${preview.substring(0, 100)}...' : preview;
+    final displayText =
+        preview.length > 100 ? '${preview.substring(0, 100)}...' : preview;
     final dateStr = DateFormat.yMMMd().add_Hm().format(entry.createdAt);
 
     return Card(
@@ -180,12 +181,14 @@ class _JournalListItem extends StatelessWidget {
                   children: [
                     ...?entry.tags?.map((t) => Chip(
                           label: Text(t.name),
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
                           visualDensity: VisualDensity.compact,
                         )),
                     ...?entry.systemTags?.map((t) => Chip(
                           label: Text(t.name),
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
                           visualDensity: VisualDensity.compact,
                         )),
                   ],

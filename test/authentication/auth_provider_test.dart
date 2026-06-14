@@ -253,8 +253,7 @@ void main() {
     test('hasError returns correct value', () async {
       expect(authProvider.hasError, isFalse);
 
-      when(() => mockAuthService.login())
-          .thenThrow(AuthException('Error'));
+      when(() => mockAuthService.login()).thenThrow(AuthException('Error'));
 
       await authProvider.login();
 

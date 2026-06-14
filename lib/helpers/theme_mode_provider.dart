@@ -17,7 +17,9 @@ class ThemeModeProvider extends ChangeNotifier {
   /// Light theme for [ThemeMode.light] (or fallback when using dark/system).
   ThemeData get theme {
     final option = AppThemes.byId(mode);
-    return option.themeMode == ThemeMode.light ? option.build() : LightTheme.build();
+    return option.themeMode == ThemeMode.light
+        ? option.build()
+        : LightTheme.build();
   }
 
   /// Dark theme

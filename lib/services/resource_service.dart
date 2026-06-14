@@ -40,12 +40,16 @@ class ResourceService extends HttpService {
     }
   }
 
-  /// Whether [file] has at least one way to read bytes for upload (path, in-memory bytes, or sized stream).
-  static bool platformFileHasReadableData(PlatformFile file) {
+  /// Whether [file] can be read for upload via path or file_picker stream/bytes APIs.
+  static Future<bool> platformFileHasReadableData(PlatformFile file) async {
     if (file.path != null && file.path!.isNotEmpty) return true;
-    if (file.bytes != null) return true;
-    if (file.readStream != null && file.size > 0) return true;
-    return false;
+    if (file.size <= 0) return false;
+    try {
+      await file.length();
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   static String _uploadFilename(PlatformFile file) {
@@ -57,36 +61,42 @@ class ResourceService extends HttpService {
       PlatformFile file) async {
     final filename = _uploadFilename(file);
     if (file.path != null && file.path!.isNotEmpty) {
-      final f = File(file.path!);
-      final length = await f.length();
-      return http.MultipartFile(
-        'files',
-        http.ByteStream(f.openRead()),
-        length,
-        filename: filename,
-      );
+      try {
+        final f = File(file.path!);
+        final length = await f.length();
+        return http.MultipartFile(
+          'files',
+          http.ByteStream(f.openRead()),
+          length,
+          filename: filename,
+        );
+      } on FileSystemException {
+        // Fall through to stream/bytes APIs (e.g. web blob URLs).
+      }
     }
-    if (file.bytes != null) {
-      return http.MultipartFile.fromBytes(
-        'files',
-        file.bytes!,
-        filename: filename,
-      );
+
+    try {
+      final length = await file.length();
+      if (length > 0) {
+        return http.MultipartFile(
+          'files',
+          http.ByteStream(file.readAsByteStream()),
+          length,
+          filename: filename,
+        );
+      }
+    } catch (_) {
+      // Fall through to bytes fallback.
     }
-    if (file.readStream != null && file.size > 0) {
-      return http.MultipartFile(
-        'files',
-        http.ByteStream(file.readStream!),
-        file.size,
-        filename: filename,
-      );
-    }
-    throw Exception(
-      'Could not read file data for "$filename" (no path, bytes, or readable stream).',
+
+    return http.MultipartFile.fromBytes(
+      'files',
+      await file.readAsBytes(),
+      filename: filename,
     );
   }
 
-  /// Upload files picked via [file_picker] (supports path, [PlatformFile.bytes], or [PlatformFile.readStream]).
+  /// Upload files picked via [file_picker].
   Future<void> uploadPlatformFiles(List<PlatformFile> files) async {
     if (files.isEmpty) {
       throw ArgumentError('No files to upload');

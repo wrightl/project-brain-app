@@ -68,15 +68,16 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
 
   Future<void> _sendConnectionRequest() async {
     // Check connection limit
-    final subscriptionProvider = Provider.of<SubscriptionProvider>(context, listen: false);
+    final subscriptionProvider =
+        Provider.of<SubscriptionProvider>(context, listen: false);
     final connectionLimit = subscriptionProvider.getCoachConnectionLimit();
-    
+
     if (connectionLimit != null) {
       // Get current connection count
       try {
         final connectedCoaches = await _coachService.getConnectedCoaches();
         final currentCount = connectedCoaches.length;
-        
+
         if (currentCount >= connectionLimit) {
           // Show upgrade prompt
           if (mounted) {
@@ -184,8 +185,9 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
       case ConnectionStatus.none:
         return Consumer<SubscriptionProvider>(
           builder: (context, subscriptionProvider, _) {
-            final connectionLimit = subscriptionProvider.getCoachConnectionLimit();
-            
+            final connectionLimit =
+                subscriptionProvider.getCoachConnectionLimit();
+
             // Show connection count if limited
             Widget? connectionInfo;
             if (connectionLimit != null) {
@@ -196,20 +198,21 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                   if (snapshot.hasData) {
                     final currentCount = snapshot.data!.length;
                     final isAtLimit = currentCount >= connectionLimit;
-                    
+
                     if (isAtLimit) {
                       return Padding(
                         padding: EdgeInsets.only(bottom: AppSpacing.sm),
                         child: Text(
                           'Connection limit reached ($currentCount/$connectionLimit)',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
                           textAlign: TextAlign.center,
                         ),
                       );
                     }
-                    
+
                     return Padding(
                       padding: EdgeInsets.only(bottom: AppSpacing.sm),
                       child: Text(
@@ -223,7 +226,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                 },
               );
             }
-            
+
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -374,7 +377,8 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                   SizedBox(height: AppSpacing.xs),
                                   Text(
                                     _connectionStatus.displayName,
-                                    style: theme.textTheme.titleMedium?.copyWith(
+                                    style:
+                                        theme.textTheme.titleMedium?.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -408,7 +412,8 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                 const SizedBox(width: AppSpacing.lg),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         _coach!.fullName,
@@ -431,10 +436,11 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                             Expanded(
                                               child: Text(
                                                 _coach!.email!,
-                                                style: theme.textTheme.bodyMedium
+                                                style: theme
+                                                    .textTheme.bodyMedium
                                                     ?.copyWith(
-                                                  color: theme.colorScheme
-                                                      .onSurface
+                                                  color: theme
+                                                      .colorScheme.onSurface
                                                       .withValues(alpha: 0.7),
                                                 ),
                                               ),
@@ -547,13 +553,14 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                           title: 'Specialisms',
                           content: Wrap(
                             spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
+                            runSpacing: AppSpacing.sm,
                             children: _coach!.specialisms!.map((spec) {
                               return Chip(
                                 label: Text(spec),
                                 backgroundColor:
                                     theme.colorScheme.primaryContainer,
-                                labelStyle: theme.textTheme.labelLarge?.copyWith(
+                                labelStyle:
+                                    theme.textTheme.labelLarge?.copyWith(
                                   color: theme.colorScheme.onPrimaryContainer,
                                 ),
                               );
@@ -601,13 +608,14 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                           title: 'Age Groups',
                           content: Wrap(
                             spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
+                            runSpacing: AppSpacing.sm,
                             children: _coach!.ageGroups!.map((ageGroup) {
                               return Chip(
                                 label: Text(ageGroup),
                                 backgroundColor:
                                     theme.colorScheme.secondaryContainer,
-                                labelStyle: theme.textTheme.labelLarge?.copyWith(
+                                labelStyle:
+                                    theme.textTheme.labelLarge?.copyWith(
                                   color: theme.colorScheme.onSecondaryContainer,
                                 ),
                               );
@@ -620,4 +628,3 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
     );
   }
 }
-

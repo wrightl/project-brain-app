@@ -30,7 +30,7 @@ class ChatInputField extends StatelessWidget {
           Consumer<SubscriptionProvider>(
             builder: (context, subscriptionProvider, _) {
               final canUseSpeech = subscriptionProvider.canUseSpeechInput();
-              
+
               return IconButton(
                 icon: Icon(
                   Icons.mic,

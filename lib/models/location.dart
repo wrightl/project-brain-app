@@ -55,7 +55,9 @@ class CityOption {
   }
 
   String get displayLabel {
-    return [city, stateProvince, country].where((part) => part != null && part.isNotEmpty).join(', ');
+    return [city, stateProvince, country]
+        .where((part) => part != null && part.isNotEmpty)
+        .join(', ');
   }
 }
 

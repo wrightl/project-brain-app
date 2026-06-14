@@ -55,7 +55,8 @@ void main() {
   }
 
   group('ChatInputField Widget Tests', () {
-    testWidgets('renders text field and send button', (WidgetTester tester) async {
+    testWidgets('renders text field and send button',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         wrap(
           ChatInputField(
@@ -97,7 +98,8 @@ void main() {
       expect(find.text('Custom hint text'), findsOneWidget);
     });
 
-    testWidgets('uses default hint text when not provided', (WidgetTester tester) async {
+    testWidgets('uses default hint text when not provided',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         wrap(
           ChatInputField(
@@ -123,7 +125,8 @@ void main() {
       expect(find.byIcon(Icons.send), findsOneWidget);
     });
 
-    testWidgets('text field is configured correctly', (WidgetTester tester) async {
+    testWidgets('text field is configured correctly',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         wrap(
           ChatInputField(

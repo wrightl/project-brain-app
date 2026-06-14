@@ -25,8 +25,7 @@ class TagService extends HttpService {
       body: jsonEncode({'name': name}),
     );
     if (res.statusCode == 201) {
-      return JournalTag.fromJson(
-          jsonDecode(res.body) as Map<String, dynamic>);
+      return JournalTag.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
     } else {
       _throwFromResponse(res, 'Failed to create tag');
     }
@@ -36,8 +35,7 @@ class TagService extends HttpService {
     final encoded = Uri.encodeComponent(name);
     final res = await get('/tag/name/$encoded', useCache: false);
     if (res.statusCode == 200) {
-      return JournalTag.fromJson(
-          jsonDecode(res.body) as Map<String, dynamic>);
+      return JournalTag.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
     } else if (res.statusCode == 404) {
       return null;
     } else {

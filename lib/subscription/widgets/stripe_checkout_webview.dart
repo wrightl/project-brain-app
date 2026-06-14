@@ -158,4 +158,3 @@ class _StripeCheckoutWebViewState extends State<StripeCheckoutWebView> {
     );
   }
 }
-

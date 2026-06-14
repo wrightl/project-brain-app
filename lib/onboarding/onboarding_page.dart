@@ -49,11 +49,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
     final totalSteps = provider.getTotalSteps();
     if (step >= 0 && step < totalSteps) {
       provider.setCurrentStep(step);
-          _pageController.animateToPage(
+      _pageController.animateToPage(
         step,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     }
   }
 
@@ -70,12 +70,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
     if (!provider.isBasicInfoValid) {
       // Navigate back to first step
       _navigateToStep(provider, 0);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Please complete all required fields'),
-              backgroundColor: Colors.red,
-            ),
-          );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please complete all required fields'),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
 
@@ -135,19 +135,19 @@ class _OnboardingPageState extends State<OnboardingPage> {
           final currentStep = provider.currentStep;
           final isLastStep = currentStep == totalSteps - 1;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Onboarding'),
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Onboarding'),
               leading: currentStep > 0
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
+                  ? IconButton(
+                      icon: const Icon(Icons.arrow_back),
                       onPressed: () => _previousPage(provider),
-              )
-            : null,
-      ),
-      body: Column(
-        children: [
-          // Progress indicator
+                    )
+                  : null,
+            ),
+            body: Column(
+              children: [
+                // Progress indicator
                 _buildProgressIndicator(provider, totalSteps, localizations),
 
                 // Page content
@@ -158,7 +158,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     onPageChanged: (index) {
                       provider.setCurrentStep(index);
                     },
-                    children: _buildPages(provider, authProvider, localizations),
+                    children:
+                        _buildPages(provider, authProvider, localizations),
                   ),
                 ),
 
@@ -177,17 +178,17 @@ class _OnboardingPageState extends State<OnboardingPage> {
     );
   }
 
-  Widget _buildProgressIndicator(
-      OnboardingProvider provider, int totalSteps, OnboardingLocalizations localizations) {
+  Widget _buildProgressIndicator(OnboardingProvider provider, int totalSteps,
+      OnboardingLocalizations localizations) {
     return Padding(
-            padding: AppInsets.screen,
+      padding: AppInsets.screen,
       child: Column(
         children: [
           // Progress bar
           Row(
-              children: List.generate(
+            children: List.generate(
               totalSteps,
-                (index) => Expanded(
+              (index) => Expanded(
                 child: GestureDetector(
                   onTap: () => _onStepTapped(provider, index),
                   child: MouseRegion(
@@ -195,7 +196,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         ? SystemMouseCursors.click
                         : SystemMouseCursors.basic,
                     child: Container(
-                      margin: EdgeInsets.symmetric(horizontal: AppSpacing.micro),
+                      margin:
+                          EdgeInsets.symmetric(horizontal: AppSpacing.micro),
                       height: 4.0,
                       decoration: BoxDecoration(
                         color: index <= provider.currentStep
@@ -229,20 +231,19 @@ class _OnboardingPageState extends State<OnboardingPage> {
     OnboardingLocalizations localizations,
   ) {
     return Padding(
-            padding: AppInsets.screen,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+      padding: AppInsets.screen,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
           if (provider.currentStep > 0)
-                  OutlinedButton(
-              onPressed: provider.isSubmitting
-                  ? null
-                  : () => _previousPage(provider),
+            OutlinedButton(
+              onPressed:
+                  provider.isSubmitting ? null : () => _previousPage(provider),
               child: Text(localizations.previous),
-                  )
-                else
-                  const SizedBox.shrink(),
-                ElevatedButton(
+            )
+          else
+            const SizedBox.shrink(),
+          ElevatedButton(
             onPressed: provider.isSubmitting
                 ? null
                 : () {
@@ -258,7 +259,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : Text(isLastStep ? localizations.complete : localizations.next),
+                : Text(
+                    isLastStep ? localizations.complete : localizations.next),
           ),
         ],
       ),
@@ -298,7 +300,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
     final dobController = TextEditingController();
 
     if (provider.dateOfBirth != null) {
-      dobController.text = '${provider.dateOfBirth!.year}-${provider.dateOfBirth!.month.toString().padLeft(2, '0')}-${provider.dateOfBirth!.day.toString().padLeft(2, '0')}';
+      dobController.text =
+          '${provider.dateOfBirth!.year}-${provider.dateOfBirth!.month.toString().padLeft(2, '0')}-${provider.dateOfBirth!.day.toString().padLeft(2, '0')}';
     }
 
     return SingleChildScrollView(
@@ -378,8 +381,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   provider.setPreferredPronoun(value);
                 }
               },
-              validator: (value) =>
-                  value == null || value.isEmpty ? localizations.required : null,
+              validator: (value) => value == null || value.isEmpty
+                  ? localizations.required
+                  : null,
             ),
           ],
         ),
@@ -423,7 +427,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           SizedBox(height: AppSpacing.xxl),
           Wrap(
             spacing: AppSpacing.md,
-                runSpacing: AppSpacing.md,
+            runSpacing: AppSpacing.md,
             children: traits.map((trait) {
               final isSelected = provider.selectedTraits.contains(trait);
               return FilterChip(
@@ -462,7 +466,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
               hintText: localizations.preferredName,
             ),
             initialValue: provider.preferredName,
-            onChanged: (value) => provider.setPreferredName(value.isEmpty ? null : value),
+            onChanged: (value) =>
+                provider.setPreferredName(value.isEmpty ? null : value),
           ),
           SizedBox(height: AppSpacing.lg),
           TextFormField(
@@ -473,7 +478,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
             initialValue: provider.inspiration,
             maxLines: 4,
-            onChanged: (value) => provider.setInspiration(value.isEmpty ? null : value),
+            onChanged: (value) =>
+                provider.setInspiration(value.isEmpty ? null : value),
           ),
           SizedBox(height: AppSpacing.lg),
           DropdownButtonFormField<String>(
@@ -516,7 +522,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           SizedBox(height: AppSpacing.sm),
           Wrap(
             spacing: AppSpacing.md,
-                runSpacing: AppSpacing.md,
+            runSpacing: AppSpacing.md,
             children: localizations.selfDescriptionOptions.map((option) {
               final isSelected = provider.selfDescription.contains(option);
               return FilterChip(
@@ -529,7 +535,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               );
             }).toList(),
           ),
-            SizedBox(height: AppSpacing.xl),
+          SizedBox(height: AppSpacing.xl),
           TextFormField(
             decoration: InputDecoration(
               labelText: localizations.businessType,
@@ -538,7 +544,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
             initialValue: provider.businessType,
             maxLines: 3,
-            onChanged: (value) => provider.setBusinessType(value.isEmpty ? null : value),
+            onChanged: (value) =>
+                provider.setBusinessType(value.isEmpty ? null : value),
           ),
           SizedBox(height: AppSpacing.lg),
           TextFormField(
@@ -549,17 +556,18 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
             initialValue: provider.proudMoment,
             maxLines: 3,
-            onChanged: (value) => provider.setProudMoment(value.isEmpty ? null : value),
+            onChanged: (value) =>
+                provider.setProudMoment(value.isEmpty ? null : value),
           ),
           SizedBox(height: AppSpacing.lg),
-            Text(
+          Text(
             localizations.challenge,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           SizedBox(height: AppSpacing.sm),
           Wrap(
             spacing: AppSpacing.md,
-                runSpacing: AppSpacing.md,
+            runSpacing: AppSpacing.md,
             children: localizations.challengeOptions.map((option) {
               final isSelected = provider.challenges.contains(option);
               return FilterChip(
@@ -661,7 +669,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           SizedBox(height: AppSpacing.sm),
           Wrap(
             spacing: AppSpacing.md,
-                runSpacing: AppSpacing.md,
+            runSpacing: AppSpacing.md,
             children: localizations.strengthsOptions.map((option) {
               final isSelected = provider.strengths.contains(option);
               return FilterChip(
@@ -682,7 +690,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           SizedBox(height: AppSpacing.sm),
           Wrap(
             spacing: AppSpacing.md,
-                runSpacing: AppSpacing.md,
+            runSpacing: AppSpacing.md,
             children: localizations.supportAreasOptions.map((option) {
               final isSelected = provider.supportAreas.contains(option);
               return FilterChip(
@@ -719,7 +727,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
             initialValue: provider.neurodivergentUnderstanding,
             maxLines: 3,
-            onChanged: (value) => provider.setNeurodivergentUnderstanding(value.isEmpty ? null : value),
+            onChanged: (value) => provider
+                .setNeurodivergentUnderstanding(value.isEmpty ? null : value),
           ),
           SizedBox(height: AppSpacing.lg),
           TextFormField(
@@ -730,7 +739,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
             initialValue: provider.biggestGoal,
             maxLines: 3,
-            onChanged: (value) => provider.setBiggestGoal(value.isEmpty ? null : value),
+            onChanged: (value) =>
+                provider.setBiggestGoal(value.isEmpty ? null : value),
           ),
         ],
       ),
@@ -758,7 +768,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           SizedBox(height: AppSpacing.sm),
           Wrap(
             spacing: AppSpacing.md,
-                runSpacing: AppSpacing.md,
+            runSpacing: AppSpacing.md,
             children: localizations.tasksOptions.map((option) {
               final isSelected = provider.tasks.contains(option);
               return FilterChip(
@@ -795,7 +805,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
             initialValue: provider.toolsIntegration,
             maxLines: 3,
-            onChanged: (value) => provider.setToolsIntegration(value.isEmpty ? null : value),
+            onChanged: (value) =>
+                provider.setToolsIntegration(value.isEmpty ? null : value),
           ),
           SizedBox(height: AppSpacing.lg),
           TextFormField(
@@ -806,7 +817,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
             initialValue: provider.workingStyle,
             maxLines: 3,
-            onChanged: (value) => provider.setWorkingStyle(value.isEmpty ? null : value),
+            onChanged: (value) =>
+                provider.setWorkingStyle(value.isEmpty ? null : value),
           ),
           SizedBox(height: AppSpacing.lg),
           TextFormField(
@@ -817,7 +829,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
             initialValue: provider.additionalInfo,
             maxLines: 3,
-            onChanged: (value) => provider.setAdditionalInfo(value.isEmpty ? null : value),
+            onChanged: (value) =>
+                provider.setAdditionalInfo(value.isEmpty ? null : value),
           ),
         ],
       ),
@@ -846,7 +859,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
             initialValue: provider.safeSpace,
             maxLines: 4,
-            onChanged: (value) => provider.setSafeSpace(value.isEmpty ? null : value),
+            onChanged: (value) =>
+                provider.setSafeSpace(value.isEmpty ? null : value),
           ),
           SizedBox(height: AppSpacing.xl),
           CheckboxListTile(
@@ -883,7 +897,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'howDoYouUseStrengths',
                 value,
               ),
-              provider.followOnQuestions['strengths']?['howDoYouUseStrengths'] ?? '',
+              provider.followOnQuestions['strengths']
+                      ?['howDoYouUseStrengths'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.lg),
             _buildTextArea(
@@ -893,7 +909,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'whatHelpsTapStrengths',
                 value,
               ),
-              provider.followOnQuestions['strengths']?['whatHelpsTapStrengths'] ?? '',
+              provider.followOnQuestions['strengths']
+                      ?['whatHelpsTapStrengths'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.lg),
             _buildTextArea(
@@ -903,7 +921,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'howBuildOnStrengths',
                 value,
               ),
-              provider.followOnQuestions['strengths']?['howBuildOnStrengths'] ?? '',
+              provider.followOnQuestions['strengths']?['howBuildOnStrengths'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.xl),
           ],
@@ -917,7 +936,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'whatsHardestToManage',
                 value,
               ),
-              provider.followOnQuestions['challenges']?['whatsHardestToManage'] ?? '',
+              provider.followOnQuestions['challenges']
+                      ?['whatsHardestToManage'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.lg),
             _buildTextArea(
@@ -927,7 +948,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'whatToolsHaveHelped',
                 value,
               ),
-              provider.followOnQuestions['challenges']?['whatToolsHaveHelped'] ?? '',
+              provider.followOnQuestions['challenges']
+                      ?['whatToolsHaveHelped'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.lg),
             _buildCheckbox(
@@ -937,7 +960,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'wouldLikeToolSuggestions',
                 value ?? false,
               ),
-              provider.followOnQuestions['challenges']?['wouldLikeToolSuggestions'] ?? false,
+              provider.followOnQuestions['challenges']
+                      ?['wouldLikeToolSuggestions'] ??
+                  false,
             ),
             SizedBox(height: AppSpacing.lg),
             _buildTextArea(
@@ -947,7 +972,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'whatHelpsRecharge',
                 value,
               ),
-              provider.followOnQuestions['challenges']?['whatHelpsRecharge'] ?? '',
+              provider.followOnQuestions['challenges']?['whatHelpsRecharge'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.xl),
           ],
@@ -961,7 +987,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'shareLearningExample',
                 value,
               ),
-              provider.followOnQuestions['learning']?['shareLearningExample'] ?? '',
+              provider.followOnQuestions['learning']?['shareLearningExample'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.lg),
             _buildCheckbox(
@@ -971,7 +998,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'preferSpecificFormat',
                 value ?? false,
               ),
-              provider.followOnQuestions['learning']?['preferSpecificFormat'] ?? false,
+              provider.followOnQuestions['learning']?['preferSpecificFormat'] ??
+                  false,
             ),
             SizedBox(height: AppSpacing.lg),
             _buildTextArea(
@@ -981,7 +1009,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'howBreakDownTasks',
                 value,
               ),
-              provider.followOnQuestions['learning']?['howBreakDownTasks'] ?? '',
+              provider.followOnQuestions['learning']?['howBreakDownTasks'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.xl),
           ],
@@ -995,7 +1024,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'whatMotivatesYou',
                 value,
               ),
-              provider.followOnQuestions['motivation']?['whatMotivatesYou'] ?? '',
+              provider.followOnQuestions['motivation']?['whatMotivatesYou'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.lg),
             _buildTextArea(
@@ -1015,7 +1045,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'whatRemindersWork',
                 value,
               ),
-              provider.followOnQuestions['motivation']?['whatRemindersWork'] ?? '',
+              provider.followOnQuestions['motivation']?['whatRemindersWork'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.lg),
             _buildTextArea(
@@ -1025,7 +1056,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'howCelebrateProgress',
                 value,
               ),
-              provider.followOnQuestions['motivation']?['howCelebrateProgress'] ?? '',
+              provider.followOnQuestions['motivation']
+                      ?['howCelebrateProgress'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.xl),
           ],
@@ -1039,7 +1072,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'sensoryFriendlyEnvironment',
                 value,
               ),
-              provider.followOnQuestions['coping']?['sensoryFriendlyEnvironment'] ?? '',
+              provider.followOnQuestions['coping']
+                      ?['sensoryFriendlyEnvironment'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.lg),
             _buildTextArea(
@@ -1059,7 +1094,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'whatHelpsOverwhelmed',
                 value,
               ),
-              provider.followOnQuestions['coping']?['whatHelpsOverwhelmed'] ?? '',
+              provider.followOnQuestions['coping']?['whatHelpsOverwhelmed'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.lg),
             _buildCheckbox(
@@ -1069,7 +1105,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'exploreCopingStrategies',
                 value ?? false,
               ),
-              provider.followOnQuestions['coping']?['exploreCopingStrategies'] ?? false,
+              provider.followOnQuestions['coping']
+                      ?['exploreCopingStrategies'] ??
+                  false,
             ),
             SizedBox(height: AppSpacing.xl),
           ],
@@ -1083,7 +1121,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'whatWouldMakeDifference',
                 value,
               ),
-              provider.followOnQuestions['support']?['whatWouldMakeDifference'] ?? '',
+              provider.followOnQuestions['support']
+                      ?['whatWouldMakeDifference'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.lg),
             _buildTextArea(
@@ -1093,7 +1133,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'whatDoesSupportLookLike',
                 value,
               ),
-              provider.followOnQuestions['support']?['whatDoesSupportLookLike'] ?? '',
+              provider.followOnQuestions['support']
+                      ?['whatDoesSupportLookLike'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.lg),
             _buildTextArea(
@@ -1103,7 +1145,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'specificSkillsToDevelop',
                 value,
               ),
-              provider.followOnQuestions['support']?['specificSkillsToDevelop'] ?? '',
+              provider.followOnQuestions['support']
+                      ?['specificSkillsToDevelop'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.lg),
             _buildTextArea(
@@ -1113,7 +1157,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'howBalanceWorkSelfCare',
                 value,
               ),
-              provider.followOnQuestions['support']?['howBalanceWorkSelfCare'] ?? '',
+              provider.followOnQuestions['support']
+                      ?['howBalanceWorkSelfCare'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.xl),
           ],
@@ -1127,7 +1173,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'whatTaskTakeOffPlate',
                 value,
               ),
-              provider.followOnQuestions['coachingBuddy']?['whatTaskTakeOffPlate'] ?? '',
+              provider.followOnQuestions['coachingBuddy']
+                      ?['whatTaskTakeOffPlate'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.lg),
             _buildTextArea(
@@ -1137,7 +1185,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'whatWouldLikeHelpWith',
                 value,
               ),
-              provider.followOnQuestions['coachingBuddy']?['whatWouldLikeHelpWith'] ?? '',
+              provider.followOnQuestions['coachingBuddy']
+                      ?['whatWouldLikeHelpWith'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.lg),
             _buildTextArea(
@@ -1147,7 +1197,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'howAdaptCommunication',
                 value,
               ),
-              provider.followOnQuestions['coachingBuddy']?['howAdaptCommunication'] ?? '',
+              provider.followOnQuestions['coachingBuddy']
+                      ?['howAdaptCommunication'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.lg),
             _buildTextArea(
@@ -1157,7 +1209,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'specificRemindersPrompts',
                 value,
               ),
-              provider.followOnQuestions['coachingBuddy']?['specificRemindersPrompts'] ?? '',
+              provider.followOnQuestions['coachingBuddy']
+                      ?['specificRemindersPrompts'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.xl),
           ],
@@ -1171,7 +1225,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'whatHelpsGrounded',
                 value,
               ),
-              provider.followOnQuestions['emotional']?['whatHelpsGrounded'] ?? '',
+              provider.followOnQuestions['emotional']?['whatHelpsGrounded'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.lg),
             _buildTextArea(
@@ -1181,7 +1236,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'howProcessChallenges',
                 value,
               ),
-              provider.followOnQuestions['emotional']?['howProcessChallenges'] ?? '',
+              provider.followOnQuestions['emotional']
+                      ?['howProcessChallenges'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.lg),
             _buildTextArea(
@@ -1191,7 +1248,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'whatHelpsBuildCalm',
                 value,
               ),
-              provider.followOnQuestions['emotional']?['whatHelpsBuildCalm'] ?? '',
+              provider.followOnQuestions['emotional']?['whatHelpsBuildCalm'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.lg),
             _buildTextArea(
@@ -1201,7 +1259,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'whatWouldHelpSupported',
                 value,
               ),
-              provider.followOnQuestions['emotional']?['whatWouldHelpSupported'] ?? '',
+              provider.followOnQuestions['emotional']
+                      ?['whatWouldHelpSupported'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.xl),
           ],
@@ -1215,7 +1275,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'recentWinToCelebrate',
                 value,
               ),
-              provider.followOnQuestions['celebrating']?['recentWinToCelebrate'] ?? '',
+              provider.followOnQuestions['celebrating']
+                      ?['recentWinToCelebrate'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.lg),
             _buildTextArea(
@@ -1225,7 +1287,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'howAcknowledgeProgress',
                 value,
               ),
-              provider.followOnQuestions['celebrating']?['howAcknowledgeProgress'] ?? '',
+              provider.followOnQuestions['celebrating']
+                      ?['howAcknowledgeProgress'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.lg),
             _buildCheckbox(
@@ -1235,7 +1299,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'wouldLikeCelebrationIdeas',
                 value ?? false,
               ),
-              provider.followOnQuestions['celebrating']?['wouldLikeCelebrationIdeas'] ?? false,
+              provider.followOnQuestions['celebrating']
+                      ?['wouldLikeCelebrationIdeas'] ??
+                  false,
             ),
             SizedBox(height: AppSpacing.lg),
             _buildTextArea(
@@ -1245,7 +1311,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'howRecognizeProgress',
                 value,
               ),
-              provider.followOnQuestions['celebrating']?['howRecognizeProgress'] ?? '',
+              provider.followOnQuestions['celebrating']
+                      ?['howRecognizeProgress'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.xl),
           ],
@@ -1259,7 +1327,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'specificToolsToIntegrate',
                 value,
               ),
-              provider.followOnQuestions['customization']?['specificToolsToIntegrate'] ?? '',
+              provider.followOnQuestions['customization']
+                      ?['specificToolsToIntegrate'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.lg),
             _buildTextArea(
@@ -1269,7 +1339,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'howCustomizeCommunication',
                 value,
               ),
-              provider.followOnQuestions['customization']?['howCustomizeCommunication'] ?? '',
+              provider.followOnQuestions['customization']
+                      ?['howCustomizeCommunication'] ??
+                  '',
             ),
             SizedBox(height: AppSpacing.lg),
             _buildTextArea(
@@ -1279,7 +1351,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 'tailoredNeeds',
                 value,
               ),
-              provider.followOnQuestions['customization']?['tailoredNeeds'] ?? '',
+              provider.followOnQuestions['customization']?['tailoredNeeds'] ??
+                  '',
             ),
           ],
         ],

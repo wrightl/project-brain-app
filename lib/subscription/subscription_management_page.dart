@@ -148,7 +148,7 @@ class SubscriptionManagementPage extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.sm,
-                                vertical: AppSpacing.xs,
+                      vertical: AppSpacing.xs,
                     ),
                     decoration: BoxDecoration(
                       color: Colors.orange,
@@ -401,8 +401,8 @@ class SubscriptionManagementPage extends StatelessWidget {
             child: Text(
               'Cancel Subscription',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: Theme.of(context).colorScheme.error,
-              ),
+                    color: Theme.of(context).colorScheme.error,
+                  ),
             ),
           ),
         ],

@@ -192,9 +192,8 @@ class _AppLoadingScreenState extends State<AppLoadingScreen>
         _exitController,
       ]),
       builder: (context, _) {
-        final pulse = _pulseController.isAnimating
-            ? _pulseController.value
-            : 0.5;
+        final pulse =
+            _pulseController.isAnimating ? _pulseController.value : 0.5;
         final breath = 1.0 + 0.045 * math.sin(pulse * math.pi);
         final logoScale = _entranceScale.value * breath;
         final opacity = _exitStarted
@@ -227,12 +226,14 @@ class _AppLoadingScreenState extends State<AppLoadingScreen>
                         ),
                       ),
                       SizedBox(height: AppSpacing.s28),
-                      _LoadingDots(phase: _gradientController.value * 2 * math.pi),
+                      _LoadingDots(
+                          phase: _gradientController.value * 2 * math.pi),
                       SizedBox(height: AppSpacing.s20),
                       Text(
                         'Getting things ready…',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: const Color(0xFF49454F).withValues(alpha: 0.85),
+                              color: const Color(0xFF49454F)
+                                  .withValues(alpha: 0.85),
                               letterSpacing: 0.2,
                             ),
                       ),
@@ -266,7 +267,8 @@ class _GradientBackdrop extends StatelessWidget {
           begin: Alignment(0, -1.0 + shift),
           end: Alignment(0, 1.0 - shift),
           colors: [
-            Color.lerp(kSplashGradientTop, kSplashGradientMid, 0.5 + 0.5 * math.sin(gradientT * math.pi))!,
+            Color.lerp(kSplashGradientTop, kSplashGradientMid,
+                0.5 + 0.5 * math.sin(gradientT * math.pi))!,
             kSplashGradientMid,
             kSplashGradientBottom,
           ],

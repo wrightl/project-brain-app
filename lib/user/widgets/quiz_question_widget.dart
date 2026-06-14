@@ -37,7 +37,8 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
       _currentValue = widget.value;
       // Update controller text if it exists
       final controller = _controllers[widget.question.id];
-      if (controller != null && controller.text != (widget.value?.toString() ?? '')) {
+      if (controller != null &&
+          controller.text != (widget.value?.toString() ?? '')) {
         controller.text = widget.value?.toString() ?? '';
       }
     }
@@ -101,7 +102,8 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
         ),
 
         // Hint text
-        if (widget.question.hint != null && widget.question.hint!.isNotEmpty) ...[
+        if (widget.question.hint != null &&
+            widget.question.hint!.isNotEmpty) ...[
           SizedBox(height: AppSpacing.sm),
           Text(
             widget.question.hint!,
@@ -164,10 +166,10 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
       decoration: InputDecoration(
         hintText: widget.question.placeholder ?? 'Enter a number',
         border: const OutlineInputBorder(),
-        suffixText: widget.question.minValue != null ||
-                widget.question.maxValue != null
-            ? _buildRangeText()
-            : null,
+        suffixText:
+            widget.question.minValue != null || widget.question.maxValue != null
+                ? _buildRangeText()
+                : null,
       ),
       keyboardType: TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [
@@ -277,11 +279,11 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
       onTap: () async {
         final now = DateTime.now();
         final initialDate = currentDate ?? now;
-        
+
         // Parse min/max as years if they're reasonable year values
         DateTime? firstDate;
         DateTime? lastDate;
-        
+
         if (widget.question.minValue != null) {
           final minVal = widget.question.minValue!.toInt();
           // If it's a reasonable year (1900-2100), treat as year
@@ -294,7 +296,7 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
         } else {
           firstDate = DateTime(1900);
         }
-        
+
         if (widget.question.maxValue != null) {
           final maxVal = widget.question.maxValue!.toInt();
           if (maxVal >= 1900 && maxVal <= 2100) {
@@ -305,7 +307,7 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
         } else {
           lastDate = DateTime(2100);
         }
-        
+
         final pickedDate = await showDatePicker(
           context: context,
           initialDate: initialDate,
@@ -338,8 +340,7 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
   }
 
   Widget _buildChoiceInput(ThemeData theme) {
-    if (widget.question.choices == null ||
-        widget.question.choices!.isEmpty) {
+    if (widget.question.choices == null || widget.question.choices!.isEmpty) {
       return Text(
         'No choices available',
         style: theme.textTheme.bodyMedium?.copyWith(
@@ -365,8 +366,7 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
   }
 
   Widget _buildMultipleChoiceInput(ThemeData theme) {
-    if (widget.question.choices == null ||
-        widget.question.choices!.isEmpty) {
+    if (widget.question.choices == null || widget.question.choices!.isEmpty) {
       return Text(
         'No choices available',
         style: theme.textTheme.bodyMedium?.copyWith(
@@ -375,9 +375,8 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
       );
     }
 
-    final selectedValues = _currentValue is List
-        ? List<String>.from(_currentValue)
-        : <String>[];
+    final selectedValues =
+        _currentValue is List ? List<String>.from(_currentValue) : <String>[];
 
     return Column(
       children: widget.question.choices!.map((choice) {
@@ -404,9 +403,8 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
   Widget _buildScaleInput(ThemeData theme) {
     final min = widget.question.minValue?.toDouble() ?? 1.0;
     final max = widget.question.maxValue?.toDouble() ?? 5.0;
-    final currentValue = _currentValue is num
-        ? (_currentValue as num).toDouble()
-        : min;
+    final currentValue =
+        _currentValue is num ? (_currentValue as num).toDouble() : min;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -459,4 +457,3 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
     );
   }
 }
-

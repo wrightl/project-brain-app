@@ -94,7 +94,7 @@ class _JournalViewPageState extends State<JournalViewPage> {
                   SizedBox(height: AppSpacing.md),
                   Wrap(
                     spacing: AppSpacing.s6,
-                  runSpacing: AppSpacing.xs,
+                    runSpacing: AppSpacing.xs,
                     children: [
                       ...?entry.tags?.map((t) => Chip(
                             label: Text(t.name),
@@ -111,7 +111,8 @@ class _JournalViewPageState extends State<JournalViewPage> {
                 ],
                 if (entry.systemTags != null)
                   ...entry.systemTags!
-                      .where((t) => t.responses != null && t.responses!.isNotEmpty)
+                      .where(
+                          (t) => t.responses != null && t.responses!.isNotEmpty)
                       .map((st) => Padding(
                             padding: EdgeInsets.only(top: AppSpacing.lg),
                             child: Column(
@@ -125,7 +126,8 @@ class _JournalViewPageState extends State<JournalViewPage> {
                                 ),
                                 SizedBox(height: AppSpacing.xs),
                                 ...st.responses!.entries.map((e) => Padding(
-                                      padding: EdgeInsets.only(top: AppSpacing.micro),
+                                      padding: EdgeInsets.only(
+                                          top: AppSpacing.micro),
                                       child: Text(
                                         '${e.key}: ${e.value}',
                                         style: theme.textTheme.bodyMedium,

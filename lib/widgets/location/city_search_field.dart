@@ -98,8 +98,9 @@ class _CitySearchFieldState extends State<CitySearchField> {
       key: ValueKey(widget.countryCode ?? 'no-country'),
       optionsBuilder: (textEditingValue) => _options,
       displayStringForOption: (option) => option.displayLabel,
-      initialValue:
-          widget.value != null ? TextEditingValue(text: widget.value!.displayLabel) : null,
+      initialValue: widget.value != null
+          ? TextEditingValue(text: widget.value!.displayLabel)
+          : null,
       onSelected: widget.onChanged,
       fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
         if (widget.value != null && controller.text.isEmpty) {

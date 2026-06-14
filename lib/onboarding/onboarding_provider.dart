@@ -132,7 +132,8 @@ class OnboardingProvider extends ChangeNotifier {
 
   /// Get total number of steps (including conditional follow-on questions)
   int getTotalSteps() {
-    int steps = 8; // Basic steps: Basic Info, Traits, Welcome, About You, Preferences, Profile, Coaching Buddy, Closing
+    int steps =
+        8; // Basic steps: Basic Info, Traits, Welcome, About You, Preferences, Profile, Coaching Buddy, Closing
     if (shouldShowFollowOnQuestions) {
       steps += 1; // Add follow-on questions step
     }
@@ -337,12 +338,10 @@ class OnboardingProvider extends ChangeNotifier {
 
     if (shouldShowStrengthsQuestions) {
       followOnQuestions['strengths'] = {
-        'howDoYouUseStrengths': _followOnQuestions['strengths']
-                ?['howDoYouUseStrengths'] ??
-            '',
-        'whatHelpsTapStrengths': _followOnQuestions['strengths']
-                ?['whatHelpsTapStrengths'] ??
-            '',
+        'howDoYouUseStrengths':
+            _followOnQuestions['strengths']?['howDoYouUseStrengths'] ?? '',
+        'whatHelpsTapStrengths':
+            _followOnQuestions['strengths']?['whatHelpsTapStrengths'] ?? '',
         'howBuildOnStrengths':
             _followOnQuestions['strengths']?['howBuildOnStrengths'] ?? '',
       };
@@ -354,9 +353,9 @@ class OnboardingProvider extends ChangeNotifier {
             _followOnQuestions['challenges']?['whatsHardestToManage'] ?? '',
         'whatToolsHaveHelped':
             _followOnQuestions['challenges']?['whatToolsHaveHelped'] ?? '',
-        'wouldLikeToolSuggestions':
-            _followOnQuestions['challenges']?['wouldLikeToolSuggestions'] ??
-                false,
+        'wouldLikeToolSuggestions': _followOnQuestions['challenges']
+                ?['wouldLikeToolSuggestions'] ??
+            false,
         'whatHelpsRecharge':
             _followOnQuestions['challenges']?['whatHelpsRecharge'] ?? '',
       };
@@ -418,9 +417,9 @@ class OnboardingProvider extends ChangeNotifier {
             _followOnQuestions['coachingBuddy']?['whatWouldLikeHelpWith'] ?? '',
         'howAdaptCommunication':
             _followOnQuestions['coachingBuddy']?['howAdaptCommunication'] ?? '',
-        'specificRemindersPrompts':
-            _followOnQuestions['coachingBuddy']?['specificRemindersPrompts'] ??
-                '',
+        'specificRemindersPrompts': _followOnQuestions['coachingBuddy']
+                ?['specificRemindersPrompts'] ??
+            '',
       };
     }
 
@@ -443,9 +442,9 @@ class OnboardingProvider extends ChangeNotifier {
             _followOnQuestions['celebrating']?['recentWinToCelebrate'] ?? '',
         'howAcknowledgeProgress':
             _followOnQuestions['celebrating']?['howAcknowledgeProgress'] ?? '',
-        'wouldLikeCelebrationIdeas':
-            _followOnQuestions['celebrating']?['wouldLikeCelebrationIdeas'] ??
-                false,
+        'wouldLikeCelebrationIdeas': _followOnQuestions['celebrating']
+                ?['wouldLikeCelebrationIdeas'] ??
+            false,
         'howRecognizeProgress':
             _followOnQuestions['celebrating']?['howRecognizeProgress'] ?? '',
       };
@@ -453,12 +452,12 @@ class OnboardingProvider extends ChangeNotifier {
 
     if (shouldShowCustomizationQuestions) {
       followOnQuestions['customization'] = {
-        'specificToolsToIntegrate':
-            _followOnQuestions['customization']?['specificToolsToIntegrate'] ??
-                '',
-        'howCustomizeCommunication':
-            _followOnQuestions['customization']?['howCustomizeCommunication'] ??
-                '',
+        'specificToolsToIntegrate': _followOnQuestions['customization']
+                ?['specificToolsToIntegrate'] ??
+            '',
+        'howCustomizeCommunication': _followOnQuestions['customization']
+                ?['howCustomizeCommunication'] ??
+            '',
         'tailoredNeeds':
             _followOnQuestions['customization']?['tailoredNeeds'] ?? '',
       };
@@ -473,7 +472,8 @@ class OnboardingProvider extends ChangeNotifier {
         currentFeeling: _currentFeeling,
       ),
       aboutYou: AboutYouSection(
-        selfDescription: _selfDescription.isEmpty ? null : _selfDescription.toList(),
+        selfDescription:
+            _selfDescription.isEmpty ? null : _selfDescription.toList(),
         businessType: _businessType,
         proudMoment: _proudMoment,
         challenge: _challenges.isEmpty ? null : _challenges.toList(),
@@ -501,8 +501,7 @@ class OnboardingProvider extends ChangeNotifier {
         safeSpace: _safeSpace,
         tipsOptIn: _tipsOptIn,
       ),
-      followOnQuestions:
-          followOnQuestions.isEmpty ? null : followOnQuestions,
+      followOnQuestions: followOnQuestions.isEmpty ? null : followOnQuestions,
     );
 
     // Format date of birth as YYYY-MM-DD
@@ -521,4 +520,3 @@ class OnboardingProvider extends ChangeNotifier {
     );
   }
 }
-

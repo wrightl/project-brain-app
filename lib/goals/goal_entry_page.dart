@@ -48,9 +48,8 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
             if (!mounted) return;
             final goals = await provider.getTodaysGoals();
             for (int i = 0; i < 3 && i < goals.length; i++) {
-              _controllers[i].text = goals[i].message == 'No Egg Goal Set'
-                  ? ''
-                  : goals[i].message;
+              _controllers[i].text =
+                  goals[i].message == 'No Egg Goal Set' ? '' : goals[i].message;
             }
             setState(() {});
           },
@@ -58,143 +57,148 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: AppInsets.page,
             child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'What would you like to accomplish today?',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: AppSpacing.sm),
-              Text(
-                'Set up to 3 goals for today. You can mark them as complete as you finish them.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
-              ),
-              SizedBox(height: AppSpacing.lg),
-
-              OutlinedButton.icon(
-                onPressed: (goalsProvider.isLoading || _suggestingGoals)
-                    ? null
-                    : () async {
-                        setState(() => _suggestingGoals = true);
-                        try {
-                          final suggested =
-                              await sl<EggGoalsService>().fetchGoalSuggestions();
-                          if (!context.mounted) return;
-                          if (suggested.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'No suggestions available right now. Try again later.',
-                                ),
-                              ),
-                            );
-                            return;
-                          }
-                          var si = 0;
-                          for (var i = 0; i < 3 && si < suggested.length; i++) {
-                            if (_controllers[i].text.trim().isEmpty) {
-                              _controllers[i].text = suggested[si++];
-                            }
-                          }
-                          setState(() {});
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Could not load suggestions: $e'),
-                              ),
-                            );
-                          }
-                        } finally {
-                          if (mounted) {
-                            setState(() => _suggestingGoals = false);
-                          }
-                        }
-                      },
-                icon: _suggestingGoals
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.auto_awesome_outlined),
-                label: Text(_suggestingGoals ? 'Suggesting…' : 'Suggest goals for today'),
-              ),
-
-              SizedBox(height: AppSpacing.xl),
-
-              // Goal input fields
-              for (int i = 0; i < 3; i++) ...[
-                TextField(
-                  controller: _controllers[i],
-                  decoration: InputDecoration(
-                    labelText: 'Goal ${i + 1}',
-                    hintText: 'Enter your goal here...',
-                    border: OutlineInputBorder(
-                      borderRadius: AppRadius.circularMd,
-                    ),
-                    prefixIcon: const Icon(Icons.check_circle_outline),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'What would you like to accomplish today?',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
-                  maxLines: 2,
                 ),
-                if (i < 2) SizedBox(height: AppSpacing.lg),
-              ],
+                SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Set up to 3 goals for today. You can mark them as complete as you finish them.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                ),
+                SizedBox(height: AppSpacing.lg),
 
-              SizedBox(height: AppSpacing.xxl),
-
-              // Save button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
+                OutlinedButton.icon(
                   onPressed: (goalsProvider.isLoading || _suggestingGoals)
                       ? null
                       : () async {
-                          final goals = _controllers
-                              .map((c) => c.text.trim())
-                              .where((text) => text.isNotEmpty)
-                              .toList();
-
-                          if (goals.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Please enter at least one goal'),
-                              ),
-                            );
-                            return;
-                          }
-
-                          // Pad to 3 goals if needed
-                          while (goals.length < 3) {
-                            goals.add('');
-                          }
-
-                          await goalsProvider.setGoals(goals);
-                          if (context.mounted) {
-                            context.go('/goals/list');
+                          setState(() => _suggestingGoals = true);
+                          try {
+                            final suggested = await sl<EggGoalsService>()
+                                .fetchGoalSuggestions();
+                            if (!context.mounted) return;
+                            if (suggested.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'No suggestions available right now. Try again later.',
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+                            var si = 0;
+                            for (var i = 0;
+                                i < 3 && si < suggested.length;
+                                i++) {
+                              if (_controllers[i].text.trim().isEmpty) {
+                                _controllers[i].text = suggested[si++];
+                              }
+                            }
+                            setState(() {});
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content:
+                                      Text('Could not load suggestions: $e'),
+                                ),
+                              );
+                            }
+                          } finally {
+                            if (mounted) {
+                              setState(() => _suggestingGoals = false);
+                            }
                           }
                         },
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                  ),
-                  child: goalsProvider.isLoading
+                  icon: _suggestingGoals
                       ? const SizedBox(
-                          height: 20,
-                          width: 20,
+                          width: 18,
+                          height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Save Goals'),
+                      : const Icon(Icons.auto_awesome_outlined),
+                  label: Text(_suggestingGoals
+                      ? 'Suggesting…'
+                      : 'Suggest goals for today'),
                 ),
-              ),
-            ],
+
+                SizedBox(height: AppSpacing.xl),
+
+                // Goal input fields
+                for (int i = 0; i < 3; i++) ...[
+                  TextField(
+                    controller: _controllers[i],
+                    decoration: InputDecoration(
+                      labelText: 'Goal ${i + 1}',
+                      hintText: 'Enter your goal here...',
+                      border: OutlineInputBorder(
+                        borderRadius: AppRadius.circularMd,
+                      ),
+                      prefixIcon: const Icon(Icons.check_circle_outline),
+                    ),
+                    maxLines: 2,
+                  ),
+                  if (i < 2) SizedBox(height: AppSpacing.lg),
+                ],
+
+                SizedBox(height: AppSpacing.xxl),
+
+                // Save button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: (goalsProvider.isLoading || _suggestingGoals)
+                        ? null
+                        : () async {
+                            final goals = _controllers
+                                .map((c) => c.text.trim())
+                                .where((text) => text.isNotEmpty)
+                                .toList();
+
+                            if (goals.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content:
+                                      Text('Please enter at least one goal'),
+                                ),
+                              );
+                              return;
+                            }
+
+                            // Pad to 3 goals if needed
+                            while (goals.length < 3) {
+                              goals.add('');
+                            }
+
+                            await goalsProvider.setGoals(goals);
+                            if (context.mounted) {
+                              context.go('/goals/list');
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                    ),
+                    child: goalsProvider.isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Save Goals'),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
         ),
       ),
     );
   }
 }
-

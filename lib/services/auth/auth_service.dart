@@ -44,10 +44,12 @@ class AuthService {
     UserProfileService? userProfileService,
     bool? enableBiometricLaunchGate,
   })  : _oauthService = oauthService ?? OAuthService(),
-        _tokenManager = tokenManager ?? TokenManager(tokenStorage: TokenStorage()),
+        _tokenManager =
+            tokenManager ?? TokenManager(tokenStorage: TokenStorage()),
         _tokenStorage = tokenStorage ?? TokenStorage(),
         _userProfileService = userProfileService ?? UserProfileService(),
-        _enableBiometricLaunchGate = enableBiometricLaunchGate ?? Platform.isIOS;
+        _enableBiometricLaunchGate =
+            enableBiometricLaunchGate ?? Platform.isIOS;
 
   /// Initialize the auth service and attempt to restore previous session
   ///

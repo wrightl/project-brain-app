@@ -173,8 +173,7 @@ class AIService extends HttpService {
       extraHeaders: {'Accept': 'text/event-stream'},
     );
 
-    logDebug(
-        '[AIService] Strategies response status: ${response.statusCode}');
+    logDebug('[AIService] Strategies response status: ${response.statusCode}');
 
     if (response.statusCode != 200) {
       logError(
@@ -238,7 +237,8 @@ class AIService extends HttpService {
       final type = data['type'] as String?;
       final value = data['value'];
       if (type == 'text' && value != null) {
-        controller.add(StrategiesStreamEvent(text: value is String ? value : value.toString()));
+        controller.add(StrategiesStreamEvent(
+            text: value is String ? value : value.toString()));
       } else if (type == 'strategies' && value is List) {
         final list = value
             .map((e) => SuggestedStrategy.fromJson(e as Map<String, dynamic>))

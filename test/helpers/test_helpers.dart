@@ -1,7 +1,9 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get_it/get_it.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:projectbrain/goals/egg_goals_provider.dart';
 import 'package:projectbrain/services/error_reporting_service.dart';
+import 'package:projectbrain/services/goals_realtime_service.dart';
 import 'package:projectbrain/services/push_notification_service.dart';
 
 class MockErrorReportingServiceForTests extends Mock
@@ -9,6 +11,11 @@ class MockErrorReportingServiceForTests extends Mock
 
 class MockPushNotificationServiceForTests extends Mock
     implements PushNotificationService {}
+
+class MockGoalsRealtimeServiceForTests extends Mock
+    implements GoalsRealtimeService {}
+
+class MockEggGoalsProviderForTests extends Mock implements EggGoalsProvider {}
 
 /// Initialize test environment with mock configuration
 ///
@@ -37,13 +44,24 @@ SUBSCRIPTION_BILLING_WEB_URL=https://example.com/billing
 Future<void> registerTestGetItServices() async {
   await GetIt.instance.reset();
   registerFallbackValue('');
+  registerFallbackValue(<String, Object>{});
   final err = MockErrorReportingServiceForTests();
   final push = MockPushNotificationServiceForTests();
+  final goalsRealtime = MockGoalsRealtimeServiceForTests();
+  final eggGoals = MockEggGoalsProviderForTests();
   when(() => err.setUserId(any())).thenAnswer((_) async {});
+  when(() => err.logEvent(any(), parameters: any(named: 'parameters')))
+      .thenAnswer((_) async {});
   when(() => push.registerToken()).thenAnswer((_) async => true);
   when(() => push.unregisterToken()).thenAnswer((_) async => true);
+  when(() => push.ensurePermissionsAndConfigure())
+      .thenAnswer((_) async => true);
+  when(() => goalsRealtime.start(any())).thenAnswer((_) async {});
+  when(() => eggGoals.syncFromAPI()).thenAnswer((_) async {});
   GetIt.instance.registerSingleton<ErrorReportingService>(err);
   GetIt.instance.registerSingleton<PushNotificationService>(push);
+  GetIt.instance.registerSingleton<GoalsRealtimeService>(goalsRealtime);
+  GetIt.instance.registerSingleton<EggGoalsProvider>(eggGoals);
 }
 
 Future<void> resetTestGetIt() => GetIt.instance.reset();

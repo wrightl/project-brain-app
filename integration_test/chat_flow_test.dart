@@ -11,7 +11,8 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('Chat Flow Integration Tests', () {
-    testWidgets('Send message and receive response', (WidgetTester tester) async {
+    testWidgets('Send message and receive response',
+        (WidgetTester tester) async {
       // Start the app (assuming user is already authenticated)
       app.main();
       await tester.pumpAndSettle(const Duration(seconds: 5));
@@ -84,7 +85,8 @@ void main() {
   });
 
   group('Chat Performance Tests', () {
-    testWidgets('Smooth scrolling with many messages', (WidgetTester tester) async {
+    testWidgets('Smooth scrolling with many messages',
+        (WidgetTester tester) async {
       app.main();
       await tester.pumpAndSettle(const Duration(seconds: 5));
 

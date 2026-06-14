@@ -34,8 +34,8 @@ class Connection {
       status: json['status']?.toString() ?? json['Status']?.toString() ?? '',
       userName: json['userName']?.toString() ?? json['UserName']?.toString(),
       coachName: json['coachName']?.toString() ?? json['CoachName']?.toString(),
-      coachProfileId:
-          json['coachProfileId']?.toString() ?? json['CoachProfileId']?.toString(),
+      coachProfileId: json['coachProfileId']?.toString() ??
+          json['CoachProfileId']?.toString(),
       requestedAt: json['requestedAt'] != null
           ? DateTime.tryParse(json['requestedAt'].toString())
           : null,

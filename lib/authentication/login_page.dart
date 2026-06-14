@@ -24,13 +24,14 @@ class LoginPage extends StatelessWidget {
           children: [
             if (authProvider.hasError) ...[
               Padding(
-                padding: EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.lg),
+                padding: EdgeInsets.fromLTRB(
+                    AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.lg),
                 child: Text(
                   authProvider.errorMessage!,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                 ),
               ),
             ],

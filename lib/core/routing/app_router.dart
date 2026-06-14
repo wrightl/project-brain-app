@@ -147,7 +147,8 @@ class AppRouter {
     if (_router == null) return;
 
     try {
-      final connections = await sl<ConnectionService>().getAcceptedConnections();
+      final connections =
+          await sl<ConnectionService>().getAcceptedConnections();
       final match =
           connections.where((connection) => connection.coachId == coachId);
       if (match.isNotEmpty) {

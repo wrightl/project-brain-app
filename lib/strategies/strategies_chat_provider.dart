@@ -92,8 +92,9 @@ class StrategiesChatProvider extends ChangeNotifier {
       }
     } catch (e) {
       logError('[StrategiesChatProvider] sendMessage failed', e);
-      _errorMessage =
-          e is Exception ? e.toString() : 'Failed to get response. Please try again.';
+      _errorMessage = e is Exception
+          ? e.toString()
+          : 'Failed to get response. Please try again.';
       notifyListeners();
     } finally {
       _isLoading = false;

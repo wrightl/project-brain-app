@@ -21,4 +21,3 @@ Map<String, dynamic> _$PushNotificationDataToJson(
       'body': instance.body,
       'data': instance.data,
     };
-

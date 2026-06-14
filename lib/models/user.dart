@@ -8,7 +8,7 @@ class User {
   final String? bio;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  
+
   // Onboarding fields
   final String? fullName;
   final String? preferredPronoun;

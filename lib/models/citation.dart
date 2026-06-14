@@ -14,4 +14,3 @@ abstract class Citation with _$Citation {
   factory Citation.fromJson(Map<String, dynamic> json) =>
       _$CitationFromJson(json);
 }
-

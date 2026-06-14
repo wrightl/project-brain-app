@@ -48,9 +48,7 @@ class ConnectionService extends HttpService {
   /// Accepted and pending connections (for network management UI).
   Future<List<Connection>> getActiveConnections() async {
     final connections = await getConnections();
-    return connections
-        .where((c) => c.isAccepted || c.isPending)
-        .toList();
+    return connections.where((c) => c.isAccepted || c.isPending).toList();
   }
 
   /// Remove or cancel a connection.

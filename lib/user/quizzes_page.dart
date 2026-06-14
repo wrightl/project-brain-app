@@ -189,7 +189,8 @@ class _QuizzesPageState extends State<QuizzesPage> {
                               SizedBox(height: AppSpacing.sm),
                               ..._insights!.keyInsights.map((insight) =>
                                   Padding(
-                                    padding: EdgeInsets.only(bottom: AppSpacing.sm),
+                                    padding:
+                                        EdgeInsets.only(bottom: AppSpacing.sm),
                                     child: Row(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,

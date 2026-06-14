@@ -73,7 +73,6 @@ class UserPage extends StatelessWidget {
                 ),
               ),
               SizedBox(height: AppSpacing.xxl),
-
               LinkList(links: todayLinks, sectionTitle: 'Today'),
               SizedBox(height: AppSpacing.xl),
               LinkList(links: accountLinks, sectionTitle: 'Account & tools'),

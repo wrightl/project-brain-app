@@ -32,4 +32,3 @@ class PushNotificationData {
   /// Extract any custom data value
   T? getDataValue<T>(String key) => data?[key] as T?;
 }
-

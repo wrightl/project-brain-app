@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
@@ -54,9 +53,10 @@ class _ResourcesPageState extends State<ResourcesPage> {
 
   Future<void> _uploadFiles() async {
     // Check subscription limits
-    final subscriptionProvider = Provider.of<SubscriptionProvider>(context, listen: false);
+    final subscriptionProvider =
+        Provider.of<SubscriptionProvider>(context, listen: false);
     final storageLimitMB = subscriptionProvider.getFileStorageLimitMB();
-    
+
     // Get current usage (refresh swallows errors; null usage = skip client checks)
     try {
       await subscriptionProvider.refresh();
@@ -83,12 +83,7 @@ class _ResourcesPageState extends State<ResourcesPage> {
     }
 
     try {
-      final result = await FilePicker.pickFiles(
-        allowMultiple: true,
-        type: FileType.any,
-        withReadStream: !kIsWeb,
-        withData: kIsWeb,
-      );
+      final result = await FilePicker.pickFiles(type: FileType.any);
 
       if (result != null && result.files.isNotEmpty) {
         setState(() {
@@ -97,9 +92,15 @@ class _ResourcesPageState extends State<ResourcesPage> {
           _successMessage = null;
         });
 
-        final platformFiles = result.files
-            .where(ResourceService.platformFileHasReadableData)
-            .toList();
+        final readableChecks = await Future.wait(
+          result.files.map(ResourceService.platformFileHasReadableData),
+        );
+        final platformFiles = <PlatformFile>[];
+        for (var i = 0; i < result.files.length; i++) {
+          if (readableChecks[i]) {
+            platformFiles.add(result.files[i]);
+          }
+        }
 
         if (platformFiles.isEmpty) {
           setState(() {
@@ -317,7 +318,8 @@ class _ResourcesPageState extends State<ResourcesPage> {
                           Icon(
                             Icons.folder_open,
                             size: 64,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                           SizedBox(height: AppSpacing.lg),
                           Text(

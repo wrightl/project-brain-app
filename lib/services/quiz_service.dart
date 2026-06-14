@@ -22,8 +22,9 @@ class QuizService extends HttpService {
       final List<dynamic> items = data is Map && data.containsKey('items')
           ? (data['items'] as List<dynamic>)
           : (data is List ? data : <dynamic>[]);
-      final quizzes =
-          items.map((json) => Quiz.fromJson(json as Map<String, dynamic>)).toList();
+      final quizzes = items
+          .map((json) => Quiz.fromJson(json as Map<String, dynamic>))
+          .toList();
       logDebug('[QuizService] Fetched ${quizzes.length} quizzes');
       return quizzes;
     } else {

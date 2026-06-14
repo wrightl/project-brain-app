@@ -49,7 +49,8 @@ class GettingStartedPage extends StatelessWidget {
                 context,
                 icon: Icons.edit,
                 title: 'Set Your Goals',
-                description: 'Define up to 3 goals you want to accomplish today.',
+                description:
+                    'Define up to 3 goals you want to accomplish today.',
               ),
               SizedBox(height: AppSpacing.lg),
 
@@ -57,7 +58,8 @@ class GettingStartedPage extends StatelessWidget {
                 context,
                 icon: Icons.check_circle,
                 title: 'Track Progress',
-                description: 'Mark goals as complete as you finish them throughout the day.',
+                description:
+                    'Mark goals as complete as you finish them throughout the day.',
               ),
               SizedBox(height: AppSpacing.lg),
 
@@ -65,7 +67,8 @@ class GettingStartedPage extends StatelessWidget {
                 context,
                 icon: Icons.phone_android,
                 title: 'Widget Support',
-                description: 'View your goals at a glance with the iOS widget on your home screen.',
+                description:
+                    'View your goals at a glance with the iOS widget on your home screen.',
               ),
               SizedBox(height: AppSpacing.xxl),
 
@@ -136,4 +139,3 @@ class GettingStartedPage extends StatelessWidget {
     );
   }
 }
-

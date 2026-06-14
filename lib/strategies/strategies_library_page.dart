@@ -80,7 +80,8 @@ class _StrategiesLibraryPageState extends State<StrategiesLibraryPage> {
                     Text(
                       l10n.emptyLibraryMessage,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -144,7 +145,8 @@ class _StrategiesLibraryPageState extends State<StrategiesLibraryPage> {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(ok ? l10n.strategyDeleted : l10n.couldNotDeleteStrategy),
+          content:
+              Text(ok ? l10n.strategyDeleted : l10n.couldNotDeleteStrategy),
         ),
       );
     }
@@ -181,7 +183,8 @@ class _StrategyLibraryCard extends StatelessWidget {
                 if (icon != null)
                   Padding(
                     padding: EdgeInsets.only(right: AppSpacing.md),
-                    child: Icon(icon, color: theme.colorScheme.primary, size: 28),
+                    child:
+                        Icon(icon, color: theme.colorScheme.primary, size: 28),
                   ),
                 Expanded(
                   child: Column(
@@ -197,7 +200,8 @@ class _StrategyLibraryCard extends StatelessWidget {
                       Text(
                         item.description,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.8),
                         ),
                         maxLines: 4,
                         overflow: TextOverflow.ellipsis,
@@ -206,7 +210,8 @@ class _StrategyLibraryCard extends StatelessWidget {
                       Text(
                         dateStr,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.6),
                         ),
                       ),
                     ],
@@ -251,7 +256,8 @@ class _StrategyLibraryCard extends StatelessWidget {
                   ),
                   onPressed: () => onRatingChanged(star),
                   padding: EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  constraints:
+                      const BoxConstraints(minWidth: 32, minHeight: 32),
                 );
               }),
             ),

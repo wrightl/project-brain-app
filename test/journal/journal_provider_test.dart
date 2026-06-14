@@ -107,8 +107,8 @@ void main() {
           .thenAnswer((_) async => created);
       when(() => mockUserService.getTimezone())
           .thenAnswer((_) async => TimezoneResponse(timezone: 'UTC'));
-      when(() => mockJournalService.getStreakSummary())
-          .thenAnswer((_) async => JournalStreakSummary(currentStreak: 1, longestStreak: 1));
+      when(() => mockJournalService.getStreakSummary()).thenAnswer((_) async =>
+          JournalStreakSummary(currentStreak: 1, longestStreak: 1));
 
       final result = await provider.createEntry(request);
 
@@ -118,7 +118,8 @@ void main() {
     });
 
     test('loadSystemTags populates systemTags', () async {
-      when(() => mockJournalService.getSystemTags()).thenAnswer((_) async => []);
+      when(() => mockJournalService.getSystemTags())
+          .thenAnswer((_) async => []);
       await provider.loadSystemTags();
       expect(provider.systemTags, isEmpty);
     });

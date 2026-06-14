@@ -304,7 +304,7 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
-                            vertical: AppSpacing.sm,
+            vertical: AppSpacing.sm,
           ),
           decoration: BoxDecoration(
             color: AppConfig.isDev
@@ -499,7 +499,7 @@ class _ProfilePageState extends State<ProfilePage> {
         SizedBox(height: AppSpacing.lg),
         Wrap(
           spacing: AppSpacing.md,
-                runSpacing: AppSpacing.md,
+          runSpacing: AppSpacing.md,
           children: _neurodiverseTraits.map((trait) {
             final isSelected = _selectedTraits.contains(trait);
             return FilterChip(

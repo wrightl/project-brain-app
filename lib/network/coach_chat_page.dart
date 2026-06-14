@@ -521,8 +521,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
                           ? const SizedBox(
                               width: 20,
                               height: 20,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.send),
                       onPressed: _isSending ? null : _sendTextMessage,

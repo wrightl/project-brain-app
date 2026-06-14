@@ -27,7 +27,8 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     // Without a logger isolate we keep this minimal; avoid throwing.
     return;
   }
-  logInfo('[PushNotification] Background message received: ${message.messageId}');
+  logInfo(
+      '[PushNotification] Background message received: ${message.messageId}');
   // Handle background message here if needed
 }
 
@@ -93,7 +94,8 @@ class PushNotificationService {
 
   /// Initialize local notifications plugin
   Future<void> _initializeLocalNotifications() async {
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -148,9 +150,9 @@ class PushNotificationService {
           provisional: false,
         );
 
-        final granted = settings.authorizationStatus ==
-                AuthorizationStatus.authorized ||
-            settings.authorizationStatus == AuthorizationStatus.provisional;
+        final granted =
+            settings.authorizationStatus == AuthorizationStatus.authorized ||
+                settings.authorizationStatus == AuthorizationStatus.provisional;
 
         logInfo(
             '[PushNotification] iOS permission status: ${settings.authorizationStatus}');
@@ -169,13 +171,15 @@ class PushNotificationService {
           return status.isGranted;
         } catch (e) {
           // If permission handler fails, assume granted (for older Android versions)
-          logWarning('[PushNotification] Error checking Android permission: $e');
+          logWarning(
+              '[PushNotification] Error checking Android permission: $e');
           return true;
         }
       }
       return false;
     } catch (e, stackTrace) {
-      logError('[PushNotification] Error requesting permissions', e, stackTrace);
+      logError(
+          '[PushNotification] Error requesting permissions', e, stackTrace);
       return false;
     }
   }
@@ -184,20 +188,23 @@ class PushNotificationService {
   void _setupMessageHandlers() {
     // Handle foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      logInfo('[PushNotification] Foreground message received: ${message.messageId}');
+      logInfo(
+          '[PushNotification] Foreground message received: ${message.messageId}');
       _handleForegroundMessage(message);
     });
 
     // Handle notification tap when app is in background
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      logInfo('[PushNotification] Notification tapped (background): ${message.messageId}');
+      logInfo(
+          '[PushNotification] Notification tapped (background): ${message.messageId}');
       _handleNotificationTap(message);
     });
 
     // Check if app was opened from a terminated state
     _firebaseMessaging.getInitialMessage().then((RemoteMessage? message) {
       if (message != null) {
-        logInfo('[PushNotification] App opened from terminated state: ${message.messageId}');
+        logInfo(
+            '[PushNotification] App opened from terminated state: ${message.messageId}');
         _handleNotificationTap(message);
       }
     });
@@ -276,22 +283,22 @@ class PushNotificationService {
       // Navigate based on notification data
       _navigateFromNotification(notificationData);
     } catch (e, stackTrace) {
-      logError('[PushNotification] Error handling notification tap', e,
-          stackTrace);
+      logError(
+          '[PushNotification] Error handling notification tap', e, stackTrace);
     }
   }
 
   /// Navigate to appropriate screen based on notification data
   void _navigateFromNotification(PushNotificationData data) {
     logInfo('[PushNotification] Navigate from notification: type=${data.type}');
-    
+
     // Store notification data for navigation handling
     if (data.data != null) {
       sharedPreferences.setString(
         'pending_notification',
         jsonEncode(data.data),
       );
-      
+
       // Try to navigate immediately if router is available
       // This works when app is in foreground or background
       try {
@@ -299,7 +306,8 @@ class PushNotificationService {
         router.navigateFromNotification(data.data!);
       } catch (e) {
         // Router might not be ready yet, data is stored for later
-        logDebug('[PushNotification] Router not ready, notification stored for later');
+        logDebug(
+            '[PushNotification] Router not ready, notification stored for later');
       }
     }
   }
@@ -320,7 +328,8 @@ class PushNotificationService {
     try {
       // Check if user is authenticated
       if (!authService.isLoggedIn) {
-        logWarning('[PushNotification] Cannot register token: user not authenticated');
+        logWarning(
+            '[PushNotification] Cannot register token: user not authenticated');
         return false;
       }
 
@@ -367,7 +376,7 @@ class PushNotificationService {
   /// Handle token refresh
   Future<void> _handleTokenRefresh(String newToken) async {
     logInfo('[PushNotification] Token refreshed');
-    
+
     // Store new token
     await sharedPreferences.setString(_tokenStorageKey, newToken);
 
@@ -388,7 +397,8 @@ class PushNotificationService {
 
       // Check if user is authenticated
       if (!authService.isLoggedIn) {
-        logWarning('[PushNotification] Cannot unregister token: user not authenticated');
+        logWarning(
+            '[PushNotification] Cannot unregister token: user not authenticated');
         // Clear local token anyway
         await sharedPreferences.remove(_tokenStorageKey);
         return true;
@@ -460,4 +470,3 @@ class PushNotificationService {
     return null;
   }
 }
-

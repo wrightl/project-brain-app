@@ -837,7 +837,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                                     Padding(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: AppSpacing.lg,
-                            vertical: AppSpacing.sm,
+                                        vertical: AppSpacing.sm,
                                       ),
                                       child: Row(
                                         children: [

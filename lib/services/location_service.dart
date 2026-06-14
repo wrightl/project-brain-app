@@ -21,7 +21,8 @@ class LocationService extends HttpService {
       final data = jsonDecode(response.body) as List<dynamic>;
       final countries = data
           .map((item) => CountryOption.fromJson(item as Map<String, dynamic>))
-          .where((country) => country.name.isNotEmpty && country.code.isNotEmpty)
+          .where(
+              (country) => country.name.isNotEmpty && country.code.isNotEmpty)
           .toList();
       logDebug('[LocationService] Loaded ${countries.length} countries');
       return countries;

@@ -37,8 +37,7 @@ class _PricingPageState extends State<PricingPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (!kIsWeb &&
-                    defaultTargetPlatform == TargetPlatform.iOS) ...[
+                if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) ...[
                   _IosWebBillingNotice(theme: Theme.of(context)),
                   SizedBox(height: AppSpacing.lg),
                 ],
@@ -671,8 +670,8 @@ class _FeatureComparisonTable extends StatelessWidget {
                   bottom: isLast
                       ? BorderSide.none
                       : BorderSide(
-                          color: theme.colorScheme.outline
-                              .withValues(alpha: 0.3)),
+                          color:
+                              theme.colorScheme.outline.withValues(alpha: 0.3)),
                 ),
               ),
               child: Padding(

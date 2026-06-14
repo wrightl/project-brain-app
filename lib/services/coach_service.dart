@@ -222,7 +222,8 @@ class CoachService extends HttpService {
     String connectionId,
     String content,
   ) async {
-    logDebug('[CoachService] Sending text message to connection: $connectionId');
+    logDebug(
+        '[CoachService] Sending text message to connection: $connectionId');
 
     final response = await post(
       '/coach-messages',
@@ -252,7 +253,8 @@ class CoachService extends HttpService {
     String connectionId,
     File audioFile,
   ) async {
-    logDebug('[CoachService] Sending audio message to connection: $connectionId');
+    logDebug(
+        '[CoachService] Sending audio message to connection: $connectionId');
 
     final token = await authService.getAccessToken();
     final uri = Uri.parse('$baseUrl/coach-messages/voice');
@@ -302,7 +304,8 @@ class CoachService extends HttpService {
   Future<void> markConversationRead(String connectionId) async {
     logDebug('[CoachService] Marking conversation read: $connectionId');
 
-    final response = await put('/coach-messages/conversation/$connectionId/read');
+    final response =
+        await put('/coach-messages/conversation/$connectionId/read');
 
     if (response.statusCode == 200 || response.statusCode == 204) {
       logDebug('[CoachService] Conversation marked as read');
@@ -358,7 +361,8 @@ class CoachService extends HttpService {
 
   /// Get the connection status between the current user and a coach.
   /// API Endpoint: GET /coaches/{coachId}/connection-status
-  Future<CoachConnectionStatusResult> getConnectionStatus(String coachId) async {
+  Future<CoachConnectionStatusResult> getConnectionStatus(
+      String coachId) async {
     logDebug('[CoachService] Getting connection status for coach: $coachId');
 
     final response = await get(

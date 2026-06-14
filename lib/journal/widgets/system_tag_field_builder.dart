@@ -35,7 +35,8 @@ class _SystemTagFieldBuilderState extends State<SystemTagFieldBuilder> {
   @override
   void didUpdateWidget(SystemTagFieldBuilder oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.value != widget.value && _textController != null &&
+    if (oldWidget.value != widget.value &&
+        _textController != null &&
         widget.value is String &&
         _textController!.text != widget.value) {
       _textController!.text = widget.value as String;
@@ -87,12 +88,12 @@ class _SystemTagFieldBuilderState extends State<SystemTagFieldBuilder> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(definition.label,
-                style: theme.textTheme.labelLarge),
+            Text(definition.label, style: theme.textTheme.labelLarge),
             if (definition.hint != null)
               Text(definition.hint!,
                   style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6))),
+                      color:
+                          theme.colorScheme.onSurface.withValues(alpha: 0.6))),
             SizedBox(height: AppSpacing.sm),
             Wrap(
               spacing: AppSpacing.sm,
@@ -124,7 +125,8 @@ class _SystemTagFieldBuilderState extends State<SystemTagFieldBuilder> {
       case 'time':
         return ListTile(
           title: Text(definition.label),
-          subtitle: Text(value is String ? value : (definition.placeholder ?? '')),
+          subtitle:
+              Text(value is String ? value : (definition.placeholder ?? '')),
           trailing: const Icon(Icons.access_time),
           onTap: () async {
             final initial = value is String ? value : null;
@@ -143,7 +145,8 @@ class _SystemTagFieldBuilderState extends State<SystemTagFieldBuilder> {
               initialTime: initialTime ?? TimeOfDay.now(),
             );
             if (time != null) {
-              onChanged('${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}');
+              onChanged(
+                  '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}');
             }
           },
         );

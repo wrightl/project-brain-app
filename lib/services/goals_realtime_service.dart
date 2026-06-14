@@ -140,8 +140,9 @@ class GoalsRealtimeService {
     if (callback == null) return;
     _reconnectTimer?.cancel();
 
-    final delaySeconds = (_minReconnectDelay.inSeconds * (1 << _reconnectAttempts))
-        .clamp(_minReconnectDelay.inSeconds, _maxReconnectDelay.inSeconds);
+    final delaySeconds =
+        (_minReconnectDelay.inSeconds * (1 << _reconnectAttempts))
+            .clamp(_minReconnectDelay.inSeconds, _maxReconnectDelay.inSeconds);
     _reconnectAttempts =
         (_reconnectAttempts + 1).clamp(0, 6); // cap so the shift stays bounded
 

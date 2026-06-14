@@ -80,7 +80,8 @@ class TokenManager {
     }
 
     // Token expired or expiring soon - refresh it
-    logDebug('[TokenManager] Access token expired or expiring soon, refreshing');
+    logDebug(
+        '[TokenManager] Access token expired or expiring soon, refreshing');
     try {
       final storedRefreshToken = await _tokenStorage.getRefreshToken();
       if (storedRefreshToken == null) {
@@ -161,7 +162,8 @@ class TokenManager {
       // Refresh tokens may not always be JWTs in Auth0
       // If it's not a JWT (3 parts), we'll skip validation and let the API handle it
       if (parts.length != 3) {
-        logDebug('[TokenManager] Token is not a JWT, skipping audience validation');
+        logDebug(
+            '[TokenManager] Token is not a JWT, skipping audience validation');
         return true;
       }
 
@@ -185,13 +187,15 @@ class TokenManager {
       if (aud is String) {
         final isValid = aud == AppConfig.authAudience;
         if (!isValid) {
-          logDebug('[TokenManager] Audience mismatch: expected ${AppConfig.authAudience}, got $aud');
+          logDebug(
+              '[TokenManager] Audience mismatch: expected ${AppConfig.authAudience}, got $aud');
         }
         return isValid;
       } else if (aud is List) {
         final isValid = aud.contains(AppConfig.authAudience);
         if (!isValid) {
-          logDebug('[TokenManager] Audience mismatch: expected ${AppConfig.authAudience} in $aud');
+          logDebug(
+              '[TokenManager] Audience mismatch: expected ${AppConfig.authAudience} in $aud');
         }
         return isValid;
       }

@@ -89,17 +89,20 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
                         SizedBox(height: AppSpacing.md),
                         _ExampleChip(
                           label: l10n.examplePrompt1,
-                          onTap: () => chatProvider.sendMessage(l10n.examplePrompt1),
+                          onTap: () =>
+                              chatProvider.sendMessage(l10n.examplePrompt1),
                         ),
                         SizedBox(height: AppSpacing.sm),
                         _ExampleChip(
                           label: l10n.examplePrompt2,
-                          onTap: () => chatProvider.sendMessage(l10n.examplePrompt2),
+                          onTap: () =>
+                              chatProvider.sendMessage(l10n.examplePrompt2),
                         ),
                         SizedBox(height: AppSpacing.sm),
                         _ExampleChip(
                           label: l10n.examplePrompt3,
-                          onTap: () => chatProvider.sendMessage(l10n.examplePrompt3),
+                          onTap: () =>
+                              chatProvider.sendMessage(l10n.examplePrompt3),
                         ),
                       ],
                     ),
@@ -135,14 +138,16 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
                 children: [
                   if (hasSelection)
                     Padding(
-                      padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
+                      padding: EdgeInsets.fromLTRB(
+                          AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
                       child: FilledButton.icon(
                         onPressed: chatProvider.isLoading
                             ? null
                             : () => _saveSelected(context, chatProvider),
                         icon: const Icon(Icons.save),
                         label: Text(
-                          l10n.formatSaveCount(chatProvider.selectedStrategies.length),
+                          l10n.formatSaveCount(
+                              chatProvider.selectedStrategies.length),
                         ),
                         style: FilledButton.styleFrom(
                           minimumSize: const Size(double.infinity, 44),
@@ -158,7 +163,8 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
                             child: TextField(
                               controller: _controller,
                               decoration: const InputDecoration(
-                                hintText: 'Tell me what you\'re dealing with...',
+                                hintText:
+                                    'Tell me what you\'re dealing with...',
                                 border: OutlineInputBorder(),
                               ),
                               enabled: !chatProvider.isLoading,
@@ -192,7 +198,8 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
     context.read<StrategiesChatProvider>().sendMessage(t);
   }
 
-  Future<void> _saveSelected(BuildContext context, StrategiesChatProvider chatProvider) async {
+  Future<void> _saveSelected(
+      BuildContext context, StrategiesChatProvider chatProvider) async {
     final n = await chatProvider.saveSelectedStrategies();
     if (!context.mounted) return;
     if (n > 0) {
@@ -205,7 +212,8 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(StrategiesLocalizations.of(context).couldNotSaveStrategies),
+          content:
+              Text(StrategiesLocalizations.of(context).couldNotSaveStrategies),
         ),
       );
     }
@@ -245,7 +253,8 @@ class _ExampleChip extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.chat_bubble_outline, size: 20, color: theme.colorScheme.primary),
+            Icon(Icons.chat_bubble_outline,
+                size: 20, color: theme.colorScheme.primary),
             SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(
@@ -285,7 +294,8 @@ class _TurnTile extends StatelessWidget {
           alignment: Alignment.centerRight,
           child: Container(
             margin: EdgeInsets.only(bottom: AppSpacing.sm),
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.s10),
+            padding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg, vertical: AppSpacing.s10),
             decoration: BoxDecoration(
               color: theme.colorScheme.primaryContainer,
               borderRadius: AppRadius.circularLg,
@@ -302,7 +312,8 @@ class _TurnTile extends StatelessWidget {
             margin: AppInsets.listItemBottom,
             padding: EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              color: theme.colorScheme.surfaceContainerHighest
+                  .withValues(alpha: 0.5),
               borderRadius: AppRadius.circularMd,
             ),
             child: Text(

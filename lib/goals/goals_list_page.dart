@@ -31,8 +31,7 @@ class GoalsListPage extends StatelessWidget {
           children: [
             Expanded(
               child: RefreshIndicator(
-                onRefresh: () =>
-                    context.read<EggGoalsProvider>().syncFromAPI(),
+                onRefresh: () => context.read<EggGoalsProvider>().syncFromAPI(),
                 child: _buildBody(context, goalsProvider),
               ),
             ),
@@ -75,8 +74,7 @@ class GoalsListPage extends StatelessWidget {
         padding: AppInsets.page,
         children: [
           SizedBox(height: AppSpacing.emptyStateOffset),
-          Icon(Icons.error_outline,
-              size: 56, color: theme.colorScheme.error),
+          Icon(Icons.error_outline, size: 56, color: theme.colorScheme.error),
           SizedBox(height: AppSpacing.lg),
           Text(
             provider.errorMessage ?? 'Failed to load goals',

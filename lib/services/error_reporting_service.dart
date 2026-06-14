@@ -42,7 +42,8 @@ class ErrorReportingService {
       // iOS: ATT before enabling analytics (IDFA-related collection).
       if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
         try {
-          final status = await AppTrackingTransparency.trackingAuthorizationStatus;
+          final status =
+              await AppTrackingTransparency.trackingAuthorizationStatus;
           if (status == TrackingStatus.notDetermined) {
             await AppTrackingTransparency.requestTrackingAuthorization();
           }
@@ -166,10 +167,10 @@ class ErrorReportingService {
   }
 
   /// Set user property
-  /// 
+  ///
   /// User properties are attributes that describe segments of your user base,
   /// such as language preference or geographic location.
-  /// 
+  ///
   /// Property names must be 24 characters or fewer, contain alphanumeric
   /// characters and underscores only, and must start with an alphabetic character.
   /// Property values must be 36 characters or fewer.

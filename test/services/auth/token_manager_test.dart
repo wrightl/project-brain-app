@@ -41,7 +41,8 @@ void main() {
 
   group('TokenManager - Token Storage', () {
     test('setAccessToken stores token', () {
-      final token = createTestToken(DateTime.now().add(const Duration(hours: 1)));
+      final token =
+          createTestToken(DateTime.now().add(const Duration(hours: 1)));
 
       tokenManager.setAccessToken(token);
 
@@ -56,7 +57,8 @@ void main() {
     });
 
     test('clearAccessToken removes stored token', () {
-      final token = createTestToken(DateTime.now().add(const Duration(hours: 1)));
+      final token =
+          createTestToken(DateTime.now().add(const Duration(hours: 1)));
       tokenManager.setAccessToken(token);
 
       tokenManager.clearAccessToken();
@@ -67,7 +69,8 @@ void main() {
     test('hasValidToken returns correct state', () {
       expect(tokenManager.hasValidToken, isFalse);
 
-      final token = createTestToken(DateTime.now().add(const Duration(hours: 1)));
+      final token =
+          createTestToken(DateTime.now().add(const Duration(hours: 1)));
       tokenManager.setAccessToken(token);
 
       expect(tokenManager.hasValidToken, isTrue);
@@ -130,7 +133,8 @@ void main() {
 
   group('TokenManager - JWT Parsing', () {
     test('parseIdToken successfully parses valid JWT', () {
-      final header = base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
+      final header =
+          base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
       final payload = base64Url.encode(
         utf8.encode(
           '{"sub":"auth0|123","name":"Test User","email":"test@example.com",'
@@ -170,8 +174,10 @@ void main() {
       expect(result, isTrue);
     });
 
-    test('validateTokenAudience returns true for token without audience', () async {
-      final header = base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
+    test('validateTokenAudience returns true for token without audience',
+        () async {
+      final header =
+          base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
       final payload = base64Url.encode(
         utf8.encode('{"sub":"1234567890","name":"Test User"}'),
       );
@@ -185,7 +191,8 @@ void main() {
 
   group('TokenManager - Edge Cases', () {
     test('handles token with invalid exp claim gracefully', () {
-      final header = base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
+      final header =
+          base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
       final payload = base64Url.encode(
         utf8.encode('{"sub":"1234567890","exp":"invalid"}'),
       );
@@ -199,7 +206,8 @@ void main() {
     });
 
     test('handles token without exp claim', () {
-      final header = base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
+      final header =
+          base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
       final payload = base64Url.encode(
         utf8.encode('{"sub":"1234567890","name":"Test"}'),
       );

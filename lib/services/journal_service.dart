@@ -36,7 +36,8 @@ class JournalService extends HttpService {
     }
   }
 
-  Future<PagedJournalResponse> listEntries({int page = 1, int pageSize = 20}) async {
+  Future<PagedJournalResponse> listEntries(
+      {int page = 1, int pageSize = 20}) async {
     final path = '/journal?page=$page&pageSize=$pageSize';
     final res = await get(path, useCache: false);
     if (res.statusCode == 200) {
@@ -70,7 +71,8 @@ class JournalService extends HttpService {
     }
   }
 
-  Future<JournalEntry> updateEntry(String id, JournalUpdateRequest request) async {
+  Future<JournalEntry> updateEntry(
+      String id, JournalUpdateRequest request) async {
     final res = await put(
       '/journal/$id',
       body: jsonEncode(request.toJson()),

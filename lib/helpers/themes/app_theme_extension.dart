@@ -42,11 +42,13 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
     if (other is! AppThemeExtension) return this;
     return AppThemeExtension(
       devBadgeColor: Color.lerp(devBadgeColor, other.devBadgeColor, t)!,
-      stagingBadgeColor: Color.lerp(stagingBadgeColor, other.stagingBadgeColor, t)!,
+      stagingBadgeColor:
+          Color.lerp(stagingBadgeColor, other.stagingBadgeColor, t)!,
       errorColor: Color.lerp(errorColor, other.errorColor, t)!,
       debugTextColor: Color.lerp(debugTextColor, other.debugTextColor, t)!,
       streakColor: Color.lerp(streakColor, other.streakColor, t)!,
-      achievementColor: Color.lerp(achievementColor, other.achievementColor, t)!,
+      achievementColor:
+          Color.lerp(achievementColor, other.achievementColor, t)!,
     );
   }
 }

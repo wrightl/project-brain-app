@@ -29,11 +29,13 @@ class UsageDashboardPage extends StatelessWidget {
       ),
       body: Consumer<SubscriptionProvider>(
         builder: (context, subscriptionProvider, _) {
-          if (subscriptionProvider.isLoading && subscriptionProvider.usage == null) {
+          if (subscriptionProvider.isLoading &&
+              subscriptionProvider.usage == null) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (subscriptionProvider.hasError && subscriptionProvider.usage == null) {
+          if (subscriptionProvider.hasError &&
+              subscriptionProvider.usage == null) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -119,7 +121,8 @@ class UsageDashboardPage extends StatelessWidget {
                     UsageMeter(
                       label: 'Storage Used',
                       current: usage.fileStorage.megabytes.toInt(),
-                      limit: subscriptionProvider.getFileStorageLimitMB()?.toInt(),
+                      limit:
+                          subscriptionProvider.getFileStorageLimitMB()?.toInt(),
                       unit: ' MB',
                     ),
                     SizedBox(height: AppSpacing.sm),
@@ -144,7 +147,8 @@ class UsageDashboardPage extends StatelessWidget {
                       UsageMeter(
                         label: 'Monthly Reports',
                         current: usage.researchReports.monthly,
-                        limit: subscriptionProvider.getMonthlyResearchReportLimit(),
+                        limit: subscriptionProvider
+                            .getMonthlyResearchReportLimit(),
                         unit: '',
                       ),
                     ],
@@ -240,4 +244,3 @@ class UsageDashboardPage extends StatelessWidget {
     );
   }
 }
-

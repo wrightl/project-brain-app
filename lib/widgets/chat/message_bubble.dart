@@ -75,8 +75,10 @@ class _MessageBubbleState extends State<MessageBubble> {
     return Container(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       padding: isUser
-          ? EdgeInsets.all(AppSpacing.sm).add(EdgeInsets.only(left: AppSpacing.s20))
-          : EdgeInsets.all(AppSpacing.sm).add(EdgeInsets.only(right: AppSpacing.s20)),
+          ? EdgeInsets.all(AppSpacing.sm)
+              .add(EdgeInsets.only(left: AppSpacing.s20))
+          : EdgeInsets.all(AppSpacing.sm)
+              .add(EdgeInsets.only(right: AppSpacing.s20)),
       child: Container(
         padding: EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
@@ -120,8 +122,8 @@ class _MessageBubbleState extends State<MessageBubble> {
     final regex = RegExp(r'\[\s*(\d+)\s*\]');
     return content.replaceAllMapped(regex, (match) {
       final citationIndex = int.tryParse(match.group(1) ?? '');
-      if (citationIndex != null && 
-          citationIndex > 0 && 
+      if (citationIndex != null &&
+          citationIndex > 0 &&
           citationIndex <= citations.length) {
         final citation = citations[citationIndex - 1];
         final url = citation.url;

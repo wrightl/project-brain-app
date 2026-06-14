@@ -163,7 +163,8 @@ class _CoachesListPageState extends State<CoachesListPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
+              padding: EdgeInsets.fromLTRB(
+                  AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
               child: Text(
                 'Your connected coaches. Send a message or manage your connections.',
                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -299,8 +300,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
                                             color: statusColor.withValues(
                                               alpha: 0.15,
                                             ),
-                                            borderRadius:
-                                                AppRadius.circularMd,
+                                            borderRadius: AppRadius.circularMd,
                                           ),
                                           child: Text(
                                             _statusLabel(connection),
@@ -343,7 +343,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
                               SizedBox(height: AppSpacing.md),
                               Wrap(
                                 spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
+                                runSpacing: AppSpacing.sm,
                                 children: [
                                   if (connection.isAccepted)
                                     FilledButton.icon(
@@ -366,8 +366,8 @@ class _CoachesListPageState extends State<CoachesListPage> {
                                   OutlinedButton.icon(
                                     onPressed: isRemoving
                                         ? null
-                                        : () =>
-                                            _confirmRemoveConnection(connection),
+                                        : () => _confirmRemoveConnection(
+                                            connection),
                                     icon: isRemoving
                                         ? SizedBox(
                                             width: 18,
@@ -386,7 +386,8 @@ class _CoachesListPageState extends State<CoachesListPage> {
                                       connection.isPending
                                           ? 'Cancel'
                                           : 'Remove',
-                                      style: theme.textTheme.labelLarge?.copyWith(
+                                      style:
+                                          theme.textTheme.labelLarge?.copyWith(
                                         color: theme.colorScheme.error,
                                       ),
                                     ),

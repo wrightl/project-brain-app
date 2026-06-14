@@ -25,7 +25,8 @@ class GoogleMapsNativeService {
       final alreadyConfigured =
           await _channel.invokeMethod<bool>('isApiKeyConfigured');
       if (alreadyConfigured == true) {
-        logInfo('[GoogleMapsNativeService] Native Maps API key already configured');
+        logInfo(
+            '[GoogleMapsNativeService] Native Maps API key already configured');
         return;
       }
     } catch (_) {

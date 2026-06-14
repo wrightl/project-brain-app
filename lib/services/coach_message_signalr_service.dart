@@ -143,8 +143,7 @@ class CoachMessageSignalRService {
   }
 
   Future<void> joinConversation(String connectionId) async {
-    if (_joinedConnectionId != null &&
-        _joinedConnectionId != connectionId) {
+    if (_joinedConnectionId != null && _joinedConnectionId != connectionId) {
       await leaveConversation(_joinedConnectionId!);
     }
 
@@ -201,8 +200,8 @@ class CoachMessageSignalRService {
       try {
         await _hub!.stop();
       } catch (e, stackTrace) {
-        logError('[CoachMessageSignalRService] Error stopping hub', e,
-            stackTrace);
+        logError(
+            '[CoachMessageSignalRService] Error stopping hub', e, stackTrace);
       }
       _hub = null;
     }

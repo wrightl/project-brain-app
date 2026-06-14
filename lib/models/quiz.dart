@@ -19,18 +19,18 @@ class Quiz {
     return Quiz(
       id: json['id'] ?? json['Id'] ?? '',
       title: json['title'] ?? json['Title'] ?? '',
-      description: json['description']?.toString() ?? json['Description']?.toString() ?? '',
+      description: json['description']?.toString() ??
+          json['Description']?.toString() ??
+          '',
       questions: json['questions'] != null
           ? (json['questions'] as List<dynamic>)
               .map((q) => QuizQuestion.fromJson(q as Map<String, dynamic>))
               .toList()
           : null,
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : null,
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'])
-          : null,
+      createdAt:
+          json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
+      updatedAt:
+          json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
     );
   }
 
@@ -238,15 +238,13 @@ class QuizResponse {
       answers: json['answers'] != null
           ? Map<String, dynamic>.from(json['answers'] ?? json['Answers'] ?? {})
           : {},
-      score: json['score'] != null
-          ? num.tryParse(json['score'].toString())
-          : null,
+      score:
+          json['score'] != null ? num.tryParse(json['score'].toString()) : null,
       completedAt: json['completedAt'] != null
           ? DateTime.parse(json['completedAt'])
           : DateTime.now(),
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : null,
+      createdAt:
+          json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
     );
   }
 
@@ -263,4 +261,3 @@ class QuizResponse {
     };
   }
 }
-

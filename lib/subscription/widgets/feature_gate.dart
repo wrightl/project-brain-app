@@ -96,4 +96,3 @@ class ResearchReportsGate extends StatelessWidget {
     );
   }
 }
-

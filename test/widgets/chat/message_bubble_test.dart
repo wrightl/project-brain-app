@@ -6,7 +6,8 @@ import 'package:projectbrain/models/chatmessage.dart';
 
 void main() {
   group('MessageBubble Widget Tests', () {
-    testWidgets('displays user message with correct styling', (WidgetTester tester) async {
+    testWidgets('displays user message with correct styling',
+        (WidgetTester tester) async {
       const userMessage = ChatMessage(
         role: 'user',
         content: 'Hello, this is a user message',
@@ -39,7 +40,8 @@ void main() {
       expect(container.alignment, equals(Alignment.centerRight));
     });
 
-    testWidgets('displays assistant message with correct styling', (WidgetTester tester) async {
+    testWidgets('displays assistant message with correct styling',
+        (WidgetTester tester) async {
       const assistantMessage = ChatMessage(
         role: 'assistant',
         content: 'Hello, this is an assistant message',
@@ -72,7 +74,8 @@ void main() {
       expect(container.alignment, equals(Alignment.centerLeft));
     });
 
-    testWidgets('displays typing indicator for empty assistant message', (WidgetTester tester) async {
+    testWidgets('displays typing indicator for empty assistant message',
+        (WidgetTester tester) async {
       const loadingMessage = ChatMessage(
         role: 'assistant',
         content: '',

@@ -158,9 +158,8 @@ class _FindCoachPageState extends State<FindCoachPage> {
         latitude: latitude,
         longitude: longitude,
         distanceMiles: distanceMiles,
-        ageGroups: _selectedAgeGroups.isNotEmpty
-            ? _selectedAgeGroups.toList()
-            : null,
+        ageGroups:
+            _selectedAgeGroups.isNotEmpty ? _selectedAgeGroups.toList() : null,
         specialisms: _selectedSpecialisms.isNotEmpty
             ? _selectedSpecialisms.toList()
             : null,
@@ -535,7 +534,7 @@ class _FindCoachPageState extends State<FindCoachPage> {
             SizedBox(height: AppSpacing.md),
             Wrap(
               spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
               children: _ageGroups.map((ageGroup) {
                 final isSelected = _selectedAgeGroups.contains(ageGroup);
                 return FilterChip(
@@ -652,8 +651,7 @@ class _FindCoachPageState extends State<FindCoachPage> {
               color: theme.colorScheme.onErrorContainer,
             ),
           ),
-          if (_errorMessage != null &&
-              _errorMessage!.contains('Settings')) ...[
+          if (_errorMessage != null && _errorMessage!.contains('Settings')) ...[
             SizedBox(height: AppSpacing.sm),
             TextButton(
               onPressed: openAppSettings,
@@ -821,16 +819,15 @@ class _FindCoachPageState extends State<FindCoachPage> {
                   Icon(
                     Icons.location_on,
                     size: 16,
-                    color:
-                        theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                   SizedBox(width: AppSpacing.xs),
                   Expanded(
                     child: Text(
                       locationLabel,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface
-                            .withValues(alpha: 0.6),
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                   ),

@@ -48,7 +48,8 @@ class TierBadge extends StatelessWidget {
     }
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.s6),
+      padding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.s6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: AppRadius.circularLg,
@@ -75,4 +76,3 @@ class TierBadge extends StatelessWidget {
     );
   }
 }
-

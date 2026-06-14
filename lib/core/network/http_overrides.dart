@@ -14,7 +14,8 @@ class DevelopmentHttpOverrides extends HttpOverrides {
       ..badCertificateCallback = (X509Certificate cert, String host, int port) {
         // Only bypass certificate validation for localhost in debug mode
         if (AppConfig.isLocalDevelopment && host == 'localhost') {
-          logDebug('[HttpOverrides] Bypassing certificate validation for localhost:$port');
+          logDebug(
+              '[HttpOverrides] Bypassing certificate validation for localhost:$port');
           return true;
         }
 
@@ -27,9 +28,11 @@ class DevelopmentHttpOverrides extends HttpOverrides {
 /// Initialize HTTP overrides if needed
 void initializeHttpOverrides() {
   if (AppConfig.isLocalDevelopment) {
-    logDebug('[HttpOverrides] Initializing development HTTP overrides for localhost');
+    logDebug(
+        '[HttpOverrides] Initializing development HTTP overrides for localhost');
     HttpOverrides.global = DevelopmentHttpOverrides();
   } else {
-    logDebug('[HttpOverrides] Using default certificate validation (production mode)');
+    logDebug(
+        '[HttpOverrides] Using default certificate validation (production mode)');
   }
 }

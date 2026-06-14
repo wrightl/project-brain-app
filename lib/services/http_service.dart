@@ -138,7 +138,8 @@ class HttpService {
           response,
           cacheDuration ?? defaultCacheDuration,
         );
-        logDebug('[HttpService] Cached GET $path for ${cacheDuration ?? defaultCacheDuration}');
+        logDebug(
+            '[HttpService] Cached GET $path for ${cacheDuration ?? defaultCacheDuration}');
       }
 
       return response;
@@ -187,7 +188,8 @@ class HttpService {
   }
 
   /// Make a POST request with timeout and retry logic
-  Future<http.Response> post(String path, {Object? body, Duration? timeout}) async {
+  Future<http.Response> post(String path,
+      {Object? body, Duration? timeout}) async {
     return await _retryRequest(
       () async {
         final token = await _getToken();
@@ -205,7 +207,8 @@ class HttpService {
   }
 
   /// Make a PUT request with timeout and retry logic
-  Future<http.Response> put(String path, {Object? body, Duration? timeout}) async {
+  Future<http.Response> put(String path,
+      {Object? body, Duration? timeout}) async {
     return await _retryRequest(
       () async {
         final token = await _getToken();
@@ -254,7 +257,8 @@ class HttpService {
     // Check circuit breaker
     if (!circuitBreaker.canAttempt()) {
       logDebug('[HttpService] Circuit breaker is open for $method $path');
-      throw Exception('Circuit breaker is open for $method $path - too many recent failures');
+      throw Exception(
+          'Circuit breaker is open for $method $path - too many recent failures');
     }
 
     int attempt = 0;
@@ -268,7 +272,8 @@ class HttpService {
         // Check for server errors that should be retried
         if (response.statusCode >= 500 && attempt < maxRetries) {
           circuitBreaker.recordFailure();
-          logDebug('[HttpService] $method $path failed with ${response.statusCode}, retrying (attempt $attempt/$maxRetries)');
+          logDebug(
+              '[HttpService] $method $path failed with ${response.statusCode}, retrying (attempt $attempt/$maxRetries)');
           await Future.delayed(retryDelay * attempt);
           continue;
         }
@@ -282,10 +287,12 @@ class HttpService {
       } on Exception catch (error, stackTrace) {
         lastException = error;
         circuitBreaker.recordFailure();
-        logDebug('[HttpService] $method $path failed (attempt $attempt/$maxRetries): $error');
+        logDebug(
+            '[HttpService] $method $path failed (attempt $attempt/$maxRetries): $error');
 
         if (attempt < maxRetries) {
-          logDebug('[HttpService] Retrying in ${retryDelay.inSeconds * attempt}s...');
+          logDebug(
+              '[HttpService] Retrying in ${retryDelay.inSeconds * attempt}s...');
           await Future.delayed(retryDelay * attempt);
         } else {
           logDebug('[HttpService] Max retries reached for $method $path');
@@ -294,7 +301,8 @@ class HttpService {
       }
     }
 
-    throw lastException ?? Exception('Failed to $method $path after $maxRetries attempts');
+    throw lastException ??
+        Exception('Failed to $method $path after $maxRetries attempts');
   }
 
   /// Get circuit breaker status for debugging

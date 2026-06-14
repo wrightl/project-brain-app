@@ -62,7 +62,8 @@ class JournalProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final paged = await journalService.listEntries(page: 1, pageSize: _pageSize);
+      final paged =
+          await journalService.listEntries(page: 1, pageSize: _pageSize);
       _items = paged.items;
       _totalCount = paged.totalCount;
       _totalPages = paged.totalPages;
@@ -85,7 +86,8 @@ class JournalProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final nextPage = _page + 1;
-      final paged = await journalService.listEntries(page: nextPage, pageSize: _pageSize);
+      final paged =
+          await journalService.listEntries(page: nextPage, pageSize: _pageSize);
       _items = [..._items, ...paged.items];
       _page = nextPage;
       _totalCount = paged.totalCount;
@@ -131,7 +133,8 @@ class JournalProvider extends ChangeNotifier {
   }
 
   /// Update entry; returns updated entry on success, throws on failure.
-  Future<JournalEntry> updateEntry(String id, JournalUpdateRequest request) async {
+  Future<JournalEntry> updateEntry(
+      String id, JournalUpdateRequest request) async {
     _errorMessage = null;
     final entry = await journalService.updateEntry(id, request);
     _currentEntry = entry;

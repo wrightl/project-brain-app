@@ -60,7 +60,8 @@ void main() {
       expect(listTile.tileColor, isNotNull);
     });
 
-    testWidgets('does not highlight inactive conversation', (WidgetTester tester) async {
+    testWidgets('does not highlight inactive conversation',
+        (WidgetTester tester) async {
       final conversation = Conversation(
         id: '123',
         userId: 'user1',

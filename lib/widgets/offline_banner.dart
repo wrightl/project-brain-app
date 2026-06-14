@@ -25,9 +25,7 @@ class OfflineBanner extends StatelessWidget {
           Expanded(child: content),
           AnimatedSize(
             duration: const Duration(milliseconds: 200),
-            child: isOnline
-                ? const SizedBox.shrink()
-                : _OfflineBar(),
+            child: isOnline ? const SizedBox.shrink() : _OfflineBar(),
           ),
         ],
       ),
@@ -44,7 +42,8 @@ class _OfflineBar extends StatelessWidget {
       child: Container(
         width: double.infinity,
         color: theme.colorScheme.errorContainer,
-        padding: EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.lg),
+        padding: EdgeInsets.symmetric(
+            vertical: AppSpacing.sm, horizontal: AppSpacing.lg),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

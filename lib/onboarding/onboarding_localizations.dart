@@ -51,7 +51,8 @@ class OnboardingLocalizations {
   String get selectDateOfBirth => 'Please select your date of birth';
 
   // Neurodiverse Traits
-  String get selectTraits => 'Select any traits that apply to you. You can select multiple or skip this step.';
+  String get selectTraits =>
+      'Select any traits that apply to you. You can select multiple or skip this step.';
 
   // Welcome
   String get preferredName => 'Preferred Name';
@@ -80,7 +81,8 @@ class OnboardingLocalizations {
   String get motivationStyle => 'Motivation Style';
   String get neurodivergentUnderstanding => 'Neurodivergent Understanding';
   String get biggestGoal => 'Biggest Goal';
-  String get neurodivergentUnderstandingHint => 'How would you like us to understand your neurodivergence?';
+  String get neurodivergentUnderstandingHint =>
+      'How would you like us to understand your neurodivergence?';
   String get biggestGoalHint => 'What\'s your biggest goal?';
 
   // Coaching Buddy
@@ -113,41 +115,59 @@ class OnboardingLocalizations {
 
   // Follow-On Question prompts
   String get howDoYouUseStrengths => 'How do you currently use your strengths?';
-  String get whatHelpsTapStrengths => 'What helps you tap into your strengths when you need them?';
-  String get howBuildOnStrengths => 'How would you like to build on your strengths?';
+  String get whatHelpsTapStrengths =>
+      'What helps you tap into your strengths when you need them?';
+  String get howBuildOnStrengths =>
+      'How would you like to build on your strengths?';
   String get whatsHardestToManage => 'What\'s hardest to manage right now?';
   String get whatToolsHaveHelped => 'What tools or strategies have helped you?';
-  String get wouldLikeToolSuggestions => 'Would you like suggestions for tools or strategies?';
+  String get wouldLikeToolSuggestions =>
+      'Would you like suggestions for tools or strategies?';
   String get whatHelpsRecharge => 'What helps you recharge?';
-  String get shareLearningExample => 'Can you share an example of how you learn best?';
-  String get preferSpecificFormat => 'Would you prefer information in a specific format?';
+  String get shareLearningExample =>
+      'Can you share an example of how you learn best?';
+  String get preferSpecificFormat =>
+      'Would you prefer information in a specific format?';
   String get howBreakDownTasks => 'How do you like to break down tasks?';
   String get whatMotivatesYou => 'What motivates you most?';
   String get howSetGoals => 'How do you prefer to set goals?';
   String get whatRemindersWork => 'What kind of reminders work best for you?';
   String get howCelebrateProgress => 'How do you like to celebrate progress?';
-  String get sensoryFriendlyEnvironment => 'What makes an environment feel sensory-friendly to you?';
+  String get sensoryFriendlyEnvironment =>
+      'What makes an environment feel sensory-friendly to you?';
   String get howManageTime => 'How do you manage your time?';
   String get whatHelpsOverwhelmed => 'What helps when you feel overwhelmed?';
-  String get exploreCopingStrategies => 'Would you like to explore coping strategies?';
-  String get whatWouldMakeDifference => 'What would make the biggest difference?';
-  String get whatDoesSupportLookLike => 'What does your support system look like?';
-  String get specificSkillsToDevelop => 'Are there specific skills you\'d like to develop?';
+  String get exploreCopingStrategies =>
+      'Would you like to explore coping strategies?';
+  String get whatWouldMakeDifference =>
+      'What would make the biggest difference?';
+  String get whatDoesSupportLookLike =>
+      'What does your support system look like?';
+  String get specificSkillsToDevelop =>
+      'Are there specific skills you\'d like to develop?';
   String get howBalanceWorkSelfCare => 'How do you balance work and self-care?';
-  String get whatTaskTakeOffPlate => 'What task would you most like to take off your plate?';
+  String get whatTaskTakeOffPlate =>
+      'What task would you most like to take off your plate?';
   String get whatWouldLikeHelpWith => 'What would you like help with?';
-  String get howAdaptCommunication => 'How would you like your coaching buddy to adapt communication?';
-  String get specificRemindersPrompts => 'Any specific reminders or prompts you\'d find helpful?';
+  String get howAdaptCommunication =>
+      'How would you like your coaching buddy to adapt communication?';
+  String get specificRemindersPrompts =>
+      'Any specific reminders or prompts you\'d find helpful?';
   String get whatHelpsGrounded => 'What helps you feel grounded?';
   String get howProcessChallenges => 'How do you process challenges?';
   String get whatHelpsBuildCalm => 'What helps you build calm?';
   String get whatWouldHelpSupported => 'What would help you feel supported?';
-  String get recentWinToCelebrate => 'What\'s a recent win you\'d like to celebrate?';
+  String get recentWinToCelebrate =>
+      'What\'s a recent win you\'d like to celebrate?';
   String get howAcknowledgeProgress => 'How do you acknowledge progress?';
-  String get wouldLikeCelebrationIdeas => 'Would you like ideas for celebrating wins?';
-  String get howRecognizeProgress => 'How can we help you recognize your progress?';
-  String get specificToolsToIntegrate => 'What specific tools would you like to integrate?';
-  String get howCustomizeCommunication => 'How would you like to customize communication?';
+  String get wouldLikeCelebrationIdeas =>
+      'Would you like ideas for celebrating wins?';
+  String get howRecognizeProgress =>
+      'How can we help you recognize your progress?';
+  String get specificToolsToIntegrate =>
+      'What specific tools would you like to integrate?';
+  String get howCustomizeCommunication =>
+      'How would you like to customize communication?';
   String get tailoredNeeds => 'What tailored needs should we know about?';
 
   // Dropdown options
@@ -312,4 +332,3 @@ class OnboardingLocalizations {
         .join(' ');
   }
 }
-

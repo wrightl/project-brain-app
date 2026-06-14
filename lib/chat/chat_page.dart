@@ -1,5 +1,6 @@
 // lib/pages/ai_chat_page.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:projectbrain/authentication/auth_provider.dart';
 import 'package:projectbrain/chat/chat_provider.dart';
 import 'package:projectbrain/models/conversation.dart';
@@ -141,7 +142,7 @@ class _ChatPageState extends State<ChatPage> {
                   controller: _scrollController,
                   itemCount: chatProvider.messages.length,
                   // Performance optimizations
-                  cacheExtent: 500, // Cache 500px above/below viewport
+                  scrollCacheExtent: ScrollCacheExtent.pixels(500),
                   addAutomaticKeepAlives:
                       true, // Keep widgets alive when scrolling
                   addRepaintBoundaries: true, // Reduce repaint overhead
