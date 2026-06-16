@@ -16,7 +16,7 @@ jobs:
               uses: actions/checkout@v6.0.3
 
             - name: Setup Flutter
-              uses: subosito/flutter-action@v2.14.0
+              uses: subosito/flutter-action@v2.22.0
               with:
                   cache: true
 
@@ -40,16 +40,6 @@ jobs:
 
             - name: Run widget tests
               run: flutter test test/widgets/ --coverage
-
-            - name: Generate coverage report
-              run: |
-                  flutter pub global activate coverage
-                  flutter pub global run coverage:format_coverage \
-                    --lcov \
-                    --in=coverage \
-                    --out=coverage/lcov.info \
-                    --packages=.packages \
-                    --report-on=lib
 
             - name: Coverage summary
               run: |
