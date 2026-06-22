@@ -6,8 +6,9 @@
 #   ./scripts/build_ios.sh <dev|staging|production> [--obfuscate] [--no-bump] [--no-upload] [--commit]
 #
 # Upload credentials (staging/production only):
-#   ASC_API_KEY_ID     App Store Connect API Key ID
-#   ASC_API_ISSUER_ID  Issuer ID from App Store Connect
+#   scripts/.asc.<env>  ASC_API_KEY_ID and ASC_API_ISSUER_ID (copy from scripts/.asc.<env>.example)
+#   ASC_API_KEY_ID      optional env override for App Store Connect API Key ID
+#   ASC_API_ISSUER_ID   optional env override for Issuer ID from App Store Connect
 #   private_keys/AuthKey_<ASC_API_KEY_ID>.p8 at the project root
 set -euo pipefail
 
@@ -25,9 +26,10 @@ Options:
   --commit      Git-commit pubspec.yaml after a successful build (when bump ran)
   -h, --help    Show this help
 
-Environment variables (required for staging/production upload):
-  ASC_API_KEY_ID     App Store Connect API Key ID
-  ASC_API_ISSUER_ID  Issuer ID from App Store Connect
+Upload credentials (staging/production):
+  scripts/.asc.<env>   ASC_API_KEY_ID and ASC_API_ISSUER_ID (see scripts/.asc.<env>.example)
+  ASC_API_KEY_ID       optional env override
+  ASC_API_ISSUER_ID    optional env override
 
 Upload behaviour:
   dev         build only (no upload)
@@ -39,6 +41,39 @@ EOF
 die() {
   echo "error: $*" >&2
   exit 1
+}
+
+read_asc_config_value() {
+  local file="$1"
+  local key="$2"
+  local line value
+  line="$(grep -E "^${key}=" "$file" | tail -n 1 || true)"
+  [[ -n "$line" ]] || return 1
+  value="${line#${key}=}"
+  value="${value%\"}"
+  value="${value#\"}"
+  value="${value%\'}"
+  value="${value#\'}"
+  printf '%s' "$value"
+}
+
+load_asc_credentials() {
+  ASC_CONFIG="${ROOT}/scripts/.asc.${NORMALIZED_ENV}"
+  ASC_CONFIG_REL="scripts/.asc.${NORMALIZED_ENV}"
+  [[ -f "$ASC_CONFIG" ]] || die "missing ${ASC_CONFIG_REL} — copy from scripts/.asc.${NORMALIZED_ENV}.example and fill in values"
+
+  if [[ -z "${ASC_API_KEY_ID:-}" ]]; then
+    ASC_API_KEY_ID="$(read_asc_config_value "$ASC_CONFIG" ASC_API_KEY_ID || true)"
+    export ASC_API_KEY_ID
+  fi
+
+  if [[ -z "${ASC_API_ISSUER_ID:-}" ]]; then
+    ASC_API_ISSUER_ID="$(read_asc_config_value "$ASC_CONFIG" ASC_API_ISSUER_ID || true)"
+    export ASC_API_ISSUER_ID
+  fi
+
+  [[ -n "${ASC_API_KEY_ID:-}" ]] || die "ASC_API_KEY_ID is required for upload (set in ${ASC_CONFIG_REL} or ASC_API_KEY_ID env var)"
+  [[ -n "${ASC_API_ISSUER_ID:-}" ]] || die "ASC_API_ISSUER_ID is required for upload (set in ${ASC_CONFIG_REL} or ASC_API_ISSUER_ID env var)"
 }
 
 has_ios_distribution_identity() {
@@ -146,8 +181,7 @@ if [[ "$NORMALIZED_ENV" != "dev" && "$NO_UPLOAD" == "false" ]]; then
 fi
 
 if [[ "$SHOULD_UPLOAD" == "true" ]]; then
-  [[ -n "${ASC_API_KEY_ID:-}" ]] || die "ASC_API_KEY_ID is required for upload"
-  [[ -n "${ASC_API_ISSUER_ID:-}" ]] || die "ASC_API_ISSUER_ID is required for upload"
+  load_asc_credentials
   KEY_PATH="${ROOT}/private_keys/AuthKey_${ASC_API_KEY_ID}.p8"
   [[ -f "$KEY_PATH" ]] || die "missing App Store Connect private key: ${KEY_PATH}"
 fi
@@ -187,6 +221,7 @@ fi
 # --- Build ---
 echo "Building IPA for environment: ${NORMALIZED_ENV}"
 flutter pub get
+"${ROOT}/scripts/patch_geolocator_spm.sh"
 
 BUILD_ARGS=(
   build ipa
@@ -200,6 +235,8 @@ if [[ "$OBFUSCATE" == "true" ]]; then
   echo "Obfuscation symbols -> ${SYM_DIR}"
 fi
 
+echo "Building IPA for environment: ${NORMALIZED_ENV}"
+echo "cmd: flutter ${BUILD_ARGS[@]}"
 flutter "${BUILD_ARGS[@]}"
 
 IPA_MATCH=(build/ios/ipa/*.ipa)
@@ -215,6 +252,7 @@ echo "IPA: ${IPA_PATH}"
 # --- Upload ---
 if [[ "$SHOULD_UPLOAD" == "true" ]]; then
   echo "Uploading to App Store Connect..."
+  echo "cmd: xcrun altool --upload-app --type ios -f ${IPA_PATH} --apiKey ${ASC_API_KEY_ID} --apiIssuer ${ASC_API_ISSUER_ID}"
   xcrun altool --upload-app --type ios \
     -f "${IPA_PATH}" \
     --apiKey "${ASC_API_KEY_ID}" \

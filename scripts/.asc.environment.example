@@ -1,0 +1,3 @@
+# Copy to scripts/.asc.staging (gitignored). Used by ./scripts/build_ios.sh staging.
+ASC_API_KEY_ID=
+ASC_API_ISSUER_ID=

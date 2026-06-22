@@ -529,9 +529,10 @@ Ensure signing is configured in Xcode first (`open ios/Runner.xcworkspace` → *
 [`scripts/build_ios.sh`](scripts/build_ios.sh) increments the pubspec build number, builds an IPA for the given environment, and uploads to App Store Connect for **staging** and **production**. **dev** builds locally and skips upload.
 
 ```bash
-# Staging or production: bump build number, build, upload to TestFlight
-export ASC_API_KEY_ID=YOUR_API_KEY_ID
-export ASC_API_ISSUER_ID=YOUR_ISSUER_ID
+# Staging or production: copy ASC config, then bump build number, build, upload to TestFlight
+cp scripts/.asc.staging.example scripts/.asc.staging
+cp scripts/.asc.production.example scripts/.asc.production
+# edit scripts/.asc.staging and scripts/.asc.production with ASC_API_KEY_ID and ASC_API_ISSUER_ID
 ./scripts/build_ios.sh staging
 ./scripts/build_ios.sh production
 
@@ -545,10 +546,12 @@ export ASC_API_ISSUER_ID=YOUR_ISSUER_ID
 ./scripts/build_ios.sh production --commit      # git commit pubspec.yaml after success
 ```
 
-| Variable | Purpose |
+| File / variable | Purpose |
 | --- | --- |
-| `ASC_API_KEY_ID` | App Store Connect API Key ID |
-| `ASC_API_ISSUER_ID` | Issuer ID from App Store Connect |
+| `scripts/.asc.staging` | App Store Connect API credentials for staging uploads (gitignored; copy from `scripts/.asc.staging.example`) |
+| `scripts/.asc.production` | App Store Connect API credentials for production uploads (gitignored; copy from `scripts/.asc.production.example`) |
+| `ASC_API_KEY_ID` | Optional env override for App Store Connect API Key ID |
+| `ASC_API_ISSUER_ID` | Optional env override for Issuer ID from App Store Connect |
 
 Store the downloaded `.p8` key as **`private_keys/AuthKey_<ASC_API_KEY_ID>.p8`** at the project root (gitignored). Create the key under App Store Connect → Users and Access → Keys.
 

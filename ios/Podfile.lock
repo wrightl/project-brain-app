@@ -2,7 +2,7 @@ PODS:
   - Auth0 (2.21.2):
     - JWTDecode (= 3.3.0)
     - SimpleKeychain (= 1.3.0)
-  - auth0_flutter (2.2.0):
+  - auth0_flutter (2.3.0):
     - Auth0 (= 2.21.2)
     - Flutter
     - FlutterMacOS
@@ -44,7 +44,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   Auth0: e15bc9c1e39a53efc8853d16460b9be409d5346f
-  auth0_flutter: c1a714e9e6bf2a1f8d79f1f11f9d1f2638105a31
+  auth0_flutter: 37add9772656d2052553f3f61433e19441827779
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   Google-Maps-iOS-Utils: 0a484b05ed21d88c9f9ebbacb007956edd508a96
   google_maps_flutter_ios: 17552876e72723da1d41accc22f03b5f7afbde69
@@ -52,6 +52,6 @@ SPEC CHECKSUMS:
   JWTDecode: 1ca6f765844457d0dd8690436860fecee788f631
   SimpleKeychain: 9c0f3ca8458fed74e01db864d181c5cbe278603e
 
-PODFILE CHECKSUM: 9c46fd01abff66081b39f5fa5767b3f1d0b11d76
+PODFILE CHECKSUM: 1fdb5eb5bc2b47137207e0289c9be130afdf0a34
 
 COCOAPODS: 1.16.2

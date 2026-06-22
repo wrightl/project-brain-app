@@ -41,6 +41,8 @@
 	<string>We use this to measure app usage and improve stability. You can decline and still use the app.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Project Brain uses your location to find coaches near you.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Project Brain uses your location to find coaches near you when you choose to search by current location.</string>
 	<key>GMSApiKey</key>
 	<string>$(GOOGLE_MAPS_API_KEY)</string>
 	<key>CFBundlePackageType</key>

@@ -51,6 +51,20 @@ app.*.map.json
 .env.production
 *.env.local
 
+# App Store Connect upload credentials for build_ios.sh (use scripts/.asc.*.example templates)
+scripts/.asc.dev
+scripts/.asc.staging
+scripts/.asc.production
+
+# Firebase config contains a live API key. Use the *.example templates; CI must
+# write the real files before building. Keep the .example files tracked.
+ios/GoogleService-Info.plist
+ios/Runner/GoogleService-Info.plist
+!ios/GoogleService-Info.plist.example
+!ios/Runner/GoogleService-Info.plist.example
+android/app/google-services.json
+!android/app/google-services.json.example
+
 /private_keys
 
 /coverage/**

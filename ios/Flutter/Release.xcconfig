@@ -1,3 +1,6 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
 #include "Generated.xcconfig"
 #include? "Secrets.xcconfig"
+
+// Xcode 26: disable explicit Swift modules for Runner archive builds.
+SWIFT_ENABLE_EXPLICIT_MODULES=NO
