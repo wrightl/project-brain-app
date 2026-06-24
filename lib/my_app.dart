@@ -7,6 +7,7 @@ import 'package:projectbrain/goals/egg_goals_provider.dart';
 import 'package:projectbrain/journal/journal_provider.dart';
 import 'package:projectbrain/strategies/strategies_provider.dart';
 import 'package:projectbrain/strategies/strategies_chat_provider.dart';
+import 'package:projectbrain/user_memory/user_memory_provider.dart';
 import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/core/routing/app_router.dart';
 import 'package:projectbrain/services/feature_flag_service.dart';
@@ -83,6 +84,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ),
         ChangeNotifierProvider.value(
           value: sl<StrategiesChatProvider>(),
+        ),
+        ChangeNotifierProvider.value(
+          value: sl<UserMemoryProvider>(),
         ),
         Provider<FeatureFlagService>.value(
           value: sl<FeatureFlagService>(),

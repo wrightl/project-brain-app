@@ -33,6 +33,7 @@ import 'package:projectbrain/journal/journal_view_page.dart';
 import 'package:projectbrain/journal/journal_entry_form_page.dart';
 import 'package:projectbrain/strategies/strategies_library_page.dart';
 import 'package:projectbrain/strategies/strategies_chat_page.dart';
+import 'package:projectbrain/user_memory/learned_memory_page.dart';
 import 'package:projectbrain/core/routing/page_transitions.dart';
 import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/goals/egg_goals_provider.dart';
@@ -351,6 +352,10 @@ class AppRouter {
             GoRoute(
               path: '/strategies/chat',
               builder: (context, state) => const StrategiesChatPage(),
+            ),
+            GoRoute(
+              path: '/learned-memories',
+              builder: (context, state) => const LearnedMemoryPage(),
             ),
           ],
         ),

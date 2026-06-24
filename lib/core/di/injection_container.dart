@@ -28,12 +28,14 @@ import 'package:projectbrain/services/egg_goals_service.dart';
 import 'package:projectbrain/services/goals_realtime_service.dart';
 import 'package:projectbrain/services/journal_service.dart';
 import 'package:projectbrain/services/strategy_service.dart';
+import 'package:projectbrain/services/user_memory_service.dart';
 import 'package:projectbrain/services/tag_service.dart';
 import 'package:projectbrain/services/user_service.dart';
 import 'package:projectbrain/services/push_notification_service.dart';
 import 'package:projectbrain/journal/journal_provider.dart';
 import 'package:projectbrain/strategies/strategies_provider.dart';
 import 'package:projectbrain/strategies/strategies_chat_provider.dart';
+import 'package:projectbrain/user_memory/user_memory_provider.dart';
 import 'package:projectbrain/services/error_reporting_service.dart';
 import 'package:projectbrain/subscription/subscription_provider.dart';
 import 'package:projectbrain/goals/egg_goals_provider.dart';
@@ -214,6 +216,11 @@ Future<void> initializeDependencies() async {
     () => StrategyService(authService: sl<AuthService>()),
   );
 
+  // User memory service
+  sl.registerLazySingleton<UserMemoryService>(
+    () => UserMemoryService(authService: sl<AuthService>()),
+  );
+
   // Tag Service
   sl.registerLazySingleton<TagService>(
     () => TagService(authService: sl<AuthService>()),
@@ -321,6 +328,10 @@ Future<void> initializeDependencies() async {
     ),
   );
 
+  sl.registerLazySingleton<UserMemoryProvider>(
+    () => UserMemoryProvider(userMemoryService: sl<UserMemoryService>()),
+  );
+
   sl.registerLazySingleton<SessionCleanupService>(
     () => SessionCleanupService(
       httpCacheCoordinator: sl<ApiHttpCacheCoordinator>(),
@@ -329,6 +340,7 @@ Future<void> initializeDependencies() async {
       eggGoalsProvider: sl<EggGoalsProvider>(),
       strategiesProvider: sl<StrategiesProvider>(),
       strategiesChatProvider: sl<StrategiesChatProvider>(),
+      userMemoryProvider: sl<UserMemoryProvider>(),
       goalsRealtimeService: sl<GoalsRealtimeService>(),
       coachMessageSignalRService: sl<CoachMessageSignalRService>(),
       chatProvider: sl<ChatProvider>(),

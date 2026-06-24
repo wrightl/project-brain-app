@@ -8,6 +8,7 @@ import 'package:projectbrain/services/feature_flag_service.dart';
 import 'package:projectbrain/services/goals_realtime_service.dart';
 import 'package:projectbrain/strategies/strategies_chat_provider.dart';
 import 'package:projectbrain/strategies/strategies_provider.dart';
+import 'package:projectbrain/user_memory/user_memory_provider.dart';
 import 'package:projectbrain/subscription/subscription_provider.dart';
 
 /// Runs user-session teardown so cached API data and in-memory UI state do not
@@ -20,6 +21,7 @@ class SessionCleanupService {
     required EggGoalsProvider eggGoalsProvider,
     required StrategiesProvider strategiesProvider,
     required StrategiesChatProvider strategiesChatProvider,
+    required UserMemoryProvider userMemoryProvider,
     required GoalsRealtimeService goalsRealtimeService,
     required CoachMessageSignalRService coachMessageSignalRService,
     required ChatProvider chatProvider,
@@ -30,6 +32,7 @@ class SessionCleanupService {
         _eggGoalsProvider = eggGoalsProvider,
         _strategiesProvider = strategiesProvider,
         _strategiesChatProvider = strategiesChatProvider,
+        _userMemoryProvider = userMemoryProvider,
         _goalsRealtimeService = goalsRealtimeService,
         _coachMessageSignalRService = coachMessageSignalRService,
         _chatProvider = chatProvider,
@@ -41,6 +44,7 @@ class SessionCleanupService {
   final EggGoalsProvider _eggGoalsProvider;
   final StrategiesProvider _strategiesProvider;
   final StrategiesChatProvider _strategiesChatProvider;
+  final UserMemoryProvider _userMemoryProvider;
   final GoalsRealtimeService _goalsRealtimeService;
   final CoachMessageSignalRService _coachMessageSignalRService;
   final ChatProvider _chatProvider;
@@ -65,6 +69,7 @@ class SessionCleanupService {
     await _eggGoalsProvider.resetOnLogout();
     _strategiesProvider.resetOnLogout();
     _strategiesChatProvider.resetOnLogout();
+    _userMemoryProvider.resetOnLogout();
     _chatProvider.resetOnLogout();
     _journalProvider.resetOnLogout();
     logDebug('[SessionCleanupService] Logout cleanup complete');

@@ -21,6 +21,12 @@ class UserPage extends StatelessWidget {
     ];
     final accountLinks = [
       NavigationLink(
+        icon: Icons.psychology_outlined,
+        title: 'Learned memories',
+        subtitle: 'Facts and experiences from your chats',
+        onTap: () => context.go('/learned-memories'),
+      ),
+      NavigationLink(
         icon: Icons.person,
         title: 'Profile',
         subtitle: 'View and manage your profile settings',
