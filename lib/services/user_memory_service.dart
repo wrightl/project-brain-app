@@ -36,6 +36,34 @@ class UserMemoryService extends HttpService {
     }
   }
 
+  Future<void> pinFact(String id) async {
+    final res = await post('/user/memory/facts/$id/pin');
+    if (res.statusCode != 204) {
+      _throwFromResponse(res, 'Failed to pin memory');
+    }
+  }
+
+  Future<void> unpinFact(String id) async {
+    final res = await post('/user/memory/facts/$id/unpin');
+    if (res.statusCode != 204) {
+      _throwFromResponse(res, 'Failed to unpin memory');
+    }
+  }
+
+  Future<void> pinEpisode(String id) async {
+    final res = await post('/user/memory/episodes/$id/pin');
+    if (res.statusCode != 204) {
+      _throwFromResponse(res, 'Failed to pin memory');
+    }
+  }
+
+  Future<void> unpinEpisode(String id) async {
+    final res = await post('/user/memory/episodes/$id/unpin');
+    if (res.statusCode != 204) {
+      _throwFromResponse(res, 'Failed to unpin memory');
+    }
+  }
+
   Never _throwFromResponse(dynamic res, String fallback) {
     String message = fallback;
     try {

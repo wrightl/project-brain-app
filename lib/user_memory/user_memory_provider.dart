@@ -70,6 +70,48 @@ class UserMemoryProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> togglePinFact(String id, {required bool pin}) async {
+    _errorMessage = null;
+    try {
+      if (pin) {
+        await userMemoryService.pinFact(id);
+      } else {
+        await userMemoryService.unpinFact(id);
+      }
+      _facts = _facts
+          .map((f) => f.id == id ? f.copyWith(isPinned: pin) : f)
+          .toList();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      logError('[UserMemoryProvider] togglePinFact failed', e);
+      _errorMessage = e is Exception ? e.toString() : 'Failed to update memory';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> togglePinEpisode(String id, {required bool pin}) async {
+    _errorMessage = null;
+    try {
+      if (pin) {
+        await userMemoryService.pinEpisode(id);
+      } else {
+        await userMemoryService.unpinEpisode(id);
+      }
+      _episodes = _episodes
+          .map((e) => e.id == id ? e.copyWith(isPinned: pin) : e)
+          .toList();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      logError('[UserMemoryProvider] togglePinEpisode failed', e);
+      _errorMessage = e is Exception ? e.toString() : 'Failed to update memory';
+      notifyListeners();
+      return false;
+    }
+  }
+
   void resetOnLogout() {
     _facts = [];
     _episodes = [];

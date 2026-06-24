@@ -15,6 +15,7 @@ class LearnedMemoryPage extends StatefulWidget {
 
 class _LearnedMemoryPageState extends State<LearnedMemoryPage> {
   String? _deletingId;
+  String? _pinningId;
 
   @override
   void initState() {
@@ -143,8 +144,20 @@ class _LearnedMemoryPageState extends State<LearnedMemoryPage> {
                     ...provider.facts.map(
                       (fact) => _MemoryTile(
                         title: fact.content,
-                        subtitle: fact.category,
+                        subtitle: fact.isPinned
+                            ? '${fact.category} · Pinned'
+                            : fact.category,
                         deleting: _deletingId == fact.id,
+                        pinning: _pinningId == fact.id,
+                        isPinned: fact.isPinned,
+                        onTogglePin: () async {
+                          setState(() => _pinningId = fact.id);
+                          await context.read<UserMemoryProvider>().togglePinFact(
+                                fact.id,
+                                pin: !fact.isPinned,
+                              );
+                          if (mounted) setState(() => _pinningId = null);
+                        },
                         onDelete: () => _confirmDeleteFact(fact),
                       ),
                     ),
@@ -161,9 +174,22 @@ class _LearnedMemoryPageState extends State<LearnedMemoryPage> {
                     ...provider.episodes.map(
                       (episode) => _MemoryTile(
                         title: episode.summary,
-                        subtitle:
-                            'Topic: ${episode.topic} · Outcome: ${episode.outcome}',
+                        subtitle: episode.isPinned
+                            ? 'Topic: ${episode.topic} · Outcome: ${episode.outcome} · Pinned'
+                            : 'Topic: ${episode.topic} · Outcome: ${episode.outcome}',
                         deleting: _deletingId == episode.id,
+                        pinning: _pinningId == episode.id,
+                        isPinned: episode.isPinned,
+                        onTogglePin: () async {
+                          setState(() => _pinningId = episode.id);
+                          await context
+                              .read<UserMemoryProvider>()
+                              .togglePinEpisode(
+                                episode.id,
+                                pin: !episode.isPinned,
+                              );
+                          if (mounted) setState(() => _pinningId = null);
+                        },
                         onDelete: () => _confirmDeleteEpisode(episode),
                       ),
                     ),
@@ -182,12 +208,18 @@ class _MemoryTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final bool deleting;
+  final bool pinning;
+  final bool isPinned;
+  final VoidCallback onTogglePin;
   final VoidCallback onDelete;
 
   const _MemoryTile({
     required this.title,
     required this.subtitle,
     required this.deleting,
+    required this.pinning,
+    required this.isPinned,
+    required this.onTogglePin,
     required this.onDelete,
   });
 
@@ -216,18 +248,33 @@ class _MemoryTile extends StatelessWidget {
                 ],
               ),
             ),
-            TextButton(
-              onPressed: deleting ? null : onDelete,
-              child: deleting
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(
-                      'Remove',
-                      style: TextStyle(color: theme.colorScheme.error),
-                    ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: pinning ? null : onTogglePin,
+                  child: pinning
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(isPinned ? 'Unpin' : 'Pin'),
+                ),
+                TextButton(
+                  onPressed: deleting ? null : onDelete,
+                  child: deleting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(
+                          'Remove',
+                          style: TextStyle(color: theme.colorScheme.error),
+                        ),
+                ),
+              ],
             ),
           ],
         ),

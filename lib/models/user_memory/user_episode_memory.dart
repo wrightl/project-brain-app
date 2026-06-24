@@ -6,6 +6,7 @@ class UserEpisodeMemory {
   final String outcome;
   final String status;
   final DateTime createdAt;
+  final bool isPinned;
 
   UserEpisodeMemory({
     required this.id,
@@ -14,6 +15,7 @@ class UserEpisodeMemory {
     required this.outcome,
     required this.status,
     required this.createdAt,
+    this.isPinned = false,
   });
 
   factory UserEpisodeMemory.fromJson(Map<String, dynamic> json) {
@@ -24,6 +26,19 @@ class UserEpisodeMemory {
       outcome: json['outcome'] as String? ?? 'unknown',
       status: json['status'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      isPinned: json['isPinned'] as bool? ?? false,
+    );
+  }
+
+  UserEpisodeMemory copyWith({bool? isPinned}) {
+    return UserEpisodeMemory(
+      id: id,
+      summary: summary,
+      topic: topic,
+      outcome: outcome,
+      status: status,
+      createdAt: createdAt,
+      isPinned: isPinned ?? this.isPinned,
     );
   }
 }
