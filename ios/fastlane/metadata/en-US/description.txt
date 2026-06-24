@@ -1,0 +1,12 @@
+Project Brain helps you stay on track with personalised coaching support from Dot+Dash.
+
+Connect with your coach, set goals, chat with text and voice messages, and get the support you need—wherever you are.
+
+Features:
+• Secure sign-in and account management
+• Coach messaging with photos, voice notes, and files
+• Goal tracking and progress updates
+• Push notifications for new messages and reminders
+• Subscription management via your web account
+
+Project Brain is designed for people who benefit from structured, compassionate coaching support.

@@ -3,7 +3,7 @@
 # and upload to App Store Connect for staging/production (dev skips upload).
 #
 # Usage:
-#   ./scripts/build_ios.sh <dev|staging|production> [--obfuscate] [--no-bump] [--no-upload] [--commit]
+#   ./scripts/build_ios.sh <dev|staging|production> [--obfuscate] [--no-bump] [--no-upload] [--upload-metadata] [--commit]
 #
 # Upload credentials (staging/production only):
 #   scripts/.asc.<env>  ASC_API_KEY_ID and ASC_API_ISSUER_ID (copy from scripts/.asc.<env>.example)
@@ -14,6 +14,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+# shellcheck source=lib/asc_credentials.sh
+source "${ROOT}/scripts/lib/asc_credentials.sh"
 
 usage() {
   cat <<'EOF'
@@ -22,8 +24,9 @@ Usage: ./scripts/build_ios.sh <dev|staging|production> [options]
 Options:
   --obfuscate   Enable Dart obfuscation and write split-debug-info symbols
   --no-bump     Skip incrementing the pubspec build number
-  --no-upload   Build IPA only; do not upload to App Store Connect
-  --commit      Git-commit pubspec.yaml after a successful build (when bump ran)
+  --no-upload        Build IPA only; do not upload to App Store Connect
+  --upload-metadata  Also upload App Store listing metadata/screenshots (staging/production)
+  --commit           Git-commit pubspec.yaml after a successful build (when bump ran)
   -h, --help    Show this help
 
 Upload credentials (staging/production):
@@ -41,39 +44,6 @@ EOF
 die() {
   echo "error: $*" >&2
   exit 1
-}
-
-read_asc_config_value() {
-  local file="$1"
-  local key="$2"
-  local line value
-  line="$(grep -E "^${key}=" "$file" | tail -n 1 || true)"
-  [[ -n "$line" ]] || return 1
-  value="${line#${key}=}"
-  value="${value%\"}"
-  value="${value#\"}"
-  value="${value%\'}"
-  value="${value#\'}"
-  printf '%s' "$value"
-}
-
-load_asc_credentials() {
-  ASC_CONFIG="${ROOT}/scripts/.asc.${NORMALIZED_ENV}"
-  ASC_CONFIG_REL="scripts/.asc.${NORMALIZED_ENV}"
-  [[ -f "$ASC_CONFIG" ]] || die "missing ${ASC_CONFIG_REL} — copy from scripts/.asc.${NORMALIZED_ENV}.example and fill in values"
-
-  if [[ -z "${ASC_API_KEY_ID:-}" ]]; then
-    ASC_API_KEY_ID="$(read_asc_config_value "$ASC_CONFIG" ASC_API_KEY_ID || true)"
-    export ASC_API_KEY_ID
-  fi
-
-  if [[ -z "${ASC_API_ISSUER_ID:-}" ]]; then
-    ASC_API_ISSUER_ID="$(read_asc_config_value "$ASC_CONFIG" ASC_API_ISSUER_ID || true)"
-    export ASC_API_ISSUER_ID
-  fi
-
-  [[ -n "${ASC_API_KEY_ID:-}" ]] || die "ASC_API_KEY_ID is required for upload (set in ${ASC_CONFIG_REL} or ASC_API_KEY_ID env var)"
-  [[ -n "${ASC_API_ISSUER_ID:-}" ]] || die "ASC_API_ISSUER_ID is required for upload (set in ${ASC_CONFIG_REL} or ASC_API_ISSUER_ID env var)"
 }
 
 has_ios_distribution_identity() {
@@ -124,6 +94,7 @@ ENVIRONMENT=""
 OBFUSCATE=false
 NO_BUMP=false
 NO_UPLOAD=false
+UPLOAD_METADATA=false
 DO_COMMIT=false
 
 while [[ $# -gt 0 ]]; do
@@ -142,6 +113,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --no-upload)
       NO_UPLOAD=true
+      shift
+      ;;
+    --upload-metadata)
+      UPLOAD_METADATA=true
       shift
       ;;
     --commit)
@@ -181,9 +156,8 @@ if [[ "$NORMALIZED_ENV" != "dev" && "$NO_UPLOAD" == "false" ]]; then
 fi
 
 if [[ "$SHOULD_UPLOAD" == "true" ]]; then
-  load_asc_credentials
-  KEY_PATH="${ROOT}/private_keys/AuthKey_${ASC_API_KEY_ID}.p8"
-  [[ -f "$KEY_PATH" ]] || die "missing App Store Connect private key: ${KEY_PATH}"
+  validate_asc_private_key
+  ensure_fastlane_bundler
 fi
 
 if [[ "$NORMALIZED_ENV" != "dev" ]]; then
@@ -251,14 +225,13 @@ echo "IPA: ${IPA_PATH}"
 
 # --- Upload ---
 if [[ "$SHOULD_UPLOAD" == "true" ]]; then
-  echo "Uploading to App Store Connect..."
-  echo "cmd: xcrun altool --upload-app --type ios -f ${IPA_PATH} --apiKey ${ASC_API_KEY_ID} --apiIssuer ${ASC_API_ISSUER_ID}"
-  xcrun altool --upload-app --type ios \
-    -f "${IPA_PATH}" \
-    --apiKey "${ASC_API_KEY_ID}" \
-    --apiIssuer "${ASC_API_ISSUER_ID}"
-  echo "Upload complete. Finish TestFlight / App Store steps in App Store Connect:"
-  echo "  https://appstoreconnect.apple.com"
+  UPLOAD_ARGS=(--ipa "$IPA_PATH")
+  [[ "$UPLOAD_METADATA" == "true" ]] && UPLOAD_ARGS+=(--metadata)
+  "${ROOT}/scripts/upload_ios_appstore.sh" "$NORMALIZED_ENV" "${UPLOAD_ARGS[@]}"
+  if [[ "$UPLOAD_METADATA" == "false" ]]; then
+    echo "Finish TestFlight / App Store steps in App Store Connect:"
+    echo "  https://appstoreconnect.apple.com"
+  fi
 else
   echo "Skipping upload (environment=${NORMALIZED_ENV}$([[ "$NO_UPLOAD" == "true" ]] && echo ', --no-upload' || echo ''))."
 fi

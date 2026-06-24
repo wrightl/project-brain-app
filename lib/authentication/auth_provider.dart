@@ -22,6 +22,8 @@ class AuthProvider extends ChangeNotifier {
 
   bool _isLoading = false;
   bool _onboardingComplete = false;
+  bool _userProfileLoaded = false;
+  bool _userProfileLoadFailed = false;
   User? _user;
   String? _errorMessage;
 
@@ -36,12 +38,20 @@ class AuthProvider extends ChangeNotifier {
   Auth0User? get profile => authService.profile;
   User? get user => _user;
   bool get onboardingComplete => _onboardingComplete;
+  bool get userProfileLoaded => _userProfileLoaded;
+  bool get userProfileLoadFailed => _userProfileLoadFailed;
   String? get errorMessage => _errorMessage;
   bool get hasError => _errorMessage != null;
+
+  void _resetProfileLoadState() {
+    _userProfileLoaded = false;
+    _userProfileLoadFailed = false;
+  }
 
   Future<void> init() async {
     _isLoading = true;
     _errorMessage = null;
+    _resetProfileLoadState();
     notifyListeners();
 
     try {
@@ -64,6 +74,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> login() async {
     _isLoading = true;
     _errorMessage = null;
+    _resetProfileLoadState();
     notifyListeners();
 
     try {
@@ -125,6 +136,7 @@ class AuthProvider extends ChangeNotifier {
       await authService.logout();
       _user = null;
       _onboardingComplete = false;
+      _resetProfileLoadState();
 
       // Clear user ID in analytics after logout
       try {
@@ -169,6 +181,8 @@ class AuthProvider extends ChangeNotifier {
     try {
       final data = await userService.getCurrentUser();
       _user = User.fromJson(data);
+      _userProfileLoaded = true;
+      _userProfileLoadFailed = false;
       _onboardingComplete = _user?.isOnboarded ?? false;
 
       // Set user ID in analytics if not already set
@@ -192,20 +206,23 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       logError('[AuthProvider] Error fetching user data', e);
       _user = null;
-      _onboardingComplete = false;
+      _userProfileLoaded = false;
+      _userProfileLoadFailed = true;
       _errorMessage = 'Failed to fetch user data';
     }
   }
 
   /// Manually refresh user data from the server
   Future<void> refreshUserData() async {
+    _isLoading = true;
     _errorMessage = null;
+    _userProfileLoadFailed = false;
+    notifyListeners();
+
     try {
       await _fetchUserData();
-    } catch (e) {
-      logError('[AuthProvider] Error refreshing user data', e);
-      _errorMessage = 'Failed to refresh user data';
     } finally {
+      _isLoading = false;
       notifyListeners();
     }
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:projectbrain/authentication/auth_provider.dart';
 import 'package:projectbrain/authentication/login_page.dart';
+import 'package:projectbrain/authentication/profile_load_error_page.dart';
 import 'package:projectbrain/user/profile_page.dart';
 import 'package:projectbrain/chat/chat_page.dart';
 import 'package:projectbrain/home/home_page.dart';
@@ -175,15 +176,34 @@ class AppRouter {
     final onboarded = authProvider.onboardingComplete;
     final loggingIn = state.matchedLocation == '/login';
     final onboarding = state.matchedLocation == '/onboarding';
+    final profileError = state.matchedLocation == '/profile-error';
 
     // Redirect to login if not authenticated
     if (!loggedIn) return loggingIn ? null : '/login';
 
-    // Redirect to onboarding if authenticated but not onboarded
-    if (loggedIn && !onboarded && !onboarding) return '/onboarding';
+    // Redirect to profile error when authenticated but profile fetch failed
+    if (loggedIn && authProvider.userProfileLoadFailed && !profileError) {
+      return '/profile-error';
+    }
+
+    // Redirect to onboarding if authenticated, profile loaded, but not onboarded
+    if (loggedIn &&
+        authProvider.userProfileLoaded &&
+        !onboarded &&
+        !onboarding) {
+      return '/onboarding';
+    }
 
     // Redirect to home if trying to access login/onboarding when already authenticated
     if (loggedIn && onboarded && (loggingIn || onboarding)) return '/';
+
+    // Leave profile error screen after a successful retry
+    if (loggedIn &&
+        authProvider.userProfileLoaded &&
+        !authProvider.userProfileLoadFailed &&
+        profileError) {
+      return onboarded ? '/' : '/onboarding';
+    }
 
     return null;
   }
@@ -198,6 +218,10 @@ class AppRouter {
         GoRoute(
           path: '/onboarding',
           builder: (context, state) => const OnboardingPage(),
+        ),
+        GoRoute(
+          path: '/profile-error',
+          builder: (context, state) => const ProfileLoadErrorPage(),
         ),
 
         // Main App Shell with Bottom Navigation

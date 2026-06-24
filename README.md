@@ -526,7 +526,14 @@ Ensure signing is configured in Xcode first (`open ios/Runner.xcworkspace` → *
 
 #### Automated build script (recommended)
 
-[`scripts/build_ios.sh`](scripts/build_ios.sh) increments the pubspec build number, builds an IPA for the given environment, and uploads to App Store Connect for **staging** and **production**. **dev** builds locally and skips upload.
+[`scripts/build_ios.sh`](scripts/build_ios.sh) increments the pubspec build number, builds an IPA for the given environment, and uploads to App Store Connect (TestFlight) via **Fastlane** for **staging** and **production**. **dev** builds locally and skips upload.
+
+**One-time Fastlane setup** (per Mac or CI image):
+
+```bash
+gem install bundler    # if bundle is not on PATH
+cd ios && bundle install
+```
 
 ```bash
 # Staging or production: copy ASC config, then bump build number, build, upload to TestFlight
@@ -540,10 +547,11 @@ cp scripts/.asc.production.example scripts/.asc.production
 ./scripts/build_ios.sh dev
 
 # Optional flags
-./scripts/build_ios.sh production --obfuscate   # Crashlytics symbol files
-./scripts/build_ios.sh staging --no-bump        # skip pubspec increment
-./scripts/build_ios.sh production --no-upload   # build IPA only
-./scripts/build_ios.sh production --commit      # git commit pubspec.yaml after success
+./scripts/build_ios.sh production --obfuscate        # Crashlytics symbol files
+./scripts/build_ios.sh staging --no-bump             # skip pubspec increment
+./scripts/build_ios.sh production --no-upload        # build IPA only
+./scripts/build_ios.sh production --upload-metadata  # also sync App Store listing to ASC
+./scripts/build_ios.sh production --commit           # git commit pubspec.yaml after success
 ```
 
 | File / variable | Purpose |
@@ -552,10 +560,36 @@ cp scripts/.asc.production.example scripts/.asc.production
 | `scripts/.asc.production` | App Store Connect API credentials for production uploads (gitignored; copy from `scripts/.asc.production.example`) |
 | `ASC_API_KEY_ID` | Optional env override for App Store Connect API Key ID |
 | `ASC_API_ISSUER_ID` | Optional env override for Issuer ID from App Store Connect |
+| `ios/fastlane/metadata/` | Version-controlled App Store listing text (description, keywords, release notes, etc.) |
+| `ios/fastlane/screenshots/` | App Store screenshots (see `ios/fastlane/screenshots/en-US/README.md`) |
 
 Store the downloaded `.p8` key as **`private_keys/AuthKey_<ASC_API_KEY_ID>.p8`** at the project root (gitignored). Create the key under App Store Connect → Users and Access → Keys.
 
-After upload, finish processing and TestFlight/App Store steps in [App Store Connect](https://appstoreconnect.apple.com).
+After upload, TestFlight processing may take several minutes. Finish remaining steps in [App Store Connect](https://appstoreconnect.apple.com) unless you used `--upload-metadata`.
+
+#### App Store metadata (Fastlane deliver)
+
+Listing text lives under [`ios/fastlane/metadata/en-US/`](ios/fastlane/metadata/en-US/). Edit those files, add screenshots under [`ios/fastlane/screenshots/en-US/`](ios/fastlane/screenshots/en-US/) (see README there for required sizes), then:
+
+```bash
+# With a full build + upload
+./scripts/build_ios.sh production --upload-metadata
+
+# Metadata only (no IPA build)
+./scripts/upload_ios_appstore.sh production --metadata
+```
+
+To pull existing listing text from App Store Connect into the repo:
+
+```bash
+# Listing text only -> ios/fastlane/metadata/
+./scripts/upload_ios_appstore.sh production --download-metadata
+
+# Listing text + screenshots -> ios/fastlane/metadata/ and ios/fastlane/screenshots/
+./scripts/upload_ios_appstore.sh production --download-metadata --with-screenshots
+```
+
+`deliver` reads from and writes to the current **Prepare for Submission** version in App Store Connect. Create that version in ASC first if metadata upload or download fails.
 
 #### Manual steps (alternative)
 
@@ -576,13 +610,10 @@ After upload, finish processing and TestFlight/App Store steps in [App Store Con
 
     Output: `build/ios/ipa/*.ipa`.
 
-3. **Upload with App Store Connect API key**
+3. **Upload with Fastlane** (or use [`scripts/upload_ios_appstore.sh`](scripts/upload_ios_appstore.sh))
 
     ```bash
-    xcrun altool --upload-app --type ios \
-      -f build/ios/ipa/*.ipa \
-      --apiKey YOUR_API_KEY_ID \
-      --apiIssuer YOUR_ISSUER_ID
+    ./scripts/upload_ios_appstore.sh production --ipa build/ios/ipa/*.ipa
     ```
 
 ### Android Build

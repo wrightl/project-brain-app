@@ -15,6 +15,9 @@ class MockAuthService extends Mock implements AuthService {}
 
 class MockAuth0User extends Mock implements Auth0User {}
 
+int usersMeStatusCode = 200;
+bool usersMeIsOnboarded = true;
+
 void main() {
   late AuthProvider authProvider;
   late MockAuthService mockAuthService;
@@ -27,14 +30,14 @@ void main() {
     apiServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     apiServer.listen((request) async {
       if (request.uri.path == '/users/me' && request.method == 'GET') {
-        request.response.statusCode = 200;
+        request.response.statusCode = usersMeStatusCode;
         request.response.headers.contentType = ContentType.json;
         request.response.write(
           jsonEncode({
             'id': 'user-1',
             'email': 'a@test.com',
             'name': 'Test',
-            'isOnboarded': true,
+            'isOnboarded': usersMeIsOnboarded,
           }),
         );
       } else {
@@ -57,6 +60,8 @@ void main() {
   });
 
   setUp(() {
+    usersMeStatusCode = 200;
+    usersMeIsOnboarded = true;
     mockAuthService = MockAuthService();
     when(() => mockAuthService.isLoggedIn).thenReturn(false);
     when(() => mockAuthService.profile).thenReturn(null);
@@ -88,6 +93,9 @@ void main() {
       expect(authProvider.isLoggedIn, isTrue);
       expect(authProvider.profile, equals(mockUser));
       expect(authProvider.user?.id, 'user-1');
+      expect(authProvider.userProfileLoaded, isTrue);
+      expect(authProvider.userProfileLoadFailed, isFalse);
+      expect(authProvider.onboardingComplete, isTrue);
     });
 
     test('handles initialization with no user', () async {
@@ -123,6 +131,22 @@ void main() {
       expect(authProvider.hasError, isTrue);
       expect(authProvider.errorMessage, contains('initialize'));
     });
+
+    test('init with session sets profile load failed on API error', () async {
+      usersMeStatusCode = 500;
+      final mockUser = MockAuth0User();
+      when(() => mockAuthService.init()).thenAnswer((_) async => true);
+      when(() => mockAuthService.isLoggedIn).thenReturn(true);
+      when(() => mockAuthService.profile).thenReturn(mockUser);
+
+      await authProvider.init();
+
+      expect(authProvider.isLoggedIn, isTrue);
+      expect(authProvider.userProfileLoadFailed, isTrue);
+      expect(authProvider.userProfileLoaded, isFalse);
+      expect(authProvider.hasError, isTrue);
+      expect(authProvider.user, isNull);
+    });
   });
 
   group('AuthProvider - Login', () {
@@ -138,7 +162,40 @@ void main() {
       expect(authProvider.isLoggedIn, isTrue);
       expect(authProvider.profile, equals(mockUser));
       expect(authProvider.user?.id, 'user-1');
+      expect(authProvider.userProfileLoaded, isTrue);
+      expect(authProvider.userProfileLoadFailed, isFalse);
       verify(() => mockAuthService.login()).called(1);
+    });
+
+    test('login sets profile load failed when API returns error', () async {
+      usersMeStatusCode = 500;
+      final mockUser = MockAuth0User();
+      when(() => mockUser.sub).thenReturn('auth0|1');
+      when(() => mockAuthService.login()).thenAnswer((_) async {});
+      when(() => mockAuthService.isLoggedIn).thenReturn(true);
+      when(() => mockAuthService.profile).thenReturn(mockUser);
+
+      await authProvider.login();
+
+      expect(authProvider.isLoggedIn, isTrue);
+      expect(authProvider.userProfileLoadFailed, isTrue);
+      expect(authProvider.userProfileLoaded, isFalse);
+      expect(authProvider.hasError, isTrue);
+      expect(authProvider.errorMessage, contains('fetch user data'));
+    });
+
+    test('successful fetch sets onboardingComplete from API', () async {
+      usersMeIsOnboarded = false;
+      final mockUser = MockAuth0User();
+      when(() => mockUser.sub).thenReturn('auth0|1');
+      when(() => mockAuthService.login()).thenAnswer((_) async {});
+      when(() => mockAuthService.isLoggedIn).thenReturn(true);
+      when(() => mockAuthService.profile).thenReturn(mockUser);
+
+      await authProvider.login();
+
+      expect(authProvider.userProfileLoaded, isTrue);
+      expect(authProvider.onboardingComplete, isFalse);
     });
 
     test('failed login sets error state', () async {
