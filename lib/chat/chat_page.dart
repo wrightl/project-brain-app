@@ -5,6 +5,7 @@ import 'package:projectbrain/authentication/auth_provider.dart';
 import 'package:projectbrain/chat/chat_provider.dart';
 import 'package:projectbrain/models/conversation.dart';
 import 'package:projectbrain/widgets/chat/action_card_widget.dart';
+import 'package:projectbrain/widgets/chat/user_choice_chips.dart';
 import 'package:projectbrain/widgets/chat/message_bubble.dart';
 import 'package:projectbrain/widgets/chat/tool_execution_badge.dart';
 import 'package:projectbrain/widgets/chat/chat_input_field.dart';
@@ -151,6 +152,7 @@ class _ChatPageState extends State<ChatPage> {
                   itemBuilder: (context, index) {
                     final message = chatProvider.messages[index];
                     final extras = chatProvider.messageExtrasFor(index);
+                    final isLastMessage = index == chatProvider.messages.length - 1;
                     return Column(
                       crossAxisAlignment: message.role == 'user'
                           ? CrossAxisAlignment.end
@@ -159,9 +161,14 @@ class _ChatPageState extends State<ChatPage> {
                         MessageBubble(
                           key: ValueKey('${message.role}_$index'),
                           message: message,
+                          showTypingIndicator: chatProvider.isSending &&
+                              isLastMessage &&
+                              message.role == 'assistant' &&
+                              message.content.isEmpty,
                         ),
                         if (message.role == 'assistant') ...[
-                          for (final tool in extras.toolExecutions)
+                          for (final tool in extras.toolExecutions
+                              .where((tool) => tool.toolName != 'ask_user'))
                             Padding(
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 16),
@@ -171,7 +178,27 @@ class _ChatPageState extends State<ChatPage> {
                             Padding(
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 16),
-                              child: ActionCardWidget(card: card),
+                              child: ActionCardWidget(
+                                card: card,
+                                onConfirmPendingAction: (pendingCard) =>
+                                    chatProvider.confirmPendingAction(
+                                        pendingCard, index),
+                                onCancelPendingAction: (pendingCard) =>
+                                    chatProvider.cancelPendingAction(
+                                        pendingCard, index),
+                              ),
+                            ),
+                          if (extras.userChoices != null &&
+                              !chatProvider.isChoiceAnswered(index))
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              child: UserChoiceChips(
+                                choices: extras.userChoices!,
+                                disabled: chatProvider.isSending,
+                                onSelect: (label) => chatProvider
+                                    .selectUserChoice(index, label),
+                              ),
                             ),
                         ],
                       ],

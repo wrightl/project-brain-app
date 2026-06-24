@@ -84,7 +84,10 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: MessageBubble(message: loadingMessage),
+            body: MessageBubble(
+              message: loadingMessage,
+              showTypingIndicator: true,
+            ),
           ),
         ),
       );
@@ -92,6 +95,24 @@ void main() {
       // Should display a typing indicator (not CircularProgressIndicator)
       expect(find.byType(TypingIndicator), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
+    testWidgets('hides typing indicator for empty assistant when not pending',
+        (WidgetTester tester) async {
+      const loadingMessage = ChatMessage(
+        role: 'assistant',
+        content: '',
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: MessageBubble(message: loadingMessage),
+          ),
+        ),
+      );
+
+      expect(find.byType(TypingIndicator), findsNothing);
     });
 
     testWidgets('uses theme colors correctly', (WidgetTester tester) async {

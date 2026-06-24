@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:projectbrain/models/agent/action_card.dart';
 import 'package:projectbrain/models/agent/agent_stream_event.dart';
+import 'package:projectbrain/models/agent/user_choice_prompt.dart';
 import 'package:projectbrain/models/agent/tool_execution.dart';
 import 'package:projectbrain/models/citation.dart';
 import 'package:projectbrain/models/strategies/suggested_strategy.dart';
@@ -266,6 +267,48 @@ class AIService extends HttpService {
   static List<ActionCard> parseActionCards(dynamic value) {
     if (value is! Map) return [];
     return [ActionCard.fromJson(Map<String, dynamic>.from(value))];
+  }
+
+  static UserChoicePrompt? parseUserChoices(dynamic value) {
+    if (value is! Map) return null;
+    final prompt = UserChoicePrompt.fromJson(Map<String, dynamic>.from(value));
+    return prompt.options.isEmpty ? null : prompt;
+  }
+
+  Future<Map<String, dynamic>> confirmPendingAgentAction({
+    required String workflowId,
+    required String actionId,
+  }) async {
+    final response = await post(
+      '/agent/workflows/$workflowId/actions/$actionId/confirm',
+      body: '{}',
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Failed to confirm action: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> cancelPendingAgentAction({
+    required String workflowId,
+    required String actionId,
+  }) async {
+    final response = await post(
+      '/agent/workflows/$workflowId/actions/$actionId/cancel',
+      body: '{}',
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Failed to cancel action: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
   /// Stream strategies-mode chat: POST /chat/stream with mode "strategies".

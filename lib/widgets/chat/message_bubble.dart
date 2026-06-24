@@ -11,10 +11,12 @@ import 'package:projectbrain/helpers/themes/app_spacing.dart';
 /// Reusable message bubble widget for displaying chat messages
 class MessageBubble extends StatefulWidget {
   final ChatMessage message;
+  final bool showTypingIndicator;
 
   const MessageBubble({
     super.key,
     required this.message,
+    this.showTypingIndicator = false,
   });
 
   @override
@@ -54,8 +56,8 @@ class _MessageBubbleState extends State<MessageBubble> {
     final isUser = message.role == 'user';
     final isEmpty = message.content.isEmpty && !isUser;
 
-    // Show typing indicator for empty assistant messages
-    if (isEmpty) {
+    // Show typing indicator only while actively streaming this message.
+    if (isEmpty && widget.showTypingIndicator) {
       return Container(
         alignment: Alignment.centerLeft,
         padding: EdgeInsets.all(AppSpacing.sm),
@@ -70,6 +72,10 @@ class _MessageBubbleState extends State<MessageBubble> {
           ),
         ),
       );
+    }
+
+    if (isEmpty && !isUser) {
+      return const SizedBox.shrink();
     }
 
     return Container(

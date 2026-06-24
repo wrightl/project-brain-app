@@ -5,6 +5,7 @@ import 'package:projectbrain/models/citation.dart';
 import 'package:projectbrain/models/agent/action_card.dart';
 import 'package:projectbrain/models/agent/agent_stream_event.dart';
 import 'package:projectbrain/models/agent/tool_execution.dart';
+import 'package:projectbrain/models/agent/user_choice_prompt.dart';
 import 'package:projectbrain/models/chatmessage.dart';
 import 'package:projectbrain/models/conversation.dart';
 import 'package:projectbrain/services/ai_service.dart';
@@ -18,6 +19,7 @@ class ChatProvider extends ChangeNotifier {
   final FeatureFlagService featureFlagService;
   final List<ChatMessage> _messages = [];
   final Map<int, AgentMessageExtras> _messageExtras = {};
+  final Set<int> _answeredChoiceMessageIndexes = {};
   Conversation? _conversation;
   bool _isLoading = false;
   bool _isSending = false;
@@ -31,6 +33,8 @@ class ChatProvider extends ChangeNotifier {
   bool get isSending => _isSending;
   String? get errorMessage => _errorMessage;
   bool get hasError => _errorMessage != null;
+  bool isChoiceAnswered(int messageIndex) =>
+      _answeredChoiceMessageIndexes.contains(messageIndex);
 
   ChatProvider({
     required this.aiService,
@@ -161,6 +165,7 @@ class ChatProvider extends ChangeNotifier {
     final citations = <Citation>[];
     final tools = <ToolExecution>[];
     final cards = <ActionCard>[];
+    UserChoicePrompt? userChoices;
 
     var lastNotify = DateTime.fromMillisecondsSinceEpoch(0);
     const notifyInterval = Duration(milliseconds: 60);
@@ -185,6 +190,12 @@ class ChatProvider extends ChangeNotifier {
         case 'action_card':
           cards.addAll(AIService.parseActionCards(event.value));
           break;
+        case 'pending_action':
+          cards.addAll(AIService.parseActionCards(event.value));
+          break;
+        case 'user_choices':
+          userChoices = AIService.parseUserChoices(event.value);
+          break;
       }
 
       final now = DateTime.now();
@@ -195,12 +206,91 @@ class ChatProvider extends ChangeNotifier {
     }
 
     final current = _messages[assistantMessageIndex];
+    var finalContent = current.content;
+    if (finalContent.isEmpty) {
+      final prompt = userChoices?.prompt?.trim();
+      if (prompt != null && prompt.isNotEmpty) {
+        finalContent = prompt;
+      } else if (userChoices != null) {
+        finalContent = 'Please choose an option:';
+      } else {
+        finalContent = 'Action completed.';
+      }
+    }
+
     _messages[assistantMessageIndex] = current.copyWith(
       citations: List.from(citations),
+      content: finalContent,
     );
     _messageExtras[assistantMessageIndex] = AgentMessageExtras(
       toolExecutions: List.from(tools),
       actionCards: List.from(cards),
+      userChoices: userChoices,
+    );
+    notifyListeners();
+  }
+
+  Future<void> selectUserChoice(int messageIndex, String label) async {
+    if (_isSending) return;
+    _answeredChoiceMessageIndexes.add(messageIndex);
+    notifyListeners();
+    await sendMessage(label);
+  }
+
+  Future<void> confirmPendingAction(ActionCard card, int messageIndex) async {
+    if (card.workflowId == null || card.pendingActionId == null) return;
+
+    final result = await aiService.confirmPendingAgentAction(
+      workflowId: card.workflowId!,
+      actionId: card.pendingActionId!,
+    );
+
+    final extras = _messageExtras[messageIndex] ?? const AgentMessageExtras();
+    final remainingCards = extras.actionCards
+        .where((c) =>
+            !(c.cardType == 'pending_confirmation' &&
+                c.pendingActionId == card.pendingActionId))
+        .toList();
+
+    final newCards = <ActionCard>[...remainingCards];
+    final actionCardsJson = result['actionCards'];
+    if (actionCardsJson is List) {
+      for (final item in actionCardsJson) {
+        if (item is Map) {
+          newCards.add(ActionCard.fromJson(Map<String, dynamic>.from(item)));
+        }
+      }
+    }
+
+    final tools = List<ToolExecution>.from(extras.toolExecutions);
+    final toolJson = result['toolExecution'];
+    if (toolJson is Map) {
+      tools.add(ToolExecution.fromJson(Map<String, dynamic>.from(toolJson)));
+    }
+
+    _messageExtras[messageIndex] = AgentMessageExtras(
+      toolExecutions: tools,
+      actionCards: newCards,
+    );
+    notifyListeners();
+  }
+
+  Future<void> cancelPendingAction(ActionCard card, int messageIndex) async {
+    if (card.workflowId == null || card.pendingActionId == null) return;
+
+    await aiService.cancelPendingAgentAction(
+      workflowId: card.workflowId!,
+      actionId: card.pendingActionId!,
+    );
+
+    final extras = _messageExtras[messageIndex] ?? const AgentMessageExtras();
+    _messageExtras[messageIndex] = AgentMessageExtras(
+      toolExecutions: extras.toolExecutions,
+      actionCards: extras.actionCards
+          .where((c) =>
+              !(c.cardType == 'pending_confirmation' &&
+                  c.pendingActionId == card.pendingActionId))
+          .toList(),
     );
     notifyListeners();
   }
@@ -233,6 +323,8 @@ class ChatProvider extends ChangeNotifier {
           await conversationService.getConversationWithMessagesById(id);
       _messages.clear();
       _messages.addAll(conversation.messages);
+      _messageExtras.clear();
+      _answeredChoiceMessageIndexes.clear();
       _conversation = conversation;
       return conversation;
     } catch (e) {
@@ -249,6 +341,7 @@ class ChatProvider extends ChangeNotifier {
   void clearConversation() {
     _messages.clear();
     _messageExtras.clear();
+    _answeredChoiceMessageIndexes.clear();
     _conversation = null;
     _errorMessage = null;
     notifyListeners();
@@ -265,6 +358,7 @@ class ChatProvider extends ChangeNotifier {
   void resetOnLogout() {
     _messages.clear();
     _messageExtras.clear();
+    _answeredChoiceMessageIndexes.clear();
     _conversation = null;
     _errorMessage = null;
     _isLoading = false;
