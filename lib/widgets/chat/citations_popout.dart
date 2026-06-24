@@ -46,10 +46,21 @@ class _CitationsPopoutState extends State<CitationsPopout>
   @override
   void didUpdateWidget(CitationsPopout oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Auto-expand when new citations are added
-    if (widget.citations.isNotEmpty && !_isExpanded) {
+    // Only auto-expand when citations actually change (e.g. new assistant
+    // response), not on unrelated chat rebuilds like sending a user message.
+    if (!_isExpanded &&
+        widget.citations.isNotEmpty &&
+        _citationsChanged(oldWidget.citations, widget.citations)) {
       _toggleExpanded();
     }
+  }
+
+  bool _citationsChanged(List<Citation> previous, List<Citation> current) {
+    if (previous.length != current.length) return true;
+    for (var i = 0; i < previous.length; i++) {
+      if (previous[i].url != current[i].url) return true;
+    }
+    return false;
   }
 
   void _toggleExpanded() {

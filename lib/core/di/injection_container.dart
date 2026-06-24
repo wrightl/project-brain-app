@@ -286,6 +286,7 @@ Future<void> initializeDependencies() async {
     () => ChatProvider(
       aiService: sl<AIService>(),
       conversationService: sl<ConversationService>(),
+      featureFlagService: sl<FeatureFlagService>(),
     ),
   );
 

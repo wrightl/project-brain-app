@@ -4,7 +4,9 @@ import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:projectbrain/authentication/auth_provider.dart';
 import 'package:projectbrain/chat/chat_provider.dart';
 import 'package:projectbrain/models/conversation.dart';
+import 'package:projectbrain/widgets/chat/action_card_widget.dart';
 import 'package:projectbrain/widgets/chat/message_bubble.dart';
+import 'package:projectbrain/widgets/chat/tool_execution_badge.dart';
 import 'package:projectbrain/widgets/chat/chat_input_field.dart';
 import 'package:projectbrain/widgets/chat/conversation_list_item.dart';
 import 'package:projectbrain/widgets/chat/typing_indicator.dart';
@@ -148,10 +150,31 @@ class _ChatPageState extends State<ChatPage> {
                   addRepaintBoundaries: true, // Reduce repaint overhead
                   itemBuilder: (context, index) {
                     final message = chatProvider.messages[index];
-                    // Use ValueKey for better widget reuse
-                    return MessageBubble(
-                      key: ValueKey('${message.role}_$index'),
-                      message: message,
+                    final extras = chatProvider.messageExtrasFor(index);
+                    return Column(
+                      crossAxisAlignment: message.role == 'user'
+                          ? CrossAxisAlignment.end
+                          : CrossAxisAlignment.start,
+                      children: [
+                        MessageBubble(
+                          key: ValueKey('${message.role}_$index'),
+                          message: message,
+                        ),
+                        if (message.role == 'assistant') ...[
+                          for (final tool in extras.toolExecutions)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              child: ToolExecutionBadge(tool: tool),
+                            ),
+                          for (final card in extras.actionCards)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              child: ActionCardWidget(card: card),
+                            ),
+                        ],
+                      ],
                     );
                   },
                 );

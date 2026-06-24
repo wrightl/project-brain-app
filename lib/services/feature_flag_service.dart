@@ -68,6 +68,10 @@ class FeatureFlagService {
   /// Feature flag key constants
   static const String _coachFeatureKey = 'CoachFeatureEnabled';
   static const String _emailFeatureKey = 'EmailFeatureEnabled';
+  static const String _agentFeatureKey = 'AgentFeatureEnabled';
+
+  bool get agentFeatureEnabled =>
+      _getBoolFlag(_agentFeatureKey, defaultValue: false);
 
   /// Get the CoachFeatureEnabled flag value
   /// Returns true if the coach section feature is enabled, false otherwise

@@ -2,22 +2,30 @@ import 'dart:async';
 import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:projectbrain/models/citation.dart';
+import 'package:projectbrain/models/agent/action_card.dart';
+import 'package:projectbrain/models/agent/agent_stream_event.dart';
+import 'package:projectbrain/models/agent/tool_execution.dart';
 import 'package:projectbrain/models/chatmessage.dart';
 import 'package:projectbrain/models/conversation.dart';
 import 'package:projectbrain/services/ai_service.dart';
 import 'package:projectbrain/services/conversation_service.dart';
+import 'package:projectbrain/services/feature_flag_service.dart';
 
 /// Provider for managing chat state and interactions
 class ChatProvider extends ChangeNotifier {
   final AIService aiService;
   final ConversationService conversationService;
+  final FeatureFlagService featureFlagService;
   final List<ChatMessage> _messages = [];
+  final Map<int, AgentMessageExtras> _messageExtras = {};
   Conversation? _conversation;
   bool _isLoading = false;
   bool _isSending = false;
   String? _errorMessage;
 
   List<ChatMessage> get messages => List.unmodifiable(_messages);
+  AgentMessageExtras messageExtrasFor(int index) =>
+      _messageExtras[index] ?? const AgentMessageExtras();
   Conversation? get activeConversation => _conversation;
   bool get isLoading => _isLoading;
   bool get isSending => _isSending;
@@ -27,6 +35,7 @@ class ChatProvider extends ChangeNotifier {
   ChatProvider({
     required this.aiService,
     required this.conversationService,
+    required this.featureFlagService,
   });
 
   /// Send a message and stream the response
@@ -49,6 +58,11 @@ class ChatProvider extends ChangeNotifier {
 
     StreamSubscription<List<Citation>>? citationsSubscription;
     try {
+      if (featureFlagService.agentFeatureEnabled) {
+        await _sendViaAgent(text, assistantMessageIndex);
+        return;
+      }
+
       final response = await aiService.streamChatResponse(
         text,
         conversationId: _conversation?.id,
@@ -127,6 +141,70 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> _sendViaAgent(String text, int assistantMessageIndex) async {
+    final response = await aiService.streamAgentResponse(
+      text,
+      conversationId: _conversation?.id,
+    );
+
+    if (_conversation == null && response.conversationId != null) {
+      _conversation = Conversation(
+        id: response.conversationId!,
+        title: text,
+        userId: '',
+        messages: [],
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+    }
+
+    final citations = <Citation>[];
+    final tools = <ToolExecution>[];
+    final cards = <ActionCard>[];
+
+    var lastNotify = DateTime.fromMillisecondsSinceEpoch(0);
+    const notifyInterval = Duration(milliseconds: 60);
+
+    await for (final event in response.stream) {
+      switch (event.type) {
+        case 'text':
+          final chunk = event.value?.toString() ?? '';
+          if (chunk.isEmpty) continue;
+          final current = _messages[assistantMessageIndex];
+          _messages[assistantMessageIndex] =
+              current.copyWith(content: current.content + chunk);
+          break;
+        case 'citations':
+          citations
+            ..clear()
+            ..addAll(AIService.parseAgentCitations(event.value));
+          break;
+        case 'tools_executed':
+          tools.addAll(AIService.parseToolExecutions(event.value));
+          break;
+        case 'action_card':
+          cards.addAll(AIService.parseActionCards(event.value));
+          break;
+      }
+
+      final now = DateTime.now();
+      if (now.difference(lastNotify) >= notifyInterval) {
+        lastNotify = now;
+        notifyListeners();
+      }
+    }
+
+    final current = _messages[assistantMessageIndex];
+    _messages[assistantMessageIndex] = current.copyWith(
+      citations: List.from(citations),
+    );
+    _messageExtras[assistantMessageIndex] = AgentMessageExtras(
+      toolExecutions: List.from(tools),
+      actionCards: List.from(cards),
+    );
+    notifyListeners();
+  }
+
   /// Fetch all conversations for the current user
   ///
   /// Note: This method returns a Future and should not be called during build.
@@ -170,6 +248,7 @@ class ChatProvider extends ChangeNotifier {
   /// Clear the current conversation and start fresh
   void clearConversation() {
     _messages.clear();
+    _messageExtras.clear();
     _conversation = null;
     _errorMessage = null;
     notifyListeners();
@@ -185,6 +264,7 @@ class ChatProvider extends ChangeNotifier {
   /// Reset all chat state so it does not leak into the next logged-in session.
   void resetOnLogout() {
     _messages.clear();
+    _messageExtras.clear();
     _conversation = null;
     _errorMessage = null;
     _isLoading = false;

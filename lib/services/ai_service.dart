@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:projectbrain/core/logging/app_logger.dart';
+import 'package:projectbrain/models/agent/action_card.dart';
+import 'package:projectbrain/models/agent/agent_stream_event.dart';
+import 'package:projectbrain/models/agent/tool_execution.dart';
 import 'package:projectbrain/models/citation.dart';
 import 'package:projectbrain/models/strategies/suggested_strategy.dart';
 import 'package:projectbrain/services/http_service.dart';
@@ -151,6 +154,118 @@ class AIService extends HttpService {
         'Failed to stream chat response: ${response.statusCode} ${response.reasonPhrase}',
       );
     }
+  }
+
+  /// Stream agent response with tool execution and action card events.
+  Future<AgentStreamResult> streamAgentResponse(
+    String content, {
+    String? conversationId,
+    String? workflowId,
+  }) async {
+    logDebug(
+        '[AIService] Sending agent message (conversation: $conversationId)');
+
+    final body = <String, dynamic>{'content': content};
+    if (conversationId != null) body['conversationId'] = conversationId;
+    if (workflowId != null) body['workflowId'] = workflowId;
+
+    final response = await send(
+      '/agent/stream',
+      jsonEncode(body),
+      extraHeaders: {'Accept': 'text/event-stream'},
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Failed to stream agent response: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+
+    final convId = response.headers['x-conversation-id'];
+    final controller = StreamController<AgentStreamEvent>();
+    var buffer = '';
+
+    void onData(String chunk) {
+      buffer += chunk;
+      while (buffer.contains('\n\n')) {
+        final idx = buffer.indexOf('\n\n');
+        final eventBlock = buffer.substring(0, idx);
+        buffer = buffer.substring(idx + 2);
+        _parseAgentEvent(eventBlock, controller);
+      }
+    }
+
+    void onDone() {
+      if (buffer.trim().isNotEmpty) {
+        _parseAgentEvent(buffer, controller);
+      }
+      controller.close();
+    }
+
+    void onError(Object e, StackTrace st) {
+      logError('[AIService] Agent stream error', e, st);
+      controller.addError(e is Exception ? e : Exception(e.toString()));
+      controller.close();
+    }
+
+    response.stream
+        .transform(utf8.decoder)
+        .listen(onData, onDone: onDone, onError: onError);
+
+    return AgentStreamResult(
+      conversationId: convId,
+      stream: controller.stream,
+    );
+  }
+
+  static void _parseAgentEvent(
+      String eventBlock, StreamController<AgentStreamEvent> controller) {
+    final dataLines = <String>[];
+    for (final line in eventBlock.split('\n')) {
+      final trimmed = line.trim();
+      if (trimmed.startsWith('data:')) {
+        dataLines.add(trimmed.substring(5).trim());
+      }
+    }
+    if (dataLines.isEmpty) return;
+    final jsonStr = dataLines.join('\n');
+    if (jsonStr.isEmpty) return;
+    try {
+      final data = jsonDecode(jsonStr) as Map<String, dynamic>;
+      final type = data['type'] as String? ?? '';
+      final value = data['value'];
+      controller.add(AgentStreamEvent(type: type, value: value));
+    } catch (e) {
+      logDebug('[AIService] Failed to parse agent SSE event: $e');
+    }
+  }
+
+  static List<Citation> parseAgentCitations(dynamic value) {
+    if (value is! List) return [];
+    return value
+        .whereType<Map>()
+        .map((item) {
+          final map = Map<String, dynamic>.from(item);
+          return Citation(
+            url: map['storageUrl'] as String? ?? '',
+            title: map['sourceFile'] as String? ?? 'Source',
+            description: map['sourcePage'] as String?,
+          );
+        })
+        .toList();
+  }
+
+  static List<ToolExecution> parseToolExecutions(dynamic value) {
+    if (value is! List) return [];
+    return value
+        .whereType<Map>()
+        .map((e) => ToolExecution.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  static List<ActionCard> parseActionCards(dynamic value) {
+    if (value is! Map) return [];
+    return [ActionCard.fromJson(Map<String, dynamic>.from(value))];
   }
 
   /// Stream strategies-mode chat: POST /chat/stream with mode "strategies".
