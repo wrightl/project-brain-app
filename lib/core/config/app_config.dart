@@ -152,17 +152,30 @@ class AppConfig {
   // API Configuration
   static String get apiBaseUrl => authAudience;
 
-  /// Helper to get required environment variable
+  /// Helper to get required environment variable (dart-define overrides bundled .env)
   static String _getEnv(String key) {
+    final fromDefine = String.fromEnvironment(key);
+    if (fromDefine.isNotEmpty) {
+      return fromDefine;
+    }
+
     final value = dotenv.env[key];
     if (value == null || value.isEmpty) {
-      throw Exception('Missing required environment variable: $key');
+      throw Exception(
+        'Missing required environment variable: $key. '
+        'Set via --dart-define=$key=... or bundled .env file.',
+      );
     }
     return value;
   }
 
   /// Helper to get optional environment variable with default
   static String getEnvOrDefault(String key, String defaultValue) {
+    final fromDefine = String.fromEnvironment(key);
+    if (fromDefine.isNotEmpty) {
+      return fromDefine;
+    }
+
     return dotenv.env[key] ?? defaultValue;
   }
 }

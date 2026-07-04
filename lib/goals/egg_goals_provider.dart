@@ -20,11 +20,14 @@ class EggGoalsProvider extends ChangeNotifier {
 
   List<EggGoal> _goals = [];
   bool _isLoading = false;
+  final Set<int> _togglingGoalIndexes = {};
+  int _syncGeneration = 0;
   String? _errorMessage;
   GoalStreakSummary? _goalStreakSummary;
 
   List<EggGoal> get goals => List.unmodifiable(_goals);
   bool get isLoading => _isLoading;
+  bool isGoalToggling(int index) => _togglingGoalIndexes.contains(index);
   String? get errorMessage => _errorMessage;
   bool get hasError => _errorMessage != null;
 
@@ -126,7 +129,7 @@ class EggGoalsProvider extends ChangeNotifier {
     final wasCompleted = _goals[index].completed;
     final newCompleted = !wasCompleted;
 
-    _isLoading = true;
+    _togglingGoalIndexes.add(index);
     notifyListeners();
 
     try {
@@ -156,16 +159,15 @@ class EggGoalsProvider extends ChangeNotifier {
       );
       _errorMessage = 'Failed to update goal';
     } finally {
-      _isLoading = false;
+      _togglingGoalIndexes.remove(index);
       notifyListeners();
     }
   }
-
-  /// Sync goals from API
   Future<void> syncFromAPI() async {
     logDebug('[EggGoalsProvider] Syncing goals from API');
     if (eggGoalsService == null) return;
 
+    final generation = ++_syncGeneration;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -173,6 +175,8 @@ class EggGoalsProvider extends ChangeNotifier {
     try {
       logDebug('[EggGoalsProvider] Syncing goals from API');
       final apiGoals = await eggGoalsService!.syncEggGoals();
+      if (generation != _syncGeneration) return;
+
       logDebug('[EggGoalsProvider] Synced goals from API: $apiGoals');
       // Always update all 3 slots from API so empty response clears stale local data
       for (int i = 0; i < 3; i++) {
@@ -194,11 +198,14 @@ class EggGoalsProvider extends ChangeNotifier {
 
       await _loadGoalsFromStorage();
     } catch (e) {
+      if (generation != _syncGeneration) return;
       logError('[EggGoalsProvider] Error syncing from API', e);
       _errorMessage = 'Failed to sync goals';
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (generation == _syncGeneration) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 

@@ -289,22 +289,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.14"
-  device_info_plus:
-    dependency: transitive
-    description:
-      name: device_info_plus
-      sha256: "6a642e1daa10190af89ba6cb6386c0df7d071a3592080bfe1e44faa63ae1df65"
-      url: "https://pub.dev"
-    source: hosted
-    version: "13.1.0"
-  device_info_plus_platform_interface:
-    dependency: transitive
-    description:
-      name: device_info_plus_platform_interface
-      sha256: "04b173a92e2d9161dfead145667037c8d834db725ce2e7b942bfe18fd2f45a46"
-      url: "https://pub.dev"
-    source: hosted
-    version: "8.1.0"
   equatable:
     dependency: "direct main"
     description:
@@ -1007,38 +991,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.4.16"
-  launchdarkly_common_client:
-    dependency: transitive
-    description:
-      name: launchdarkly_common_client
-      sha256: "2b4f4b2653898719fa8e637555605f7cbfbf7c415860b3ea51aee9b41608848d"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.13.0"
-  launchdarkly_dart_common:
-    dependency: transitive
-    description:
-      name: launchdarkly_dart_common
-      sha256: e36fb8d943ea7a5b99e7ecdc361174ca95e05533904dd92175816ae5c9723eee
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.8.1"
-  launchdarkly_event_source_client:
-    dependency: transitive
-    description:
-      name: launchdarkly_event_source_client
-      sha256: c248a81bc353d44f7f18803ff625d784d640265bf8bbc32c63f1d2d91911b88f
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.1.0"
-  launchdarkly_flutter_client_sdk:
-    dependency: "direct main"
-    description:
-      name: launchdarkly_flutter_client_sdk
-      sha256: "8cc88d4fa2be55715f93539b5e563f65433814cbb492767814ded7f6c8945f18"
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.19.0"
   leak_tracker:
     dependency: transitive
     description:
@@ -1884,14 +1836,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.3.0"
-  win32_registry:
-    dependency: transitive
-    description:
-      name: win32_registry
-      sha256: "73b1d78920a9d6e03f8b4e43e612b87bf3152a0e5c5e5150267762b7c4116904"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.0.3"
   xdg_directories:
     dependency: transitive
     description:

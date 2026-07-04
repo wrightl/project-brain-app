@@ -94,9 +94,13 @@ class _StripeCheckoutWebViewState extends State<StripeCheckoutWebView> {
   }
 
   void _handleUrlChange(String url) {
-    // Check for Stripe success/cancel URLs
-    // Stripe typically redirects to success_url or cancel_url
-    if (url.contains('success') || url.contains('checkout/success')) {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+
+    final path = uri.path.toLowerCase();
+    if (path.contains('/checkout/success') ||
+        path.endsWith('/success') ||
+        (uri.host.endsWith('stripe.com') && path.contains('success'))) {
       // Checkout successful
       if (widget.onSuccess != null) {
         widget.onSuccess!();
@@ -106,7 +110,9 @@ class _StripeCheckoutWebViewState extends State<StripeCheckoutWebView> {
           context.pop(true); // Return true to indicate success
         }
       }
-    } else if (url.contains('cancel') || url.contains('checkout/cancel')) {
+    } else if (path.contains('/checkout/cancel') ||
+        path.endsWith('/cancel') ||
+        (uri.host.endsWith('stripe.com') && path.contains('cancel'))) {
       // Checkout canceled
       if (widget.onCancel != null) {
         widget.onCancel!();

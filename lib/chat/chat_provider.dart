@@ -142,6 +142,7 @@ class ChatProvider extends ChangeNotifier {
       // does not leak across sends.
       await citationsSubscription?.cancel();
       _isSending = false;
+      notifyListeners();
     }
   }
 
@@ -240,59 +241,71 @@ class ChatProvider extends ChangeNotifier {
   Future<void> confirmPendingAction(ActionCard card, int messageIndex) async {
     if (card.workflowId == null || card.pendingActionId == null) return;
 
-    final result = await aiService.confirmPendingAgentAction(
-      workflowId: card.workflowId!,
-      actionId: card.pendingActionId!,
-    );
+    try {
+      final result = await aiService.confirmPendingAgentAction(
+        workflowId: card.workflowId!,
+        actionId: card.pendingActionId!,
+      );
 
-    final extras = _messageExtras[messageIndex] ?? const AgentMessageExtras();
-    final remainingCards = extras.actionCards
-        .where((c) =>
-            !(c.cardType == 'pending_confirmation' &&
-                c.pendingActionId == card.pendingActionId))
-        .toList();
+      final extras = _messageExtras[messageIndex] ?? const AgentMessageExtras();
+      final remainingCards = extras.actionCards
+          .where((c) =>
+              !(c.cardType == 'pending_confirmation' &&
+                  c.pendingActionId == card.pendingActionId))
+          .toList();
 
-    final newCards = <ActionCard>[...remainingCards];
-    final actionCardsJson = result['actionCards'];
-    if (actionCardsJson is List) {
-      for (final item in actionCardsJson) {
-        if (item is Map) {
-          newCards.add(ActionCard.fromJson(Map<String, dynamic>.from(item)));
+      final newCards = <ActionCard>[...remainingCards];
+      final actionCardsJson = result['actionCards'];
+      if (actionCardsJson is List) {
+        for (final item in actionCardsJson) {
+          if (item is Map) {
+            newCards.add(ActionCard.fromJson(Map<String, dynamic>.from(item)));
+          }
         }
       }
-    }
 
-    final tools = List<ToolExecution>.from(extras.toolExecutions);
-    final toolJson = result['toolExecution'];
-    if (toolJson is Map) {
-      tools.add(ToolExecution.fromJson(Map<String, dynamic>.from(toolJson)));
-    }
+      final tools = List<ToolExecution>.from(extras.toolExecutions);
+      final toolJson = result['toolExecution'];
+      if (toolJson is Map) {
+        tools.add(ToolExecution.fromJson(Map<String, dynamic>.from(toolJson)));
+      }
 
-    _messageExtras[messageIndex] = AgentMessageExtras(
-      toolExecutions: tools,
-      actionCards: newCards,
-    );
-    notifyListeners();
+      _messageExtras[messageIndex] = AgentMessageExtras(
+        toolExecutions: tools,
+        actionCards: newCards,
+      );
+      notifyListeners();
+    } catch (e, stackTrace) {
+      logError('[ChatProvider] Error confirming pending action', e, stackTrace);
+      _errorMessage = 'Failed to confirm action. Please try again.';
+      notifyListeners();
+    }
   }
 
   Future<void> cancelPendingAction(ActionCard card, int messageIndex) async {
     if (card.workflowId == null || card.pendingActionId == null) return;
 
-    await aiService.cancelPendingAgentAction(
-      workflowId: card.workflowId!,
-      actionId: card.pendingActionId!,
-    );
+    try {
+      await aiService.cancelPendingAgentAction(
+        workflowId: card.workflowId!,
+        actionId: card.pendingActionId!,
+      );
 
-    final extras = _messageExtras[messageIndex] ?? const AgentMessageExtras();
-    _messageExtras[messageIndex] = AgentMessageExtras(
-      toolExecutions: extras.toolExecutions,
-      actionCards: extras.actionCards
-          .where((c) =>
-              !(c.cardType == 'pending_confirmation' &&
-                  c.pendingActionId == card.pendingActionId))
-          .toList(),
-    );
-    notifyListeners();
+      final extras = _messageExtras[messageIndex] ?? const AgentMessageExtras();
+      _messageExtras[messageIndex] = AgentMessageExtras(
+        toolExecutions: extras.toolExecutions,
+        actionCards: extras.actionCards
+            .where((c) =>
+                !(c.cardType == 'pending_confirmation' &&
+                    c.pendingActionId == card.pendingActionId))
+            .toList(),
+      );
+      notifyListeners();
+    } catch (e, stackTrace) {
+      logError('[ChatProvider] Error cancelling pending action', e, stackTrace);
+      _errorMessage = 'Failed to cancel action. Please try again.';
+      notifyListeners();
+    }
   }
 
   /// Fetch all conversations for the current user
@@ -362,6 +375,7 @@ class ChatProvider extends ChangeNotifier {
     _conversation = null;
     _errorMessage = null;
     _isLoading = false;
+    _isSending = false;
     notifyListeners();
     logDebug('[ChatProvider] Reset on logout');
   }

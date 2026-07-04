@@ -51,6 +51,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
         _coachService.getConnectionStatus(widget.coachId),
       ]);
 
+      if (!mounted) return;
       setState(() {
         _coach = results[0] as Coach;
         final statusResult = results[1] as CoachConnectionStatusResult;
@@ -59,6 +60,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Failed to load coach details: ${e.toString()}';
         _isLoading = false;
@@ -104,6 +106,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
 
     try {
       final status = await _coachService.sendConnectionRequest(widget.coachId);
+      if (!mounted) return;
       setState(() {
         _connectionStatus = status;
         _isUpdatingConnection = false;

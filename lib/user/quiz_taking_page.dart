@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:projectbrain/core/di/injection_container.dart';
-import 'package:projectbrain/models/quiz.dart';
-import 'package:projectbrain/services/quiz_service.dart';
-import 'package:projectbrain/user/widgets/quiz_question_widget.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/user/quiz_taking_provider.dart';
+import 'package:projectbrain/user/widgets/quiz_question_widget.dart';
 
 /// Page for taking a quiz with swipe navigation
-class QuizTakingPage extends StatefulWidget {
+class QuizTakingPage extends StatelessWidget {
   final String quizId;
 
   const QuizTakingPage({
@@ -16,27 +16,26 @@ class QuizTakingPage extends StatefulWidget {
   });
 
   @override
-  State<QuizTakingPage> createState() => _QuizTakingPageState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) =>
+          QuizTakingProvider(quizService: sl())..loadQuiz(quizId),
+      child: _QuizTakingView(quizId: quizId),
+    );
+  }
 }
 
-class _QuizTakingPageState extends State<QuizTakingPage> {
-  final QuizService _quizService = sl<QuizService>();
-  final PageController _pageController = PageController();
-  final Map<String, dynamic> _answers = {};
+class _QuizTakingView extends StatefulWidget {
+  final String quizId;
 
-  Quiz? _quiz;
-  List<QuizQuestion> _visibleQuestions = [];
-  int _currentQuestionIndex = 0;
-  bool _isLoading = true;
-  bool _isSubmitting = false;
-  String? _errorMessage;
-  String? _successMessage;
+  const _QuizTakingView({required this.quizId});
 
   @override
-  void initState() {
-    super.initState();
-    _loadQuiz();
-  }
+  State<_QuizTakingView> createState() => _QuizTakingViewState();
+}
+
+class _QuizTakingViewState extends State<_QuizTakingView> {
+  final PageController _pageController = PageController();
 
   @override
   void dispose() {
@@ -44,40 +43,8 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
     super.dispose();
   }
 
-  Future<void> _loadQuiz() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final quiz = await _quizService.getQuizById(widget.quizId);
-
-      // Filter to only visible questions
-      final visibleQuestions =
-          quiz.questions?.where((q) => q.visible).toList() ?? [];
-
-      setState(() {
-        _quiz = quiz;
-        _visibleQuestions = visibleQuestions;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to load quiz: ${e.toString()}';
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _updateAnswer(String questionId, dynamic value) {
-    setState(() {
-      _answers[questionId] = value;
-    });
-  }
-
-  void _nextQuestion() {
-    if (_currentQuestionIndex < _visibleQuestions.length - 1) {
+  void _nextQuestion(QuizTakingProvider provider) {
+    if (provider.currentQuestionIndex < provider.visibleQuestions.length - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -85,8 +52,8 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
     }
   }
 
-  void _previousQuestion() {
-    if (_currentQuestionIndex > 0) {
+  void _previousQuestion(QuizTakingProvider provider) {
+    if (provider.currentQuestionIndex > 0) {
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -94,153 +61,71 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
     }
   }
 
-  void _onPageChanged(int index) {
-    setState(() {
-      _currentQuestionIndex = index;
-    });
-  }
+  Future<void> _submitQuiz(QuizTakingProvider provider) async {
+    final submitted = await provider.submitQuiz(widget.quizId);
+    if (!mounted) return;
 
-  bool _canProceedToNext() {
-    if (_currentQuestionIndex >= _visibleQuestions.length - 1) {
-      return false; // Already on last question
-    }
-
-    final currentQuestion = _visibleQuestions[_currentQuestionIndex];
-
-    // If question is mandatory, check if it's answered
-    if (currentQuestion.mandatory) {
-      final answer = _answers[currentQuestion.id];
-      if (answer == null ||
-          answer == '' ||
-          (answer is List && answer.isEmpty)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  Future<void> _submitQuiz() async {
-    // Validate all mandatory questions are answered
-    final missingMandatory = <String>[];
-    for (final question in _visibleQuestions) {
-      if (question.mandatory) {
-        final answer = _answers[question.id];
-        if (answer == null ||
-            answer == '' ||
-            (answer is List && answer.isEmpty)) {
-          missingMandatory.add(question.label);
-        }
-      }
-    }
-
-    if (missingMandatory.isNotEmpty) {
-      setState(() {
-        _errorMessage =
-            'Please answer all required questions before submitting:\n${missingMandatory.map((q) => '• $q').join('\n')}';
-      });
-      // Scroll to first unanswered mandatory question
-      final firstMissingIndex = _visibleQuestions.indexWhere((q) =>
-          q.mandatory &&
-          (_answers[q.id] == null ||
-              _answers[q.id] == '' ||
-              (_answers[q.id] is List && (_answers[q.id] as List).isEmpty)));
-      if (firstMissingIndex >= 0) {
+    if (!submitted) {
+      final missingIndex = provider.firstMissingMandatoryIndex();
+      if (missingIndex != null && missingIndex >= 0) {
         _pageController.animateToPage(
-          firstMissingIndex,
+          missingIndex,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
         );
       }
-      return;
-    }
 
-    setState(() {
-      _isSubmitting = true;
-      _errorMessage = null;
-      _successMessage = null;
-    });
-
-    try {
-      await _quizService.submitQuizResponse(
-        widget.quizId,
-        _answers,
-      );
-
-      setState(() {
-        _isSubmitting = false;
-        _successMessage = 'Quiz submitted successfully!';
-      });
-
-      // Show success message and navigate back
-      if (mounted) {
+      if (provider.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: AppSpacing.sm),
-                Text('Quiz submitted successfully!'),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-
-        // Wait a moment then navigate back with success result
-        await Future.delayed(const Duration(milliseconds: 1500));
-        if (mounted) {
-          context.pop(true); // Return true to indicate successful submission
-        }
-      }
-    } catch (e) {
-      setState(() {
-        _isSubmitting = false;
-        _errorMessage = 'Failed to submit quiz: ${e.toString()}';
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text(provider.errorMessage!),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 4),
           ),
         );
       }
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white),
+            SizedBox(width: AppSpacing.sm),
+            Text('Quiz submitted successfully!'),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 3),
+      ),
+    );
+
+    await Future.delayed(const Duration(milliseconds: 1500));
+    if (mounted) {
+      context.pop(true);
     }
   }
 
-  bool _isQuizComplete() {
-    // Check if all mandatory questions are answered
-    for (final question in _visibleQuestions) {
-      if (question.mandatory) {
-        final answer = _answers[question.id];
-        if (answer == null ||
-            answer == '' ||
-            (answer is List && answer.isEmpty)) {
-          return false;
-        }
-      }
-    }
-    return true;
+  bool _isQuizComplete(QuizTakingProvider provider) {
+    return provider.validateMandatoryAnswers() == null;
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final provider = context.watch<QuizTakingProvider>();
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_quiz?.title ?? 'Quiz'),
+        title: Text(provider.quiz?.title ?? 'Quiz'),
         actions: [
-          if (_visibleQuestions.isNotEmpty)
+          if (provider.visibleQuestions.isNotEmpty)
             Padding(
               padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Center(
                 child: Text(
-                  '${_currentQuestionIndex + 1} / ${_visibleQuestions.length}',
+                  '${provider.currentQuestionIndex + 1} / ${provider.visibleQuestions.length}',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -249,9 +134,11 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
             ),
         ],
       ),
-      body: _isLoading
+      body: provider.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _quiz == null || _errorMessage != null
+          : provider.quiz == null ||
+                  (provider.errorMessage != null &&
+                      provider.visibleQuestions.isEmpty)
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -263,7 +150,7 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
                       ),
                       SizedBox(height: AppSpacing.lg),
                       Text(
-                        _errorMessage ?? 'Failed to load quiz',
+                        provider.errorMessage ?? 'Failed to load quiz',
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: theme.colorScheme.error,
                         ),
@@ -277,7 +164,7 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
                     ],
                   ),
                 )
-              : _visibleQuestions.isEmpty
+              : provider.visibleQuestions.isEmpty
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -299,8 +186,7 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
                     )
                   : Column(
                       children: [
-                        // Error/Success messages
-                        if (_errorMessage != null)
+                        if (provider.errorMessage != null)
                           Container(
                             width: double.infinity,
                             padding: EdgeInsets.all(AppSpacing.md),
@@ -316,28 +202,16 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
                                 SizedBox(width: AppSpacing.sm),
                                 Expanded(
                                   child: Text(
-                                    _errorMessage!,
+                                    provider.errorMessage!,
                                     style: theme.textTheme.bodyMedium?.copyWith(
                                       color: theme.colorScheme.onErrorContainer,
                                     ),
                                   ),
                                 ),
-                                IconButton(
-                                  icon: Icon(
-                                    Icons.close,
-                                    size: 18,
-                                    color: theme.colorScheme.onErrorContainer,
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _errorMessage = null;
-                                    });
-                                  },
-                                ),
                               ],
                             ),
                           ),
-                        if (_successMessage != null)
+                        if (provider.successMessage != null)
                           Container(
                             width: double.infinity,
                             padding: EdgeInsets.all(AppSpacing.md),
@@ -352,7 +226,7 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
                                 SizedBox(width: AppSpacing.sm),
                                 Expanded(
                                   child: Text(
-                                    _successMessage!,
+                                    provider.successMessage!,
                                     style: theme.textTheme.bodyMedium?.copyWith(
                                       color:
                                           theme.colorScheme.onPrimaryContainer,
@@ -362,28 +236,24 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
                               ],
                             ),
                           ),
-
-                        // Progress indicator
                         LinearProgressIndicator(
-                          value: (_currentQuestionIndex + 1) /
-                              _visibleQuestions.length,
+                          value: (provider.currentQuestionIndex + 1) /
+                              provider.visibleQuestions.length,
                           backgroundColor:
                               theme.colorScheme.surfaceContainerHighest,
                           valueColor: AlwaysStoppedAnimation<Color>(
                             theme.colorScheme.primary,
                           ),
                         ),
-
-                        // Questions
                         Expanded(
                           child: PageView.builder(
                             controller: _pageController,
-                            onPageChanged: _onPageChanged,
+                            onPageChanged: provider.setCurrentQuestionIndex,
                             physics: const PageScrollPhysics(),
-                            itemCount: _visibleQuestions.length,
+                            itemCount: provider.visibleQuestions.length,
                             itemBuilder: (context, index) {
-                              final question = _visibleQuestions[index];
-                              final answer = _answers[question.id];
+                              final question = provider.visibleQuestions[index];
+                              final answer = provider.answers[question.id];
 
                               return SingleChildScrollView(
                                 padding: AppInsets.page,
@@ -391,14 +261,12 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
                                   question: question,
                                   value: answer,
                                   onChanged: (value) =>
-                                      _updateAnswer(question.id, value),
+                                      provider.updateAnswer(question.id, value),
                                 ),
                               );
                             },
                           ),
                         ),
-
-                        // Navigation buttons
                         Container(
                           padding: AppInsets.screen,
                           decoration: BoxDecoration(
@@ -410,20 +278,17 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              // Back button
                               IconButton(
-                                onPressed: _currentQuestionIndex > 0
-                                    ? _previousQuestion
+                                onPressed: provider.currentQuestionIndex > 0
+                                    ? () => _previousQuestion(provider)
                                     : null,
                                 icon: const Icon(Icons.arrow_back),
                                 tooltip: 'Previous question',
                               ),
-
-                              // Page indicators (dots)
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: List.generate(
-                                  _visibleQuestions.length,
+                                  provider.visibleQuestions.length,
                                   (index) => Container(
                                     width: 8,
                                     height: 8,
@@ -432,7 +297,8 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
                                     ),
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: index == _currentQuestionIndex
+                                      color: index ==
+                                              provider.currentQuestionIndex
                                           ? theme.colorScheme.primary
                                           : theme.colorScheme.onSurface
                                               .withValues(alpha: 0.3),
@@ -440,24 +306,22 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
                                   ),
                                 ),
                               ),
-
-                              // Next/Submit button
-                              if (_currentQuestionIndex <
-                                  _visibleQuestions.length - 1)
+                              if (provider.currentQuestionIndex <
+                                  provider.visibleQuestions.length - 1)
                                 ElevatedButton.icon(
-                                  onPressed: _canProceedToNext()
-                                      ? _nextQuestion
+                                  onPressed: provider.canProceedToNext()
+                                      ? () => _nextQuestion(provider)
                                       : null,
                                   icon: const Icon(Icons.arrow_forward),
                                   label: const Text('Next'),
                                 )
                               else
                                 ElevatedButton.icon(
-                                  onPressed:
-                                      (_isQuizComplete() && !_isSubmitting)
-                                          ? _submitQuiz
-                                          : null,
-                                  icon: _isSubmitting
+                                  onPressed: (_isQuizComplete(provider) &&
+                                          !provider.isSubmitting)
+                                      ? () => _submitQuiz(provider)
+                                      : null,
+                                  icon: provider.isSubmitting
                                       ? const SizedBox(
                                           width: 16,
                                           height: 16,
@@ -467,7 +331,7 @@ class _QuizTakingPageState extends State<QuizTakingPage> {
                                           ),
                                         )
                                       : const Icon(Icons.check),
-                                  label: Text(_isSubmitting
+                                  label: Text(provider.isSubmitting
                                       ? 'Submitting...'
                                       : 'Submit'),
                                   style: ElevatedButton.styleFrom(

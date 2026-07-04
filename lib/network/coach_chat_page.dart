@@ -116,9 +116,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
     }
 
     if (isConnectionGuid(routeParam)) {
-      return connections.any((c) => c.id == routeParam)
-          ? routeParam
-          : routeParam;
+      return connections.any((c) => c.id == routeParam) ? routeParam : null;
     }
 
     final match = connections.where((c) => c.coachId == routeParam);

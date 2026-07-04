@@ -39,11 +39,13 @@ class _ResourcesPageState extends State<ResourcesPage> {
 
     try {
       final resources = await _resourceService.getResources();
+      if (!mounted) return;
       setState(() {
         _resources = resources;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Failed to load resources: ${e.toString()}';
         _isLoading = false;

@@ -137,11 +137,14 @@ class GoalsListPage extends StatelessWidget {
     EggGoalsProvider provider,
   ) {
     final theme = Theme.of(context);
+    final isToggling = provider.isGoalToggling(index);
 
     return Card(
       margin: AppInsets.listItemBottom,
       child: InkWell(
-        onTap: () async {
+        onTap: isToggling
+            ? null
+            : () async {
           await provider.toggleGoalCompletion(index);
           if (context.mounted) {
             final progress = provider.getCompletionProgress();
@@ -180,13 +183,18 @@ class GoalsListPage extends StatelessWidget {
                       ? Colors.green.withValues(alpha: 0.1)
                       : Colors.transparent,
                 ),
-                child: goal.completed
-                    ? const Icon(
-                        Icons.check,
-                        color: Colors.green,
-                        size: 20,
+                child: isToggling
+                    ? const Padding(
+                        padding: EdgeInsets.all(6),
+                        child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : null,
+                    : goal.completed
+                        ? const Icon(
+                            Icons.check,
+                            color: Colors.green,
+                            size: 20,
+                          )
+                        : null,
               ),
               const SizedBox(width: AppSpacing.lg),
               Expanded(
