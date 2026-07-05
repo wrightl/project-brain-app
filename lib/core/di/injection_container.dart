@@ -1,6 +1,7 @@
 import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:get_it/get_it.dart';
 import 'package:projectbrain/core/config/app_config.dart';
+import 'dart:io' show Platform;
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -76,15 +77,20 @@ Future<void> initializeDependencies() async {
   // ===== Authentication Services =====
   // Single Auth0 client (CredentialsManager + Authentication API share state)
   sl.registerLazySingleton<Auth0>(
-    () => Auth0(
-      AppConfig.authDomain,
-      AppConfig.authClientId,
-      localAuthentication: const LocalAuthentication(
-        title: 'Unlock Project Brain',
-        cancelTitle: 'Cancel',
-        fallbackTitle: 'Use Passcode',
-      ),
-    ),
+    () {
+      if (Platform.isIOS) {
+        return Auth0(
+          AppConfig.authDomain,
+          AppConfig.authClientId,
+          localAuthentication: const LocalAuthentication(
+            title: 'Unlock Project Brain',
+            cancelTitle: 'Cancel',
+            fallbackTitle: 'Use Passcode',
+          ),
+        );
+      }
+      return Auth0(AppConfig.authDomain, AppConfig.authClientId);
+    },
   );
 
   // Token Storage - handles secure storage of tokens
@@ -96,13 +102,15 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton<TokenManager>(
     () => TokenManager(
       auth0: sl<Auth0>(),
-      tokenStorage: sl<TokenStorage>(),
     ),
   );
 
   // OAuth Service - handles Auth0 OAuth flows
   sl.registerLazySingleton<OAuthService>(
-    () => OAuthService(auth0: sl<Auth0>()),
+    () => OAuthService(
+      auth0: sl<Auth0>(),
+      preferencesService: sl<PreferencesService>(),
+    ),
   );
 
   // User Profile Service - fetches user profile from Auth0
@@ -117,7 +125,6 @@ Future<void> initializeDependencies() async {
       tokenManager: sl<TokenManager>(),
       tokenStorage: sl<TokenStorage>(),
       userProfileService: sl<UserProfileService>(),
-      enableBiometricLaunchGate: false,
     ),
   );
 
@@ -142,6 +149,7 @@ Future<void> initializeDependencies() async {
       authService: sl<AuthService>(),
       featureFlagService: sl<FeatureFlagService>(),
       userService: sl<UserService>(),
+      preferencesService: sl<PreferencesService>(),
     ),
   );
 

@@ -10,6 +10,8 @@ class PreferencesService {
   // Keys
   static const String _lastRouteKey = 'last_route_key';
   static const String _themeModeKey = 'theme_mode';
+  static const String _lastLoginEmailKey = 'last_login_email';
+  static const String _forceFreshLoginKey = 'force_fresh_login';
 
   /// Get the last visited route
   String? get lastRoute => _prefs.getString(_lastRouteKey);
@@ -62,5 +64,23 @@ class PreferencesService {
   /// Remove a key (e.g. user-scoped cache on logout).
   Future<bool> remove(String key) async {
     return await _prefs.remove(key);
+  }
+
+  /// Last email used for a successful login (prefills Auth0 Universal Login).
+  String? get lastLoginEmail => _prefs.getString(_lastLoginEmailKey);
+
+  Future<bool> setLastLoginEmail(String email) async {
+    return await _prefs.setString(_lastLoginEmailKey, email);
+  }
+
+  /// When true, the next login must not silently reuse the Auth0 SSO session.
+  bool get forceFreshLogin => _prefs.getBool(_forceFreshLoginKey) ?? false;
+
+  Future<bool> setForceFreshLogin(bool value) async {
+    return await _prefs.setBool(_forceFreshLoginKey, value);
+  }
+
+  Future<bool> clearForceFreshLogin() async {
+    return await _prefs.remove(_forceFreshLoginKey);
   }
 }

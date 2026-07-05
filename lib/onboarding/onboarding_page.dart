@@ -6,6 +6,7 @@ import 'package:projectbrain/onboarding/onboarding_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -59,8 +60,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   void _onStepTapped(OnboardingProvider provider, int step) {
-    // Allow navigation to any step that has been completed (step <= currentStep)
-    // or to the first step (Basic Info) which is always accessible
+    // Allow navigation to any completed step, or the always-accessible first.
     if (step == 0 || step <= provider.currentStep) {
       _navigateToStep(provider, step);
     }
@@ -69,7 +69,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
   Future<void> _submitOnboarding(
       OnboardingProvider provider, AuthProvider authProvider) async {
     if (!provider.isBasicInfoValid) {
-      // Navigate back to first step
       _navigateToStep(provider, 0);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -137,41 +136,29 @@ class _OnboardingPageState extends State<OnboardingPage> {
           final isLastStep = currentStep == totalSteps - 1;
 
           return Scaffold(
-            appBar: AppBar(
-              title: const Text('Onboarding'),
-              leading: currentStep > 0
-                  ? IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: () => _previousPage(provider),
-                    )
-                  : null,
-            ),
-            body: Column(
-              children: [
-                // Progress indicator
-                _buildProgressIndicator(provider, totalSteps, localizations),
-
-                // Page content
-                Expanded(
-                  child: PageView(
-                    controller: _pageController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    onPageChanged: (index) {
-                      provider.setCurrentStep(index);
-                    },
-                    children:
-                        _buildPages(provider, authProvider, localizations),
+            body: SafeArea(
+              child: Column(
+                children: [
+                  _buildHeader(provider, totalSteps),
+                  Expanded(
+                    child: PageView(
+                      controller: _pageController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      onPageChanged: (index) {
+                        provider.setCurrentStep(index);
+                      },
+                      children:
+                          _buildPages(provider, authProvider, localizations),
+                    ),
                   ),
-                ),
-
-                // Navigation buttons
-                _buildNavigationButtons(
-                  provider,
-                  authProvider,
-                  isLastStep,
-                  localizations,
-                ),
-              ],
+                  _buildNavigationButtons(
+                    provider,
+                    authProvider,
+                    isLastStep,
+                    localizations,
+                  ),
+                ],
+              ),
             ),
           );
         },
@@ -179,13 +166,59 @@ class _OnboardingPageState extends State<OnboardingPage> {
     );
   }
 
-  Widget _buildProgressIndicator(OnboardingProvider provider, int totalSteps,
-      OnboardingLocalizations localizations) {
+  /// Header: back button, step-count pill, and segmented progress bar.
+  Widget _buildHeader(OnboardingProvider provider, int totalSteps) {
+    final theme = Theme.of(context);
+    final appTheme = context.appTheme;
+    final currentStep = provider.currentStep;
+
     return Padding(
-      padding: AppInsets.screen,
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.md,
+      ),
       child: Column(
         children: [
-          // Progress bar
+          Row(
+            children: [
+              if (currentStep > 0)
+                IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => _previousPage(provider),
+                  style: IconButton.styleFrom(
+                    backgroundColor: theme.colorScheme.surface,
+                    side: BorderSide(color: appTheme.borderColor),
+                  ),
+                )
+              else
+                const SizedBox(width: 48),
+              Expanded(
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.xs,
+                    ),
+                    decoration: BoxDecoration(
+                      color: appTheme.primarySoft,
+                      borderRadius: AppRadius.circularPill,
+                    ),
+                    child: Text(
+                      'Step ${currentStep + 1} of $totalSteps',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 48),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
           Row(
             children: List.generate(
               totalSteps,
@@ -193,32 +226,26 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 child: GestureDetector(
                   onTap: () => _onStepTapped(provider, index),
                   child: MouseRegion(
-                    cursor: (index == 0 || index <= provider.currentStep)
+                    cursor: (index == 0 || index <= currentStep)
                         ? SystemMouseCursors.click
                         : SystemMouseCursors.basic,
-                    child: Container(
-                      margin:
-                          EdgeInsets.symmetric(horizontal: AppSpacing.micro),
-                      height: 4.0,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.micro,
+                      ),
+                      height: 6.0,
                       decoration: BoxDecoration(
-                        color: index <= provider.currentStep
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(AppRadius.xs),
+                        color: index <= currentStep
+                            ? theme.colorScheme.primary
+                            : appTheme.primarySoft,
+                        borderRadius: AppRadius.circularPill,
                       ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-          SizedBox(height: AppSpacing.sm),
-          // Step indicator text
-          Text(
-            'Step ${provider.currentStep + 1} of $totalSteps',
-            style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
       ),
@@ -231,37 +258,57 @@ class _OnboardingPageState extends State<OnboardingPage> {
     bool isLastStep,
     OnboardingLocalizations localizations,
   ) {
-    return Padding(
-      padding: AppInsets.screen,
+    final theme = Theme.of(context);
+    final appTheme = context.appTheme;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.md,
+        AppSpacing.lg,
+        AppSpacing.md,
+      ),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(top: BorderSide(color: appTheme.borderColor)),
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          if (provider.currentStep > 0)
-            OutlinedButton(
-              onPressed:
-                  provider.isSubmitting ? null : () => _previousPage(provider),
-              child: Text(localizations.previous),
-            )
-          else
-            const SizedBox.shrink(),
-          ElevatedButton(
-            onPressed: provider.isSubmitting
-                ? null
-                : () {
-                    if (isLastStep) {
-                      _submitOnboarding(provider, authProvider);
-                    } else {
-                      _nextPage(provider);
-                    }
-                  },
-            child: provider.isSubmitting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(
-                    isLastStep ? localizations.complete : localizations.next),
+          if (provider.currentStep > 0) ...[
+            Expanded(
+              child: OutlinedButton(
+                onPressed: provider.isSubmitting
+                    ? null
+                    : () => _previousPage(provider),
+                child: Text(localizations.previous),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+          ],
+          Expanded(
+            flex: 2,
+            child: ElevatedButton.icon(
+              onPressed: provider.isSubmitting
+                  ? null
+                  : () {
+                      if (isLastStep) {
+                        _submitOnboarding(provider, authProvider);
+                      } else {
+                        _nextPage(provider);
+                      }
+                    },
+              icon: provider.isSubmitting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(isLastStep ? Icons.check : Icons.arrow_forward,
+                      size: 18),
+              label: Text(
+                isLastStep ? localizations.complete : localizations.next,
+              ),
+            ),
           ),
         ],
       ),
@@ -292,11 +339,89 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return pages;
   }
 
+  /// Step intro: accent icon bubble, title, and optional subtitle.
+  Widget _stepHeader({
+    required IconData icon,
+    required Color color,
+    required Color backgroundColor,
+    required String title,
+    String? subtitle,
+  }) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        IconBubble(
+          icon: icon,
+          color: color,
+          backgroundColor: backgroundColor,
+          size: 56,
+          iconSize: 28,
+          borderRadius: 16,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        Text(title, style: theme.textTheme.headlineSmall),
+        if (subtitle != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Text(subtitle, style: theme.textTheme.bodySmall),
+        ],
+      ],
+    );
+  }
+
+  /// Design-system chip group for multi-select options.
+  Widget _choiceChips({
+    required List<String> options,
+    required bool Function(String) isSelected,
+    required void Function(String) onToggle,
+    String Function(String)? format,
+  }) {
+    final theme = Theme.of(context);
+    final appTheme = context.appTheme;
+
+    return Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.sm,
+      children: options.map((option) {
+        final selected = isSelected(option);
+        return FilterChip(
+          label: Text(format?.call(option) ?? option),
+          selected: selected,
+          onSelected: (_) => onToggle(option),
+          backgroundColor: theme.colorScheme.surface,
+          selectedColor: appTheme.primarySoft,
+          checkmarkColor: theme.colorScheme.primary,
+          labelStyle: theme.textTheme.labelMedium?.copyWith(
+            color: selected
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurface,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+          ),
+          side: BorderSide(
+            color: selected ? theme.colorScheme.primary : appTheme.borderColor,
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _fieldLabel(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.titleSmall,
+      ),
+    );
+  }
+
   Widget _buildBasicInfoPage(
     OnboardingProvider provider,
     AuthProvider authProvider,
     OnboardingLocalizations localizations,
   ) {
+    final appTheme = context.appTheme;
     final formKey = _formKeys.putIfAbsent(0, () => GlobalKey<FormState>());
     final dobController = TextEditingController();
 
@@ -312,20 +437,18 @@ class _OnboardingPageState extends State<OnboardingPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Welcome ${authProvider.profile?.name ?? 'there'}!',
-              style: Theme.of(context).textTheme.headlineSmall,
+            _stepHeader(
+              icon: Icons.waving_hand_outlined,
+              color: Theme.of(context).colorScheme.primary,
+              backgroundColor: appTheme.primarySoft,
+              title: 'Welcome ${authProvider.profile?.name ?? 'there'}!',
+              subtitle: 'Please complete your profile.',
             ),
-            SizedBox(height: AppSpacing.sm),
-            Text(
-              'Please complete your profile.',
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            SizedBox(height: AppSpacing.xxl),
+            const SizedBox(height: AppSpacing.xl),
             TextFormField(
               decoration: InputDecoration(
                 labelText: localizations.fullName,
-                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.person_outline),
               ),
               initialValue: provider.fullName.isEmpty
                   ? authProvider.profile?.name ?? ''
@@ -334,14 +457,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   val == null || val.isEmpty ? localizations.required : null,
               onSaved: (val) => provider.setFullName(val ?? ''),
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             TextFormField(
               controller: dobController,
               readOnly: true,
               decoration: InputDecoration(
                 labelText: localizations.dateOfBirth,
-                border: const OutlineInputBorder(),
-                suffixIcon: const Icon(Icons.calendar_today),
+                prefixIcon: const Icon(Icons.cake_outlined),
+                suffixIcon: const Icon(Icons.calendar_today, size: 18),
               ),
               onTap: () async {
                 final now = DateTime.now();
@@ -362,11 +485,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   ? localizations.selectDateOfBirth
                   : null,
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             DropdownButtonFormField<String>(
               decoration: InputDecoration(
                 labelText: localizations.preferredPronoun,
-                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.badge_outlined),
               ),
               initialValue: provider.preferredPronoun.isEmpty
                   ? null
@@ -396,6 +519,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     OnboardingProvider provider,
     OnboardingLocalizations localizations,
   ) {
+    final appTheme = context.appTheme;
     final traits = [
       'ADHD',
       'Autism',
@@ -416,30 +540,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            localizations.stepNeurodiverseTraits,
-            style: Theme.of(context).textTheme.headlineSmall,
+          _stepHeader(
+            icon: Icons.psychology_outlined,
+            color: appTheme.sky,
+            backgroundColor: appTheme.skySoft,
+            title: localizations.stepNeurodiverseTraits,
+            subtitle: localizations.selectTraits,
           ),
-          SizedBox(height: AppSpacing.sm),
-          Text(
-            localizations.selectTraits,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-          SizedBox(height: AppSpacing.xxl),
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.md,
-            children: traits.map((trait) {
-              final isSelected = provider.selectedTraits.contains(trait);
-              return FilterChip(
-                label: Text(trait),
-                selected: isSelected,
-                onSelected: (_) => provider.toggleTrait(trait),
-                selectedColor: Theme.of(context).colorScheme.primaryContainer,
-                checkmarkColor:
-                    Theme.of(context).colorScheme.onPrimaryContainer,
-              );
-            }).toList(),
+          const SizedBox(height: AppSpacing.xl),
+          DsSurfaceCard(
+            child: _choiceChips(
+              options: traits,
+              isSelected: (t) => provider.selectedTraits.contains(t),
+              onToggle: provider.toggleTrait,
+            ),
           ),
         ],
       ),
@@ -450,31 +564,34 @@ class _OnboardingPageState extends State<OnboardingPage> {
     OnboardingProvider provider,
     OnboardingLocalizations localizations,
   ) {
+    final appTheme = context.appTheme;
+
     return SingleChildScrollView(
       padding: AppInsets.page,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            localizations.stepWelcome,
-            style: Theme.of(context).textTheme.headlineSmall,
+          _stepHeader(
+            icon: Icons.favorite_outline,
+            color: appTheme.coral,
+            backgroundColor: appTheme.coralSoft,
+            title: localizations.stepWelcome,
           ),
-          SizedBox(height: AppSpacing.xxl),
+          const SizedBox(height: AppSpacing.xl),
           TextFormField(
             decoration: InputDecoration(
               labelText: localizations.preferredName,
-              border: const OutlineInputBorder(),
               hintText: localizations.preferredName,
+              prefixIcon: const Icon(Icons.emoji_people_outlined),
             ),
             initialValue: provider.preferredName,
             onChanged: (value) =>
                 provider.setPreferredName(value.isEmpty ? null : value),
           ),
-          SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.lg),
           TextFormField(
             decoration: InputDecoration(
               labelText: localizations.inspiration,
-              border: const OutlineInputBorder(),
               hintText: localizations.inspirationHint,
             ),
             initialValue: provider.inspiration,
@@ -482,11 +599,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
             onChanged: (value) =>
                 provider.setInspiration(value.isEmpty ? null : value),
           ),
-          SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.lg),
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: localizations.currentFeeling,
-              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.mood_outlined),
             ),
             initialValue: provider.currentFeeling,
             items: localizations.currentFeelingOptions.map((feeling) {
@@ -506,41 +623,33 @@ class _OnboardingPageState extends State<OnboardingPage> {
     OnboardingProvider provider,
     OnboardingLocalizations localizations,
   ) {
+    final appTheme = context.appTheme;
+
     return SingleChildScrollView(
       padding: AppInsets.page,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            localizations.stepAboutYou,
-            style: Theme.of(context).textTheme.headlineSmall,
+          _stepHeader(
+            icon: Icons.person_search_outlined,
+            color: appTheme.amber,
+            backgroundColor: appTheme.amberSoft,
+            title: localizations.stepAboutYou,
           ),
-          SizedBox(height: AppSpacing.xxl),
-          Text(
-            localizations.selfDescription,
-            style: Theme.of(context).textTheme.titleMedium,
+          const SizedBox(height: AppSpacing.xl),
+          _fieldLabel(localizations.selfDescription),
+          DsSurfaceCard(
+            child: _choiceChips(
+              options: localizations.selfDescriptionOptions,
+              isSelected: (o) => provider.selfDescription.contains(o),
+              onToggle: provider.toggleSelfDescription,
+              format: localizations.formatLabel,
+            ),
           ),
-          SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.md,
-            children: localizations.selfDescriptionOptions.map((option) {
-              final isSelected = provider.selfDescription.contains(option);
-              return FilterChip(
-                label: Text(localizations.formatLabel(option)),
-                selected: isSelected,
-                onSelected: (_) => provider.toggleSelfDescription(option),
-                selectedColor: Theme.of(context).colorScheme.primaryContainer,
-                checkmarkColor:
-                    Theme.of(context).colorScheme.onPrimaryContainer,
-              );
-            }).toList(),
-          ),
-          SizedBox(height: AppSpacing.xl),
+          const SizedBox(height: AppSpacing.xl),
           TextFormField(
             decoration: InputDecoration(
               labelText: localizations.businessType,
-              border: const OutlineInputBorder(),
               hintText: localizations.businessTypeHint,
             ),
             initialValue: provider.businessType,
@@ -548,11 +657,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
             onChanged: (value) =>
                 provider.setBusinessType(value.isEmpty ? null : value),
           ),
-          SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.lg),
           TextFormField(
             decoration: InputDecoration(
               labelText: localizations.proudMoment,
-              border: const OutlineInputBorder(),
               hintText: localizations.proudMomentHint,
             ),
             initialValue: provider.proudMoment,
@@ -560,26 +668,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
             onChanged: (value) =>
                 provider.setProudMoment(value.isEmpty ? null : value),
           ),
-          SizedBox(height: AppSpacing.lg),
-          Text(
-            localizations.challenge,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.md,
-            children: localizations.challengeOptions.map((option) {
-              final isSelected = provider.challenges.contains(option);
-              return FilterChip(
-                label: Text(localizations.formatLabel(option)),
-                selected: isSelected,
-                onSelected: (_) => provider.toggleChallenge(option),
-                selectedColor: Theme.of(context).colorScheme.primaryContainer,
-                checkmarkColor:
-                    Theme.of(context).colorScheme.onPrimaryContainer,
-              );
-            }).toList(),
+          const SizedBox(height: AppSpacing.xl),
+          _fieldLabel(localizations.challenge),
+          DsSurfaceCard(
+            child: _choiceChips(
+              options: localizations.challengeOptions,
+              isSelected: (o) => provider.challenges.contains(o),
+              onToggle: provider.toggleChallenge,
+              format: localizations.formatLabel,
+            ),
           ),
         ],
       ),
@@ -590,20 +687,24 @@ class _OnboardingPageState extends State<OnboardingPage> {
     OnboardingProvider provider,
     OnboardingLocalizations localizations,
   ) {
+    final appTheme = context.appTheme;
+
     return SingleChildScrollView(
       padding: AppInsets.page,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            localizations.stepPreferences,
-            style: Theme.of(context).textTheme.headlineSmall,
+          _stepHeader(
+            icon: Icons.tune_outlined,
+            color: appTheme.teal,
+            backgroundColor: appTheme.tealSoft,
+            title: localizations.stepPreferences,
           ),
-          SizedBox(height: AppSpacing.xxl),
+          const SizedBox(height: AppSpacing.xl),
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: localizations.learningStyle,
-              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.school_outlined),
             ),
             initialValue: provider.learningStyle,
             items: localizations.learningStyleOptions.map((option) {
@@ -614,11 +715,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
             }).toList(),
             onChanged: (value) => provider.setLearningStyle(value),
           ),
-          SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.lg),
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: localizations.informationDepth,
-              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.layers_outlined),
             ),
             initialValue: provider.informationDepth,
             items: localizations.informationDepthOptions.map((option) {
@@ -629,11 +730,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
             }).toList(),
             onChanged: (value) => provider.setInformationDepth(value),
           ),
-          SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.lg),
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: localizations.celebrationStyle,
-              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.celebration_outlined),
             ),
             initialValue: provider.celebrationStyle,
             items: localizations.celebrationStyleOptions.map((option) {
@@ -653,62 +754,44 @@ class _OnboardingPageState extends State<OnboardingPage> {
     OnboardingProvider provider,
     OnboardingLocalizations localizations,
   ) {
+    final appTheme = context.appTheme;
+
     return SingleChildScrollView(
       padding: AppInsets.page,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            localizations.stepProfile,
-            style: Theme.of(context).textTheme.headlineSmall,
+          _stepHeader(
+            icon: Icons.star_outline,
+            color: appTheme.green,
+            backgroundColor: appTheme.greenSoft,
+            title: localizations.stepProfile,
           ),
-          SizedBox(height: AppSpacing.xxl),
-          Text(
-            localizations.strengths,
-            style: Theme.of(context).textTheme.titleMedium,
+          const SizedBox(height: AppSpacing.xl),
+          _fieldLabel(localizations.strengths),
+          DsSurfaceCard(
+            child: _choiceChips(
+              options: localizations.strengthsOptions,
+              isSelected: (o) => provider.strengths.contains(o),
+              onToggle: provider.toggleStrength,
+              format: localizations.formatLabel,
+            ),
           ),
-          SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.md,
-            children: localizations.strengthsOptions.map((option) {
-              final isSelected = provider.strengths.contains(option);
-              return FilterChip(
-                label: Text(localizations.formatLabel(option)),
-                selected: isSelected,
-                onSelected: (_) => provider.toggleStrength(option),
-                selectedColor: Theme.of(context).colorScheme.primaryContainer,
-                checkmarkColor:
-                    Theme.of(context).colorScheme.onPrimaryContainer,
-              );
-            }).toList(),
+          const SizedBox(height: AppSpacing.xl),
+          _fieldLabel(localizations.supportAreas),
+          DsSurfaceCard(
+            child: _choiceChips(
+              options: localizations.supportAreasOptions,
+              isSelected: (o) => provider.supportAreas.contains(o),
+              onToggle: provider.toggleSupportArea,
+              format: localizations.formatLabel,
+            ),
           ),
-          SizedBox(height: AppSpacing.xl),
-          Text(
-            localizations.supportAreas,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.md,
-            children: localizations.supportAreasOptions.map((option) {
-              final isSelected = provider.supportAreas.contains(option);
-              return FilterChip(
-                label: Text(localizations.formatLabel(option)),
-                selected: isSelected,
-                onSelected: (_) => provider.toggleSupportArea(option),
-                selectedColor: Theme.of(context).colorScheme.primaryContainer,
-                checkmarkColor:
-                    Theme.of(context).colorScheme.onPrimaryContainer,
-              );
-            }).toList(),
-          ),
-          SizedBox(height: AppSpacing.xl),
+          const SizedBox(height: AppSpacing.xl),
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: localizations.motivationStyle,
-              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.rocket_launch_outlined),
             ),
             initialValue: provider.motivationStyle,
             items: localizations.motivationStyleOptions.map((option) {
@@ -719,11 +802,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
             }).toList(),
             onChanged: (value) => provider.setMotivationStyle(value),
           ),
-          SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.lg),
           TextFormField(
             decoration: InputDecoration(
               labelText: localizations.neurodivergentUnderstanding,
-              border: const OutlineInputBorder(),
               hintText: localizations.neurodivergentUnderstandingHint,
             ),
             initialValue: provider.neurodivergentUnderstanding,
@@ -731,11 +813,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
             onChanged: (value) => provider
                 .setNeurodivergentUnderstanding(value.isEmpty ? null : value),
           ),
-          SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.lg),
           TextFormField(
             decoration: InputDecoration(
               labelText: localizations.biggestGoal,
-              border: const OutlineInputBorder(),
               hintText: localizations.biggestGoalHint,
             ),
             initialValue: provider.biggestGoal,
@@ -752,41 +833,35 @@ class _OnboardingPageState extends State<OnboardingPage> {
     OnboardingProvider provider,
     OnboardingLocalizations localizations,
   ) {
+    final theme = Theme.of(context);
+    final appTheme = context.appTheme;
+
     return SingleChildScrollView(
       padding: AppInsets.page,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            localizations.stepCoachingBuddy,
-            style: Theme.of(context).textTheme.headlineSmall,
+          _stepHeader(
+            icon: Icons.smart_toy_outlined,
+            color: theme.colorScheme.primary,
+            backgroundColor: appTheme.primarySoft,
+            title: localizations.stepCoachingBuddy,
           ),
-          SizedBox(height: AppSpacing.xxl),
-          Text(
-            localizations.tasks,
-            style: Theme.of(context).textTheme.titleMedium,
+          const SizedBox(height: AppSpacing.xl),
+          _fieldLabel(localizations.tasks),
+          DsSurfaceCard(
+            child: _choiceChips(
+              options: localizations.tasksOptions,
+              isSelected: (o) => provider.tasks.contains(o),
+              onToggle: provider.toggleTask,
+              format: localizations.formatLabel,
+            ),
           ),
-          SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.md,
-            children: localizations.tasksOptions.map((option) {
-              final isSelected = provider.tasks.contains(option);
-              return FilterChip(
-                label: Text(localizations.formatLabel(option)),
-                selected: isSelected,
-                onSelected: (_) => provider.toggleTask(option),
-                selectedColor: Theme.of(context).colorScheme.primaryContainer,
-                checkmarkColor:
-                    Theme.of(context).colorScheme.onPrimaryContainer,
-              );
-            }).toList(),
-          ),
-          SizedBox(height: AppSpacing.xl),
+          const SizedBox(height: AppSpacing.xl),
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: localizations.communicationStyle,
-              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.chat_bubble_outline),
             ),
             initialValue: provider.communicationStyle,
             items: localizations.communicationStyleOptions.map((option) {
@@ -797,11 +872,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
             }).toList(),
             onChanged: (value) => provider.setCommunicationStyle(value),
           ),
-          SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.lg),
           TextFormField(
             decoration: InputDecoration(
               labelText: localizations.toolsIntegration,
-              border: const OutlineInputBorder(),
               hintText: localizations.toolsIntegrationHint,
             ),
             initialValue: provider.toolsIntegration,
@@ -809,11 +883,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
             onChanged: (value) =>
                 provider.setToolsIntegration(value.isEmpty ? null : value),
           ),
-          SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.lg),
           TextFormField(
             decoration: InputDecoration(
               labelText: localizations.workingStyle,
-              border: const OutlineInputBorder(),
               hintText: localizations.workingStyleHint,
             ),
             initialValue: provider.workingStyle,
@@ -821,11 +894,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
             onChanged: (value) =>
                 provider.setWorkingStyle(value.isEmpty ? null : value),
           ),
-          SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.lg),
           TextFormField(
             decoration: InputDecoration(
               labelText: localizations.additionalInfo,
-              border: const OutlineInputBorder(),
               hintText: localizations.additionalInfoHint,
             ),
             initialValue: provider.additionalInfo,
@@ -842,20 +914,23 @@ class _OnboardingPageState extends State<OnboardingPage> {
     OnboardingProvider provider,
     OnboardingLocalizations localizations,
   ) {
+    final appTheme = context.appTheme;
+
     return SingleChildScrollView(
       padding: AppInsets.page,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            localizations.stepClosing,
-            style: Theme.of(context).textTheme.headlineSmall,
+          _stepHeader(
+            icon: Icons.spa_outlined,
+            color: appTheme.coral,
+            backgroundColor: appTheme.coralSoft,
+            title: localizations.stepClosing,
           ),
-          SizedBox(height: AppSpacing.xxl),
+          const SizedBox(height: AppSpacing.xl),
           TextFormField(
             decoration: InputDecoration(
               labelText: localizations.safeSpace,
-              border: const OutlineInputBorder(),
               hintText: localizations.safeSpaceHint,
             ),
             initialValue: provider.safeSpace,
@@ -863,11 +938,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
             onChanged: (value) =>
                 provider.setSafeSpace(value.isEmpty ? null : value),
           ),
-          SizedBox(height: AppSpacing.xl),
-          CheckboxListTile(
-            title: Text(localizations.tipsOptInLabel),
-            value: provider.tipsOptIn ?? false,
-            onChanged: (value) => provider.setTipsOptIn(value),
+          const SizedBox(height: AppSpacing.xl),
+          _buildCheckbox(
+            localizations.tipsOptInLabel,
+            (value) => provider.setTipsOptIn(value),
+            provider.tipsOptIn ?? false,
           ),
         ],
       ),
@@ -878,16 +953,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
     OnboardingProvider provider,
     OnboardingLocalizations localizations,
   ) {
+    final appTheme = context.appTheme;
+
     return SingleChildScrollView(
       padding: AppInsets.page,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            localizations.stepFollowOnQuestions,
-            style: Theme.of(context).textTheme.headlineSmall,
+          _stepHeader(
+            icon: Icons.question_answer_outlined,
+            color: appTheme.sky,
+            backgroundColor: appTheme.skySoft,
+            title: localizations.stepFollowOnQuestions,
           ),
-          SizedBox(height: AppSpacing.xxl),
+          const SizedBox(height: AppSpacing.xl),
           // Strengths Questions
           if (provider.shouldShowStrengthsQuestions) ...[
             _buildSectionTitle(localizations.strengthsQuestions),
@@ -902,7 +981,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['howDoYouUseStrengths'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.whatHelpsTapStrengths,
               (value) => provider.setFollowOnQuestion(
@@ -914,7 +993,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['whatHelpsTapStrengths'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.howBuildOnStrengths,
               (value) => provider.setFollowOnQuestion(
@@ -925,7 +1004,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               provider.followOnQuestions['strengths']?['howBuildOnStrengths'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.xl),
           ],
           // Challenges Questions
           if (provider.shouldShowChallengesQuestions) ...[
@@ -941,7 +1020,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['whatsHardestToManage'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.whatToolsHaveHelped,
               (value) => provider.setFollowOnQuestion(
@@ -953,7 +1032,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['whatToolsHaveHelped'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildCheckbox(
               localizations.wouldLikeToolSuggestions,
               (value) => provider.setFollowOnQuestion(
@@ -965,7 +1044,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['wouldLikeToolSuggestions'] ??
                   false,
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.whatHelpsRecharge,
               (value) => provider.setFollowOnQuestion(
@@ -976,7 +1055,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               provider.followOnQuestions['challenges']?['whatHelpsRecharge'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.xl),
           ],
           // Learning Questions
           if (provider.shouldShowLearningQuestions) ...[
@@ -991,7 +1070,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               provider.followOnQuestions['learning']?['shareLearningExample'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildCheckbox(
               localizations.preferSpecificFormat,
               (value) => provider.setFollowOnQuestion(
@@ -1002,7 +1081,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               provider.followOnQuestions['learning']?['preferSpecificFormat'] ??
                   false,
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.howBreakDownTasks,
               (value) => provider.setFollowOnQuestion(
@@ -1013,7 +1092,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               provider.followOnQuestions['learning']?['howBreakDownTasks'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.xl),
           ],
           // Motivation Questions
           if (provider.shouldShowMotivationQuestions) ...[
@@ -1028,7 +1107,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               provider.followOnQuestions['motivation']?['whatMotivatesYou'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.howSetGoals,
               (value) => provider.setFollowOnQuestion(
@@ -1038,7 +1117,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['motivation']?['howSetGoals'] ?? '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.whatRemindersWork,
               (value) => provider.setFollowOnQuestion(
@@ -1049,7 +1128,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               provider.followOnQuestions['motivation']?['whatRemindersWork'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.howCelebrateProgress,
               (value) => provider.setFollowOnQuestion(
@@ -1061,7 +1140,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['howCelebrateProgress'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.xl),
           ],
           // Coping Questions
           if (provider.shouldShowCopingQuestions) ...[
@@ -1077,7 +1156,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['sensoryFriendlyEnvironment'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.howManageTime,
               (value) => provider.setFollowOnQuestion(
@@ -1087,7 +1166,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
               provider.followOnQuestions['coping']?['howManageTime'] ?? '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.whatHelpsOverwhelmed,
               (value) => provider.setFollowOnQuestion(
@@ -1098,7 +1177,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               provider.followOnQuestions['coping']?['whatHelpsOverwhelmed'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildCheckbox(
               localizations.exploreCopingStrategies,
               (value) => provider.setFollowOnQuestion(
@@ -1110,7 +1189,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['exploreCopingStrategies'] ??
                   false,
             ),
-            SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.xl),
           ],
           // Support Questions
           if (provider.shouldShowSupportQuestions) ...[
@@ -1126,7 +1205,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['whatWouldMakeDifference'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.whatDoesSupportLookLike,
               (value) => provider.setFollowOnQuestion(
@@ -1138,7 +1217,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['whatDoesSupportLookLike'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.specificSkillsToDevelop,
               (value) => provider.setFollowOnQuestion(
@@ -1150,7 +1229,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['specificSkillsToDevelop'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.howBalanceWorkSelfCare,
               (value) => provider.setFollowOnQuestion(
@@ -1162,7 +1241,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['howBalanceWorkSelfCare'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.xl),
           ],
           // Coaching Buddy Questions
           if (provider.shouldShowCoachingBuddyQuestions) ...[
@@ -1178,7 +1257,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['whatTaskTakeOffPlate'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.whatWouldLikeHelpWith,
               (value) => provider.setFollowOnQuestion(
@@ -1190,7 +1269,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['whatWouldLikeHelpWith'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.howAdaptCommunication,
               (value) => provider.setFollowOnQuestion(
@@ -1202,7 +1281,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['howAdaptCommunication'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.specificRemindersPrompts,
               (value) => provider.setFollowOnQuestion(
@@ -1214,7 +1293,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['specificRemindersPrompts'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.xl),
           ],
           // Emotional Questions
           if (provider.shouldShowEmotionalQuestions) ...[
@@ -1229,7 +1308,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               provider.followOnQuestions['emotional']?['whatHelpsGrounded'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.howProcessChallenges,
               (value) => provider.setFollowOnQuestion(
@@ -1241,7 +1320,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['howProcessChallenges'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.whatHelpsBuildCalm,
               (value) => provider.setFollowOnQuestion(
@@ -1252,7 +1331,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               provider.followOnQuestions['emotional']?['whatHelpsBuildCalm'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.whatWouldHelpSupported,
               (value) => provider.setFollowOnQuestion(
@@ -1264,7 +1343,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['whatWouldHelpSupported'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.xl),
           ],
           // Celebrating Questions
           if (provider.shouldShowCelebratingQuestions) ...[
@@ -1280,7 +1359,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['recentWinToCelebrate'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.howAcknowledgeProgress,
               (value) => provider.setFollowOnQuestion(
@@ -1292,7 +1371,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['howAcknowledgeProgress'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildCheckbox(
               localizations.wouldLikeCelebrationIdeas,
               (value) => provider.setFollowOnQuestion(
@@ -1304,7 +1383,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['wouldLikeCelebrationIdeas'] ??
                   false,
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.howRecognizeProgress,
               (value) => provider.setFollowOnQuestion(
@@ -1316,7 +1395,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['howRecognizeProgress'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.xl),
           ],
           // Customization Questions
           if (provider.shouldShowCustomizationQuestions) ...[
@@ -1332,7 +1411,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['specificToolsToIntegrate'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.howCustomizeCommunication,
               (value) => provider.setFollowOnQuestion(
@@ -1344,7 +1423,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ?['howCustomizeCommunication'] ??
                   '',
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             _buildTextArea(
               localizations.tailoredNeeds,
               (value) => provider.setFollowOnQuestion(
@@ -1363,13 +1442,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: EdgeInsets.only(bottom: AppSpacing.lg),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-      ),
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+      child: SectionHeader(title: title),
     );
   }
 
@@ -1381,7 +1455,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return TextFormField(
       decoration: InputDecoration(
         labelText: label,
-        border: const OutlineInputBorder(),
+        alignLabelWithHint: true,
       ),
       initialValue: initialValue,
       maxLines: 4,
@@ -1394,10 +1468,48 @@ class _OnboardingPageState extends State<OnboardingPage> {
     Function(bool?) onChanged,
     bool initialValue,
   ) {
-    return CheckboxListTile(
-      title: Text(label),
-      value: initialValue,
-      onChanged: onChanged,
+    final theme = Theme.of(context);
+    final appTheme = context.appTheme;
+
+    return DsSurfaceCard(
+      onTap: () => onChanged(!initialValue),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      backgroundColor:
+          initialValue ? appTheme.primarySoft : theme.colorScheme.surface,
+      borderColor: initialValue
+          ? theme.colorScheme.primary.withValues(alpha: 0.4)
+          : appTheme.borderColor,
+      child: Row(
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: initialValue
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: initialValue
+                    ? theme.colorScheme.primary
+                    : appTheme.textMuted,
+                width: 1.5,
+              ),
+            ),
+            child: initialValue
+                ? const Icon(Icons.check, size: 16, color: Colors.white)
+                : null,
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Text(label, style: theme.textTheme.bodyMedium),
+          ),
+        ],
+      ),
     );
   }
 }

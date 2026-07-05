@@ -3,14 +3,19 @@ import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:projectbrain/core/config/app_config.dart';
+import 'package:projectbrain/core/storage/preferences_service.dart';
 import 'package:projectbrain/services/auth/auth_exception.dart';
 
 /// Service responsible for handling Auth0 OAuth authentication flows
 class OAuthService {
   final Auth0 _auth0;
+  final PreferencesService? _preferencesService;
 
-  OAuthService({Auth0? auth0})
-      : _auth0 = auth0 ?? Auth0(AppConfig.authDomain, AppConfig.authClientId);
+  OAuthService({
+    Auth0? auth0,
+    PreferencesService? preferencesService,
+  })  : _auth0 = auth0 ?? Auth0(AppConfig.authDomain, AppConfig.authClientId),
+        _preferencesService = preferencesService;
 
   /// Initiate the login flow
   ///
@@ -19,16 +24,32 @@ class OAuthService {
   Future<Credentials> login() async {
     try {
       logDebug('[OAuthService] Starting login flow');
+
+      final prefs = _preferencesService;
+      final forceFreshLogin = prefs?.forceFreshLogin ?? false;
+      final loginHint = forceFreshLogin ? null : prefs?.lastLoginEmail;
+
+      final parameters = <String, String>{};
+      if (forceFreshLogin) {
+        parameters['prompt'] = 'login';
+      } else if (loginHint != null && loginHint.isNotEmpty) {
+        parameters['login_hint'] = loginHint;
+      }
+
       final credentials = await _auth0.webAuthentication().login(
             useHTTPS: true,
-            useEphemeralSession: true,
+            useEphemeralSession: false,
             audience: AppConfig.authAudience,
             scopes: {'openid', 'profile', 'offline_access', 'email'},
             redirectUrl: AppConfig.authRedirectUri,
-            // Avoid silent SSO / consent-only when an Auth0 session still exists;
-            // forces identifier + credentials on Universal Login.
-            parameters: const {'prompt': 'select_account'},
+            parameters: parameters,
           );
+
+      await storeCredentials(credentials);
+
+      if (forceFreshLogin) {
+        await prefs?.clearForceFreshLogin();
+      }
 
       logDebug('[OAuthService] Login successful');
       return credentials;
@@ -55,24 +76,29 @@ class OAuthService {
     try {
       logDebug('[OAuthService] Logging out');
       if (defaultTargetPlatform == TargetPlatform.iOS) {
-        // iOS intentionally skips hosted logout so ASWebAuthenticationSession
-        // does not show the system credential sheet.
         await clearLocalCredentials();
       } else {
         await _auth0.webAuthentication().logout(
               returnTo: AppConfig.authRedirectUri,
-              // Must match [login] so iOS/macOS builds the same redirect URL mode;
-              // mismatch often causes Auth0 "Oops" and leaves the hosted session active.
               useHTTPS: true,
             );
-        // Federated web logout clears the SSO session; also drop the locally
-        // persisted native credentials so they cannot be silently restored.
         await clearLocalCredentials();
       }
       logDebug('[OAuthService] Logout complete');
     } catch (e, stackTrace) {
       logDebug('[OAuthService] Error during logout: $e');
       throw AuthException('Error during logout', e, stackTrace);
+    }
+  }
+
+  /// Persist credentials in the native Auth0 CredentialsManager.
+  Future<void> storeCredentials(Credentials credentials) async {
+    try {
+      await _auth0.credentialsManager.storeCredentials(credentials);
+      logDebug('[OAuthService] Stored credentials in CredentialsManager');
+    } catch (e) {
+      logDebug('[OAuthService] Failed to store credentials: $e');
+      rethrow;
     }
   }
 
@@ -95,7 +121,10 @@ class OAuthService {
   /// Throws [ApiException] if refresh fails
   Future<Credentials> refreshCredentials(String refreshToken) async {
     logDebug('[OAuthService] Refreshing credentials');
-    return await _auth0.api.renewCredentials(refreshToken: refreshToken);
+    final credentials =
+        await _auth0.api.renewCredentials(refreshToken: refreshToken);
+    await storeCredentials(credentials);
+    return credentials;
   }
 
   /// Returns credentials persisted by the native SDK after [login], if valid.
@@ -140,19 +169,16 @@ class OAuthService {
       logDebug('[OAuthService] Restored credentials with biometric gate');
       return credentials;
     } on CredentialsManagerException catch (e) {
-      // No credentials available to restore: treat as logged out.
       if (e.isNoCredentialsFound || e.isNoRefreshTokenFound) {
         logDebug('[OAuthService] No stored credentials for biometric restore');
         return null;
       }
 
-      // Token renewal failed from stale/invalid stored credentials.
       if (e.isTokenRenewFailed) {
         logDebug('[OAuthService] Stored credentials could not be renewed');
         return null;
       }
 
-      // Any remaining credentials manager errors are treated as local-auth denial.
       logDebug('[OAuthService] Biometric/local auth failed: ${e.message}');
       throw AuthException('Biometric authentication failed', e);
     } catch (e, stackTrace) {

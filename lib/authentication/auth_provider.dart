@@ -14,11 +14,13 @@ import 'package:projectbrain/services/api_http_cache_coordinator.dart';
 import 'package:projectbrain/core/session/session_cleanup_service.dart';
 import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
+import 'package:projectbrain/core/storage/preferences_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService authService;
   final FeatureFlagService? featureFlagService;
   final UserService userService;
+  final PreferencesService? preferencesService;
 
   bool _isLoading = false;
   bool _onboardingComplete = false;
@@ -31,6 +33,7 @@ class AuthProvider extends ChangeNotifier {
     required this.authService,
     this.featureFlagService,
     required this.userService,
+    this.preferencesService,
   });
 
   bool get isLoading => _isLoading;
@@ -83,6 +86,7 @@ class AuthProvider extends ChangeNotifier {
         sl<ApiHttpCacheCoordinator>().clearAllCaches();
       }
       await _fetchUserData();
+      await _persistLastLoginEmail();
 
       // Set user ID in analytics after successful login
       try {
@@ -132,6 +136,12 @@ class AuthProvider extends ChangeNotifier {
           logError('[AuthProvider] Session cleanup failed', e, st);
         }
       }
+
+      final prefs = preferencesService ??
+          (sl.isRegistered<PreferencesService>()
+              ? sl<PreferencesService>()
+              : null);
+      await prefs?.setForceFreshLogin(true);
 
       await authService.logout();
       _user = null;
@@ -261,6 +271,21 @@ class AuthProvider extends ChangeNotifier {
       await sl<PushNotificationService>().registerToken();
     } catch (e) {
       logError('[AuthProvider] Error registering push token after login', e);
+    }
+  }
+
+  Future<void> _persistLastLoginEmail() async {
+    final email = profile?.email ?? _user?.email;
+    if (email == null || email.isEmpty) return;
+
+    final prefs = preferencesService ??
+        (sl.isRegistered<PreferencesService>()
+            ? sl<PreferencesService>()
+            : null);
+    try {
+      await prefs?.setLastLoginEmail(email);
+    } catch (e) {
+      logError('[AuthProvider] Error saving last login email', e);
     }
   }
 }

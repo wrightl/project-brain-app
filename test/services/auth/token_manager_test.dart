@@ -1,33 +1,24 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:projectbrain/services/auth/token_manager.dart';
-import 'package:projectbrain/services/auth/token_storage.dart';
 import 'package:projectbrain/services/auth/auth_exception.dart';
 import 'dart:convert';
 import '../../helpers/test_helpers.dart';
 
-// Mock classes
-class MockTokenStorage extends Mock implements TokenStorage {}
-
 void main() {
   late TokenManager tokenManager;
-  late MockTokenStorage mockTokenStorage;
 
   setUpAll(() async {
-    // Initialize test environment once for all tests
     await initializeTestEnvironment();
   });
 
   setUp(() {
-    mockTokenStorage = MockTokenStorage();
-    tokenManager = TokenManager(tokenStorage: mockTokenStorage);
+    tokenManager = TokenManager();
   });
 
   tearDownAll(() {
     resetTestEnvironment();
   });
 
-  // Helper function to create a JWT token with specific expiry
   String createTestToken(DateTime expiry) {
     final header = base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
     final payload = base64Url.encode(
@@ -101,7 +92,6 @@ void main() {
     });
 
     test('isTokenExpired accounts for expiry buffer', () {
-      // Token expires in 3 minutes (less than 5-minute buffer)
       final nearExpiryToken = createTestToken(
         DateTime.now().add(const Duration(minutes: 3)),
       );
@@ -111,7 +101,6 @@ void main() {
     });
 
     test('isTokenExpired returns false for token beyond buffer', () {
-      // Token expires in 10 minutes (more than 5-minute buffer)
       final safeToken = createTestToken(
         DateTime.now().add(const Duration(minutes: 10)),
       );
@@ -201,7 +190,6 @@ void main() {
 
       tokenManager.setAccessToken(token);
 
-      // Should handle gracefully
       expect(tokenManager.hasValidToken, isTrue);
     });
 
@@ -216,13 +204,12 @@ void main() {
 
       tokenManager.setAccessToken(token);
 
-      // Token without expiry should be considered expired
       expect(tokenManager.isTokenExpired(), isTrue);
     });
 
     test('handles empty token string', () {
       tokenManager.setAccessToken('');
-      expect(tokenManager.hasValidToken, isTrue); // Token is set, even if empty
+      expect(tokenManager.hasValidToken, isFalse);
     });
   });
 }

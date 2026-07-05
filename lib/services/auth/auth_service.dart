@@ -44,8 +44,7 @@ class AuthService {
     UserProfileService? userProfileService,
     bool? enableBiometricLaunchGate,
   })  : _oauthService = oauthService ?? OAuthService(),
-        _tokenManager =
-            tokenManager ?? TokenManager(tokenStorage: TokenStorage()),
+        _tokenManager = tokenManager ?? TokenManager(),
         _tokenStorage = tokenStorage ?? TokenStorage(),
         _userProfileService = userProfileService ?? UserProfileService(),
         _enableBiometricLaunchGate =
@@ -59,51 +58,13 @@ class AuthService {
     _launchAuthMessage = null;
 
     try {
-      if (_enableBiometricLaunchGate) {
-        logDebug('[AuthService] Using biometric-gated session restore');
-        final credentials =
-            await _oauthService.tryRestoreCredentialsWithBiometric();
-        if (credentials == null) {
-          logDebug('[AuthService] No session available for biometric restore');
-          return false;
-        }
+      Credentials? credentials = await _restoreFromCredentialsManager();
 
-        if (credentials.accessToken.isEmpty) {
-          await _clearSession();
-          return false;
-        }
-
-        final isValidAudience =
-            await _tokenManager.validateTokenAudience(credentials.accessToken);
-        if (!isValidAudience) {
-          logWarning('[AuthService] Invalid token audience, clearing session');
-          await _clearSession();
-          return false;
-        }
-
-        await _hydrateSessionFromCredentials(
-          credentials,
-          allowIdTokenProfileFallback: true,
-        );
-        logInfo('[AuthService] Session restored successfully');
-        return true;
-      }
-
-      Credentials? credentials =
-          await _oauthService.tryRestoreCredentialsFromCredentialsManager();
+      credentials ??= await _migrateLegacyRefreshToken();
 
       if (credentials == null) {
-        final storedRefreshToken = await _tokenStorage.getRefreshToken();
-        if (storedRefreshToken == null) {
-          logDebug(
-              '[AuthService] No CredentialsManager session or refresh token');
-          return false;
-        }
-        logDebug('[AuthService] Refreshing session from stored refresh token');
-        credentials =
-            await _oauthService.refreshCredentials(storedRefreshToken);
-      } else {
-        logDebug('[AuthService] Using credentials from CredentialsManager');
+        logDebug('[AuthService] No session available to restore');
+        return false;
       }
 
       if (credentials.accessToken.isEmpty) {
@@ -130,7 +91,6 @@ class AuthService {
       await _clearSession();
       return false;
     } on AuthException catch (e) {
-      // Biometric challenge canceled/failed should keep app logged out.
       logWarning('[AuthService] Auth init blocked by biometric/local auth', e);
       _launchAuthMessage =
           'Biometric unlock was canceled or failed. Please log in to continue.';
@@ -139,6 +99,38 @@ class AuthService {
       logError('[AuthService] Unexpected error during init', e, stackTrace);
       await _clearSession();
       return false;
+    }
+  }
+
+  Future<Credentials?> _restoreFromCredentialsManager() async {
+    if (_enableBiometricLaunchGate) {
+      logDebug('[AuthService] Using biometric-gated session restore');
+      return _oauthService.tryRestoreCredentialsWithBiometric();
+    }
+
+    logDebug('[AuthService] Restoring session from CredentialsManager');
+    return _oauthService.tryRestoreCredentialsFromCredentialsManager();
+  }
+
+  /// One-time migration from legacy flutter_secure_storage refresh tokens.
+  Future<Credentials?> _migrateLegacyRefreshToken() async {
+    final legacyRefreshToken = await _tokenStorage.getRefreshToken();
+    if (legacyRefreshToken == null || legacyRefreshToken.isEmpty) {
+      return null;
+    }
+
+    logDebug(
+        '[AuthService] Migrating legacy refresh token to CredentialsManager');
+    try {
+      final credentials =
+          await _oauthService.refreshCredentials(legacyRefreshToken);
+      await _tokenStorage.deleteRefreshToken();
+      logInfo('[AuthService] Legacy refresh token migrated successfully');
+      return credentials;
+    } catch (e) {
+      logWarning('[AuthService] Legacy refresh token migration failed', e);
+      await _tokenStorage.deleteRefreshToken();
+      return null;
     }
   }
 
@@ -159,11 +151,9 @@ class AuthService {
   Future<void> logout() async {
     logInfo('[AuthService] Logging out');
 
-    // Perform Auth0 logout to clear SSO session
     try {
       await _oauthService.logout();
     } catch (e) {
-      // Log but don't fail - we still want to clear local session
       logWarning('[AuthService] Error during remote logout', e);
     }
 
@@ -187,11 +177,7 @@ class AuthService {
       throw AuthException('Invalid credentials - missing access token');
     }
 
-    if (credentials.refreshToken != null) {
-      await _tokenStorage.saveRefreshToken(credentials.refreshToken!);
-    }
-
-    _tokenManager.setAccessToken(credentials.accessToken);
+    _tokenManager.setCredentials(credentials);
 
     try {
       _profile =
@@ -278,8 +264,6 @@ class AuthService {
   /// Clear all authentication data
   Future<void> _clearSession() async {
     await _tokenStorage.clearAll();
-    // Also drop natively-persisted Auth0 credentials so an invalid-audience or
-    // failed-remote-logout reset cannot be silently restored on next launch.
     await _oauthService.clearLocalCredentials();
     _tokenManager.clearAccessToken();
     _profile = null;

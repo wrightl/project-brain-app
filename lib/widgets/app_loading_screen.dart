@@ -1,16 +1,15 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/design_palette.dart';
 
-/// Brand-aligned splash colors (match native [launch_background] / LaunchScreen).
-const Color kSplashGradientTop = Color(0xFFF2ECFC);
-const Color kSplashGradientMid = Color(0xFFE8DEF8);
-const Color kSplashGradientBottom = Color(0xFFDDD0F4);
-const Color kSplashAccent = Color(0xFF6750A4);
+/// Splash accent, aligned with the design system primary.
+const Color kSplashAccent = DesignPalette.primary;
 
 const String kSplashLogoAsset = 'assets/icon/appstore.png';
 
-/// Full-screen animated loading UI: gradient, logo motion, dots, exit transition.
+/// Full-screen animated loading UI: soft ambient blobs, logo tile with
+/// breathing motion, shimmering progress pill, and a fade/scale exit.
 class AppLoadingScreen extends StatefulWidget {
   const AppLoadingScreen({
     super.key,
@@ -32,11 +31,11 @@ class AppLoadingScreen extends StatefulWidget {
 class _AppLoadingScreenState extends State<AppLoadingScreen>
     with TickerProviderStateMixin {
   late final AnimationController _entranceController;
-  late final AnimationController _pulseController;
-  late final AnimationController _gradientController;
+  late final AnimationController _ambientController;
   late final AnimationController _exitController;
   late final Animation<double> _entranceScale;
   late final Animation<double> _entranceOpacity;
+  late final Animation<double> _taglineOpacity;
   late final Animation<double> _exitOpacity;
   late final Animation<double> _exitScale;
   bool _exitStarted = false;
@@ -47,47 +46,41 @@ class _AppLoadingScreenState extends State<AppLoadingScreen>
     super.initState();
     _entranceController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 780),
+      duration: const Duration(milliseconds: 900),
     );
-    _pulseController = AnimationController(
+    // One long-running driver for blobs, breathing, dots, and shimmer.
+    _ambientController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    );
-    _gradientController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 4200),
+      duration: const Duration(milliseconds: 5200),
     )..repeat();
-
     _exitController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 220),
+      duration: const Duration(milliseconds: 260),
     );
 
-    _entranceScale = Tween<double>(begin: 0.82, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _entranceController,
-        curve: Curves.easeOutCubic,
-      ),
+    _entranceScale = Tween<double>(begin: 0.86, end: 1.0).animate(
+      CurvedAnimation(parent: _entranceController, curve: Curves.easeOutBack),
     );
     _entranceOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _entranceController,
-        curve: const Interval(0.0, 0.65, curve: Curves.easeOut),
+        curve: const Interval(0.0, 0.55, curve: Curves.easeOut),
+      ),
+    );
+    _taglineOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _entranceController,
+        curve: const Interval(0.45, 1.0, curve: Curves.easeOut),
       ),
     );
     _exitOpacity = Tween<double>(begin: 1.0, end: 0.0).animate(
       CurvedAnimation(parent: _exitController, curve: Curves.easeIn),
     );
-    _exitScale = Tween<double>(begin: 1.0, end: 1.06).animate(
+    _exitScale = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(parent: _exitController, curve: Curves.easeIn),
     );
 
     _entranceController.forward();
-    _entranceController.addStatusListener((status) {
-      if (status == AnimationStatus.completed && mounted) {
-        _pulseController.repeat(reverse: true);
-      }
-    });
 
     _exitController.addStatusListener((status) {
       if (status == AnimationStatus.completed && mounted) {
@@ -101,9 +94,7 @@ class _AppLoadingScreenState extends State<AppLoadingScreen>
   void didUpdateWidget(AppLoadingScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.error != null && oldWidget.error == null) {
-      _entranceController.stop();
-      _pulseController.stop();
-      _gradientController.stop();
+      _ambientController.stop();
     }
     if (!oldWidget.bootstrapComplete &&
         widget.bootstrapComplete &&
@@ -115,15 +106,13 @@ class _AppLoadingScreenState extends State<AppLoadingScreen>
   void _maybeStartExit() {
     if (_exitStarted || _exitDone) return;
     _exitStarted = true;
-    _pulseController.stop();
     _exitController.forward();
   }
 
   @override
   void dispose() {
     _entranceController.dispose();
-    _pulseController.dispose();
-    _gradientController.dispose();
+    _ambientController.dispose();
     _exitController.dispose();
     super.dispose();
   }
@@ -132,48 +121,65 @@ class _AppLoadingScreenState extends State<AppLoadingScreen>
   Widget build(BuildContext context) {
     if (widget.error != null) {
       return Scaffold(
-        body: DecoratedBox(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [kSplashGradientTop, kSplashGradientBottom],
-            ),
-          ),
-          child: Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline,
-                      size: 48, color: kSplashAccent.withValues(alpha: 0.9)),
-                  SizedBox(height: AppSpacing.lg),
-                  Text(
-                    'Couldn\'t start the app',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: const Color(0xFF1C1B1F),
-                          fontWeight: FontWeight.w600,
+        backgroundColor: DesignPalette.bg,
+        body: Stack(
+          children: [
+            const _AmbientBlobs(t: 0.35),
+            Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: DesignPalette.coralSoft,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Icon(
+                        Icons.error_outline,
+                        size: 36,
+                        color: DesignPalette.coral,
+                      ),
+                    ),
+                    SizedBox(height: AppSpacing.lg),
+                    Text(
+                      "Couldn't start the app",
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: DesignPalette.textPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    SizedBox(height: AppSpacing.sm),
+                    Text(
+                      'Check your connection and try again.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: DesignPalette.textSecondary,
+                          ),
+                    ),
+                    SizedBox(height: AppSpacing.xl),
+                    FilledButton(
+                      onPressed: widget.onRetry,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: DesignPalette.primary,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppSpacing.xxl,
+                          vertical: AppSpacing.md,
                         ),
-                  ),
-                  SizedBox(height: AppSpacing.sm),
-                  Text(
-                    'Check your connection and try again.',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: const Color(0xFF49454F),
-                        ),
-                  ),
-                  SizedBox(height: AppSpacing.xl),
-                  FilledButton(
-                    onPressed: widget.onRetry,
-                    child: const Text('Retry'),
-                  ),
-                ],
+                        shape: const StadiumBorder(),
+                      ),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+          ],
         ),
       );
     }
@@ -187,14 +193,12 @@ class _AppLoadingScreenState extends State<AppLoadingScreen>
     return AnimatedBuilder(
       animation: Listenable.merge([
         _entranceController,
-        _pulseController,
-        _gradientController,
+        _ambientController,
         _exitController,
       ]),
       builder: (context, _) {
-        final pulse =
-            _pulseController.isAnimating ? _pulseController.value : 0.5;
-        final breath = 1.0 + 0.045 * math.sin(pulse * math.pi);
+        final t = _ambientController.value;
+        final breath = 1.0 + 0.03 * math.sin(t * 2 * math.pi);
         final logoScale = _entranceScale.value * breath;
         final opacity = _exitStarted
             ? _entranceOpacity.value * _exitOpacity.value
@@ -202,46 +206,92 @@ class _AppLoadingScreenState extends State<AppLoadingScreen>
         final exitScaleMul = _exitStarted ? _exitScale.value : 1.0;
 
         return Scaffold(
-          body: _GradientBackdrop(
-            gradientT: _gradientController.value,
-            child: Center(
-              child: Transform.scale(
-                scale: logoScale * exitScaleMul,
+          backgroundColor: DesignPalette.bg,
+          body: Stack(
+            children: [
+              _AmbientBlobs(t: t),
+              Center(
                 child: Opacity(
                   opacity: opacity.clamp(0.0, 1.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(
-                        width: 120,
-                        height: 120,
-                        child: Image.asset(
-                          kSplashLogoAsset,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => Icon(
-                            Icons.psychology_rounded,
-                            size: 88,
-                            color: kSplashAccent.withValues(alpha: 0.85),
+                  child: Transform.scale(
+                    scale: exitScaleMul,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Transform.scale(
+                          scale: logoScale,
+                          child: Container(
+                            width: 108,
+                            height: 108,
+                            decoration: BoxDecoration(
+                              color: DesignPalette.surface,
+                              borderRadius: BorderRadius.circular(28),
+                              border: Border.all(color: DesignPalette.border),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: DesignPalette.primary
+                                      .withValues(alpha: 0.14),
+                                  blurRadius: 36,
+                                  offset: const Offset(0, 14),
+                                ),
+                              ],
+                            ),
+                            padding: EdgeInsets.all(AppSpacing.md),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(18),
+                              child: Image.asset(
+                                kSplashLogoAsset,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.psychology_rounded,
+                                  size: 56,
+                                  color: DesignPalette.primary,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                      SizedBox(height: AppSpacing.s28),
-                      _LoadingDots(
-                          phase: _gradientController.value * 2 * math.pi),
-                      SizedBox(height: AppSpacing.s20),
-                      Text(
-                        'Getting things ready…',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: const Color(0xFF49454F)
-                                  .withValues(alpha: 0.85),
-                              letterSpacing: 0.2,
-                            ),
-                      ),
-                    ],
+                        SizedBox(height: AppSpacing.xl),
+                        Opacity(
+                          opacity: _taglineOpacity.value,
+                          child: Column(
+                            children: [
+                              Text(
+                                'ProjectBrain',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall
+                                    ?.copyWith(
+                                      color: DesignPalette.textPrimary,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: -0.3,
+                                    ),
+                              ),
+                              SizedBox(height: AppSpacing.xs),
+                              Text(
+                                'Your space to focus and grow',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: DesignPalette.textMuted,
+                                      letterSpacing: 0.1,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: AppSpacing.xxl),
+                        Opacity(
+                          opacity: _taglineOpacity.value,
+                          child: _ShimmerBar(t: t),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
         );
       },
@@ -249,65 +299,112 @@ class _AppLoadingScreenState extends State<AppLoadingScreen>
   }
 }
 
-class _GradientBackdrop extends StatelessWidget {
-  const _GradientBackdrop({
-    required this.gradientT,
-    required this.child,
-  });
+/// Slowly drifting soft accent blobs behind the content.
+class _AmbientBlobs extends StatelessWidget {
+  const _AmbientBlobs({required this.t});
 
-  final double gradientT;
-  final Widget child;
+  final double t;
 
   @override
   Widget build(BuildContext context) {
-    final shift = 0.08 * math.sin(gradientT * 2 * math.pi);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment(0, -1.0 + shift),
-          end: Alignment(0, 1.0 - shift),
-          colors: [
-            Color.lerp(kSplashGradientTop, kSplashGradientMid,
-                0.5 + 0.5 * math.sin(gradientT * math.pi))!,
-            kSplashGradientMid,
-            kSplashGradientBottom,
-          ],
-          stops: const [0.0, 0.45, 1.0],
+    final phase = t * 2 * math.pi;
+
+    return IgnorePointer(
+      child: Stack(
+        children: [
+          _blob(
+            alignment: Alignment(
+              -0.9 + 0.12 * math.sin(phase),
+              -0.75 + 0.08 * math.cos(phase),
+            ),
+            size: 260,
+            color: DesignPalette.primarySoft,
+          ),
+          _blob(
+            alignment: Alignment(
+              1.1 - 0.1 * math.cos(phase * 0.8),
+              -0.15 + 0.1 * math.sin(phase * 0.8),
+            ),
+            size: 220,
+            color: DesignPalette.tealSoft,
+          ),
+          _blob(
+            alignment: Alignment(
+              -0.5 + 0.1 * math.cos(phase * 0.6),
+              1.05 - 0.08 * math.sin(phase * 0.6),
+            ),
+            size: 280,
+            color: DesignPalette.coralSoft,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _blob({
+    required Alignment alignment,
+    required double size,
+    required Color color,
+  }) {
+    return Align(
+      alignment: alignment,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [
+              color.withValues(alpha: 0.85),
+              color.withValues(alpha: 0.0),
+            ],
+          ),
         ),
       ),
-      child: child,
     );
   }
 }
 
-class _LoadingDots extends StatelessWidget {
-  const _LoadingDots({required this.phase});
+/// Slim pill progress track with a shimmering sweep.
+class _ShimmerBar extends StatelessWidget {
+  const _ShimmerBar({required this.t});
 
-  final double phase;
+  final double t;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(3, (i) {
-        final t = phase + i * 0.85;
-        final y = 4.0 * math.sin(t);
-        final o = 0.35 + 0.65 * (0.5 + 0.5 * math.sin(t));
-        return Padding(
-          padding: EdgeInsets.symmetric(horizontal: AppSpacing.s5),
-          child: Transform.translate(
-            offset: Offset(0, -y),
-            child: Container(
-              width: 9,
-              height: 9,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: kSplashAccent.withValues(alpha: o.clamp(0.35, 1.0)),
+    // Sweep travels across twice per ambient cycle.
+    final sweep = (t * 2) % 1.0;
+
+    return SizedBox(
+      width: 160,
+      height: 6,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(3),
+        child: Stack(
+          children: [
+            Container(color: DesignPalette.primarySoft),
+            Align(
+              alignment: Alignment(-1.5 + 3.0 * sweep, 0),
+              child: FractionallySizedBox(
+                widthFactor: 0.45,
+                heightFactor: 1,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        DesignPalette.primary.withValues(alpha: 0.0),
+                        DesignPalette.primary,
+                        DesignPalette.primary.withValues(alpha: 0.0),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
-        );
-      }),
+          ],
+        ),
+      ),
     );
   }
 }

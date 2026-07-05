@@ -25,7 +25,6 @@ String _jwtSegment(Map<String, dynamic> claims) {
   return base64Url.encode(json).replaceAll('=', '');
 }
 
-/// Unsigned JWT for tests (signature not validated by our code).
 String makeTestJwt(Map<String, dynamic> payload) {
   final header = _jwtSegment({'alg': 'none', 'typ': 'JWT'});
   final body = _jwtSegment(payload);
@@ -70,16 +69,18 @@ void main() {
     mockOAuth = MockOAuthService();
     mockStorage = MockTokenStorage();
     mockProfile = MockUserProfileService();
-    when(() => mockStorage.saveRefreshToken(any())).thenAnswer((_) async {});
     when(() => mockStorage.clearAll()).thenAnswer((_) async {});
     when(() => mockStorage.getRefreshToken()).thenAnswer((_) async => null);
+    when(() => mockStorage.deleteRefreshToken()).thenAnswer((_) async {});
     when(() => mockOAuth.tryRestoreCredentialsWithBiometric(
+          minTtl: any(named: 'minTtl'),
+        )).thenAnswer((_) async => null);
+    when(() => mockOAuth.tryRestoreCredentialsFromCredentialsManager(
           minTtl: any(named: 'minTtl'),
         )).thenAnswer((_) async => null);
     when(() => mockOAuth.clearLocalCredentials()).thenAnswer((_) async {});
     tokenManager = TokenManager(
       auth0: Auth0(AppConfig.authDomain, AppConfig.authClientId),
-      tokenStorage: mockStorage,
     );
     authService = AuthService(
       oauthService: mockOAuth,
@@ -134,7 +135,7 @@ void main() {
       verifyNever(() => mockOAuth.refreshCredentials(any()));
     });
 
-    test('falls back to refresh token when CredentialsManager is empty',
+    test('migrates legacy refresh token when CredentialsManager is empty',
         () async {
       when(() => mockOAuth.tryRestoreCredentialsFromCredentialsManager(
             minTtl: any(named: 'minTtl'),
@@ -174,49 +175,8 @@ void main() {
 
       expect(ok, isTrue);
       verify(() => mockOAuth.refreshCredentials('stored-rt')).called(1);
-    });
-
-    test('persists refresh token before calling userinfo', () async {
-      when(() => mockOAuth.tryRestoreCredentialsFromCredentialsManager(
-            minTtl: any(named: 'minTtl'),
-          )).thenAnswer((_) async => null);
-      when(() => mockStorage.getRefreshToken()).thenAnswer((_) async => 'rt');
-
-      final access = makeTestJwt({
-        'aud': AppConfig.authAudience,
-        'exp': DateTime.now()
-                .add(const Duration(hours: 1))
-                .millisecondsSinceEpoch ~/
-            1000,
-      });
-      final creds = testCredentials(
-        accessToken: access,
-        idToken: makeTestJwt({'sub': 's'}),
-        refreshToken: 'persist-me',
-      );
-      when(() => mockOAuth.refreshCredentials('rt'))
-          .thenAnswer((_) async => creds);
-
-      final order = <String>[];
-      when(() => mockStorage.saveRefreshToken('persist-me'))
-          .thenAnswer((_) async {
-        order.add('saveRefresh');
-      });
-      when(() => mockProfile.getUserProfile(access)).thenAnswer((_) async {
-        order.add('userinfo');
-        return Auth0User(
-          nickname: 'a',
-          name: 'A',
-          email: 'a@a.com',
-          picture: '',
-          updatedAt: '2024-01-01T00:00:00.000Z',
-          sub: 'auth0|a',
-        );
-      });
-
-      await authService.init();
-
-      expect(order, ['saveRefresh', 'userinfo']);
+      verify(() => mockStorage.deleteRefreshToken()).called(1);
+      verifyNever(() => mockStorage.saveRefreshToken(any()));
     });
 
     test('userinfo failure still restores session via ID token claims',
@@ -256,10 +216,10 @@ void main() {
       expect(ok, isTrue);
       expect(authService.profile?.sub, 'auth0|idt');
       expect(authService.profile?.email, 'idt@test.com');
-      verify(() => mockStorage.saveRefreshToken('rt2')).called(1);
+      verifyNever(() => mockStorage.saveRefreshToken(any()));
     });
 
-    test('ApiException during refresh clears session', () async {
+    test('ApiException during legacy migration clears legacy token', () async {
       when(() => mockOAuth.tryRestoreCredentialsFromCredentialsManager(
             minTtl: any(named: 'minTtl'),
           )).thenAnswer((_) async => null);
@@ -268,12 +228,11 @@ void main() {
       when(() => mockOAuth.refreshCredentials('bad-rt')).thenThrow(
         ApiException.unknown('invalid_grant'),
       );
-      when(() => mockStorage.clearAll()).thenAnswer((_) async {});
 
       final ok = await authService.init();
 
       expect(ok, isFalse);
-      verify(() => mockStorage.clearAll()).called(1);
+      verify(() => mockStorage.deleteRefreshToken()).called(1);
     });
   });
 
@@ -346,8 +305,8 @@ void main() {
       final ok = await biometricAuthService.init();
 
       expect(ok, isFalse);
-      verifyNever(() => mockStorage.getRefreshToken());
       verifyNever(() => mockOAuth.refreshCredentials(any()));
+      verify(() => mockStorage.getRefreshToken()).called(1);
     });
   });
 }
