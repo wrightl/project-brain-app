@@ -42,9 +42,8 @@ class ConversationListItem extends StatelessWidget {
               children: [
                 IconBubble(
                   icon: Icons.chat_bubble_outline,
-                  color: isActive
-                      ? theme.colorScheme.primary
-                      : appTheme.textMuted,
+                  color:
+                      isActive ? theme.colorScheme.primary : appTheme.textMuted,
                   backgroundColor: isActive
                       ? theme.colorScheme.surface
                       : appTheme.borderColor.withValues(alpha: 0.35),
@@ -58,8 +57,7 @@ class ConversationListItem extends StatelessWidget {
                     conversation.title,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight:
-                          isActive ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                       color: isActive
                           ? theme.colorScheme.primary
                           : theme.colorScheme.onSurface,

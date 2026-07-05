@@ -163,6 +163,7 @@ class EggGoalsProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   Future<void> syncFromAPI() async {
     logDebug('[EggGoalsProvider] Syncing goals from API');
     if (eggGoalsService == null) return;

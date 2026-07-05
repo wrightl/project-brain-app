@@ -770,120 +770,124 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                                         iconSize: 20,
                                         borderRadius: 12,
                                       ),
-                                    title: Text(
-                                      voiceNote.description?.isNotEmpty == true
-                                          ? voiceNote.description!
-                                          : 'Voice Note',
-                                      style: theme.textTheme.titleMedium,
-                                    ),
-                                    subtitle: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        if (voiceNote.description?.isNotEmpty ==
-                                            true)
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                                bottom: AppSpacing.xs),
-                                            child: Text(
-                                              voiceNote.fileName,
-                                              style: theme.textTheme.bodySmall
-                                                  ?.copyWith(
-                                                color: theme
-                                                    .colorScheme.onSurface
-                                                    .withValues(alpha: 0.7),
-                                              ),
-                                            ),
-                                          ),
-                                        Text(
-                                          _formatDate(voiceNote.createdAt),
-                                          style: theme.textTheme.bodySmall,
-                                        ),
-                                      ],
-                                    ),
-                                    trailing: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        if (isDownloading)
-                                          const Padding(
-                                            padding: AppInsets.screen,
-                                            child: SizedBox(
-                                              width: 20,
-                                              height: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                              ),
-                                            ),
-                                          )
-                                        else
-                                          IconButton(
-                                            icon: Icon(
-                                              isCurrentlyPlaying && _isPlaying
-                                                  ? Icons.pause
-                                                  : Icons.play_arrow,
-                                            ),
-                                            onPressed: () =>
-                                                _playVoiceNote(voiceNote),
-                                            color: theme.colorScheme.primary,
-                                          ),
-                                        IconButton(
-                                          icon: const Icon(Icons.delete),
-                                          onPressed: isDownloading
-                                              ? null
-                                              : () => _deleteVoiceNote(
-                                                  voiceNote.id),
-                                          color: theme.colorScheme.error,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  if (isCurrentlyPlaying)
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: AppSpacing.lg,
-                                        vertical: AppSpacing.sm,
+                                      title: Text(
+                                        voiceNote.description?.isNotEmpty ==
+                                                true
+                                            ? voiceNote.description!
+                                            : 'Voice Note',
+                                        style: theme.textTheme.titleMedium,
                                       ),
-                                      child: Row(
+                                      subtitle: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          Expanded(
-                                            flex: 8,
-                                            child: Slider(
-                                              value: _playbackDuration
-                                                          .inMilliseconds >
-                                                      0
-                                                  ? _playbackPosition
-                                                          .inMilliseconds /
-                                                      _playbackDuration
-                                                          .inMilliseconds
-                                                  : 0.0,
-                                              onChanged: (value) async {
-                                                final position = Duration(
-                                                  milliseconds: (value *
-                                                          _playbackDuration
-                                                              .inMilliseconds)
-                                                      .round(),
-                                                );
-                                                await _audioPlayer
-                                                    .seek(position);
-                                              },
+                                          if (voiceNote
+                                                  .description?.isNotEmpty ==
+                                              true)
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                  bottom: AppSpacing.xs),
+                                              child: Text(
+                                                voiceNote.fileName,
+                                                style: theme.textTheme.bodySmall
+                                                    ?.copyWith(
+                                                  color: theme
+                                                      .colorScheme.onSurface
+                                                      .withValues(alpha: 0.7),
+                                                ),
+                                              ),
                                             ),
+                                          Text(
+                                            _formatDate(voiceNote.createdAt),
+                                            style: theme.textTheme.bodySmall,
                                           ),
-                                          SizedBox(width: AppSpacing.sm),
-                                          Expanded(
-                                            flex: 2,
-                                            child: Text(
-                                              '${_formatDuration(_playbackPosition)} / ${_formatDuration(_playbackDuration)}',
-                                              style: theme.textTheme.bodySmall,
-                                              textAlign: TextAlign.right,
+                                        ],
+                                      ),
+                                      trailing: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (isDownloading)
+                                            const Padding(
+                                              padding: AppInsets.screen,
+                                              child: SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                ),
+                                              ),
+                                            )
+                                          else
+                                            IconButton(
+                                              icon: Icon(
+                                                isCurrentlyPlaying && _isPlaying
+                                                    ? Icons.pause
+                                                    : Icons.play_arrow,
+                                              ),
+                                              onPressed: () =>
+                                                  _playVoiceNote(voiceNote),
+                                              color: theme.colorScheme.primary,
                                             ),
+                                          IconButton(
+                                            icon: const Icon(Icons.delete),
+                                            onPressed: isDownloading
+                                                ? null
+                                                : () => _deleteVoiceNote(
+                                                    voiceNote.id),
+                                            color: theme.colorScheme.error,
                                           ),
                                         ],
                                       ),
                                     ),
-                                ],
+                                    if (isCurrentlyPlaying)
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: AppSpacing.lg,
+                                          vertical: AppSpacing.sm,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              flex: 8,
+                                              child: Slider(
+                                                value: _playbackDuration
+                                                            .inMilliseconds >
+                                                        0
+                                                    ? _playbackPosition
+                                                            .inMilliseconds /
+                                                        _playbackDuration
+                                                            .inMilliseconds
+                                                    : 0.0,
+                                                onChanged: (value) async {
+                                                  final position = Duration(
+                                                    milliseconds: (value *
+                                                            _playbackDuration
+                                                                .inMilliseconds)
+                                                        .round(),
+                                                  );
+                                                  await _audioPlayer
+                                                      .seek(position);
+                                                },
+                                              ),
+                                            ),
+                                            SizedBox(width: AppSpacing.sm),
+                                            Expanded(
+                                              flex: 2,
+                                              child: Text(
+                                                '${_formatDuration(_playbackPosition)} / ${_formatDuration(_playbackDuration)}',
+                                                style:
+                                                    theme.textTheme.bodySmall,
+                                                textAlign: TextAlign.right,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
+                            );
                           },
                         ),
             ),

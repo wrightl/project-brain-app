@@ -249,9 +249,8 @@ class ChatProvider extends ChangeNotifier {
 
       final extras = _messageExtras[messageIndex] ?? const AgentMessageExtras();
       final remainingCards = extras.actionCards
-          .where((c) =>
-              !(c.cardType == 'pending_confirmation' &&
-                  c.pendingActionId == card.pendingActionId))
+          .where((c) => !(c.cardType == 'pending_confirmation' &&
+              c.pendingActionId == card.pendingActionId))
           .toList();
 
       final newCards = <ActionCard>[...remainingCards];
@@ -295,9 +294,8 @@ class ChatProvider extends ChangeNotifier {
       _messageExtras[messageIndex] = AgentMessageExtras(
         toolExecutions: extras.toolExecutions,
         actionCards: extras.actionCards
-            .where((c) =>
-                !(c.cardType == 'pending_confirmation' &&
-                    c.pendingActionId == card.pendingActionId))
+            .where((c) => !(c.cardType == 'pending_confirmation' &&
+                c.pendingActionId == card.pendingActionId))
             .toList(),
       );
       notifyListeners();

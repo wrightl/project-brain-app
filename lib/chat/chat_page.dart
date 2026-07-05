@@ -121,45 +121,47 @@ class _ChatPageState extends State<ChatPage> {
               ),
               Expanded(
                 child: FutureBuilder(
-              future: _conversationsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: TypingIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                  return Consumer<ChatProvider>(
-                    builder: (context, chatProvider, child) {
-                      return ListView.builder(
-                        itemCount: snapshot.data!.length,
-                        itemBuilder: (context, index) {
-                          final conversation = snapshot.data![index];
-                          final isActive =
-                              chatProvider.activeConversation?.id ==
-                                  conversation.id;
-                          return ConversationListItem(
-                            conversation: conversation,
-                            isActive: isActive,
-                            onTap: () {
-                              chatProvider.loadConversation(conversation.id);
-                              Navigator.pop(context); // Close the drawer
-                            },
-                          );
-                        },
-                      );
-                    },
-                  );
-                } else {
-                  return Center(
-                    child: Text(
-                      'No conversations found.',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: appTheme.textMuted,
-                      ),
-                    ),
-                  );
-                }
-              }),
+                    future: _conversationsFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: TypingIndicator());
+                      } else if (snapshot.hasError) {
+                        return Center(child: Text('Error: ${snapshot.error}'));
+                      } else if (snapshot.hasData &&
+                          snapshot.data!.isNotEmpty) {
+                        return Consumer<ChatProvider>(
+                          builder: (context, chatProvider, child) {
+                            return ListView.builder(
+                              itemCount: snapshot.data!.length,
+                              itemBuilder: (context, index) {
+                                final conversation = snapshot.data![index];
+                                final isActive =
+                                    chatProvider.activeConversation?.id ==
+                                        conversation.id;
+                                return ConversationListItem(
+                                  conversation: conversation,
+                                  isActive: isActive,
+                                  onTap: () {
+                                    chatProvider
+                                        .loadConversation(conversation.id);
+                                    Navigator.pop(context); // Close the drawer
+                                  },
+                                );
+                              },
+                            );
+                          },
+                        );
+                      } else {
+                        return Center(
+                          child: Text(
+                            'No conversations found.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: appTheme.textMuted,
+                            ),
+                          ),
+                        );
+                      }
+                    }),
               ),
             ],
           ),
@@ -186,7 +188,8 @@ class _ChatPageState extends State<ChatPage> {
                   itemBuilder: (context, index) {
                     final message = chatProvider.messages[index];
                     final extras = chatProvider.messageExtrasFor(index);
-                    final isLastMessage = index == chatProvider.messages.length - 1;
+                    final isLastMessage =
+                        index == chatProvider.messages.length - 1;
                     return Column(
                       crossAxisAlignment: message.role == 'user'
                           ? CrossAxisAlignment.end
@@ -230,8 +233,8 @@ class _ChatPageState extends State<ChatPage> {
                               child: UserChoiceChips(
                                 choices: extras.userChoices!,
                                 disabled: chatProvider.isSending,
-                                onSelect: (label) => chatProvider
-                                    .selectUserChoice(index, label),
+                                onSelect: (label) =>
+                                    chatProvider.selectUserChoice(index, label),
                               ),
                             ),
                         ],

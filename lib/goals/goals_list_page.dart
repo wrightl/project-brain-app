@@ -157,8 +157,7 @@ class GoalsListPage extends StatelessWidget {
           DsSurfaceCard(
             child: Column(
               children: [
-                Icon(Icons.flag_outlined,
-                    size: 48, color: appTheme.textMuted),
+                Icon(Icons.flag_outlined, size: 48, color: appTheme.textMuted),
                 const SizedBox(height: AppSpacing.md),
                 Text('No goals set yet', style: theme.textTheme.titleMedium),
                 const SizedBox(height: AppSpacing.sm),

@@ -24,8 +24,8 @@ class ProfileLoadErrorPage extends StatelessWidget {
               IconBubble(
                 icon: Icons.error_outline,
                 color: theme.colorScheme.error,
-                backgroundColor: theme.colorScheme.errorContainer
-                    .withValues(alpha: 0.35),
+                backgroundColor:
+                    theme.colorScheme.errorContainer.withValues(alpha: 0.35),
                 size: 72,
                 iconSize: 36,
                 borderRadius: 20,

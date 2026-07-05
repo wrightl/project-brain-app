@@ -351,8 +351,7 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
     }
 
     final appTheme = context.appTheme;
-    final selected =
-        _currentValue is String ? _currentValue as String : null;
+    final selected = _currentValue is String ? _currentValue as String : null;
 
     return Column(
       children: widget.question.choices!.asMap().entries.map((entry) {

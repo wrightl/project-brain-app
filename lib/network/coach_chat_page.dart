@@ -414,13 +414,15 @@ class _CoachChatPageState extends State<CoachChatPage> {
                               ? Alignment.centerLeft
                               : Alignment.centerRight,
                           child: Container(
-                            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                            margin:
+                                const EdgeInsets.only(bottom: AppSpacing.sm),
                             padding: const EdgeInsets.symmetric(
                               horizontal: AppSpacing.lg,
                               vertical: AppSpacing.md,
                             ),
                             constraints: BoxConstraints(
-                              maxWidth: MediaQuery.of(context).size.width * 0.75,
+                              maxWidth:
+                                  MediaQuery.of(context).size.width * 0.75,
                             ),
                             decoration: BoxDecoration(
                               color: message.isFromCoach

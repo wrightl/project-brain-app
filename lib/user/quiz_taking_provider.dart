@@ -3,7 +3,8 @@ import 'package:projectbrain/models/quiz.dart';
 import 'package:projectbrain/services/quiz_service.dart';
 
 class QuizTakingProvider extends ChangeNotifier {
-  QuizTakingProvider({required QuizService quizService}) : _quizService = quizService;
+  QuizTakingProvider({required QuizService quizService})
+      : _quizService = quizService;
 
   final QuizService _quizService;
   final Map<String, dynamic> _answers = {};
@@ -58,9 +59,7 @@ class QuizTakingProvider extends ChangeNotifier {
     }
 
     final answer = _answers[currentQuestion.id];
-    if (answer == null ||
-        answer == '' ||
-        (answer is List && answer.isEmpty)) {
+    if (answer == null || answer == '' || (answer is List && answer.isEmpty)) {
       return false;
     }
 

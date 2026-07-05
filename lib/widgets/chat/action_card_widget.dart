@@ -118,7 +118,9 @@ class ActionCardWidget extends StatelessWidget {
       case 'journal_entry_created':
         return 'Journal entry created';
       case 'memory_saved':
-        return card.title != null ? 'Remembered: ${card.title}' : 'Memory saved';
+        return card.title != null
+            ? 'Remembered: ${card.title}'
+            : 'Memory saved';
       case 'memory_deleted':
         return 'Memory forgotten';
       case 'pending_confirmation':

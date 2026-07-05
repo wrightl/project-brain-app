@@ -274,7 +274,8 @@ class _CoachesListPageState extends State<CoachesListPage> {
                                     backgroundColor: context.appTheme.tealSoft,
                                     child: Text(
                                       _initials(connection.coachName),
-                                      style: theme.textTheme.titleSmall?.copyWith(
+                                      style:
+                                          theme.textTheme.titleSmall?.copyWith(
                                         color: context.appTheme.teal,
                                       ),
                                     ),
@@ -293,8 +294,8 @@ class _CoachesListPageState extends State<CoachesListPage> {
                                         AccentTag(
                                           label: _statusLabel(connection),
                                           color: statusColor,
-                                          backgroundColor:
-                                              statusColor.withValues(alpha: 0.15),
+                                          backgroundColor: statusColor
+                                              .withValues(alpha: 0.15),
                                         ),
                                       ],
                                     ),

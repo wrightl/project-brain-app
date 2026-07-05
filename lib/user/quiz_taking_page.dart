@@ -19,8 +19,7 @@ class QuizTakingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) =>
-          QuizTakingProvider(quizService: sl())..loadQuiz(quizId),
+      create: (_) => QuizTakingProvider(quizService: sl())..loadQuiz(quizId),
       child: _QuizTakingView(quizId: quizId),
     );
   }
@@ -301,11 +300,11 @@ class _QuizTakingViewState extends State<_QuizTakingView> {
                                     ),
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: index ==
-                                              provider.currentQuestionIndex
-                                          ? theme.colorScheme.primary
-                                          : theme.colorScheme.onSurface
-                                              .withValues(alpha: 0.3),
+                                      color:
+                                          index == provider.currentQuestionIndex
+                                              ? theme.colorScheme.primary
+                                              : theme.colorScheme.onSurface
+                                                  .withValues(alpha: 0.3),
                                     ),
                                   ),
                                 ),

@@ -388,8 +388,7 @@ class _ResourcesPageState extends State<ResourcesPage> {
                                       Icons.delete_outline,
                                       color: theme.colorScheme.error,
                                     ),
-                                    onPressed: () =>
-                                        _deleteResource(resource),
+                                    onPressed: () => _deleteResource(resource),
                                     tooltip: 'Delete',
                                   ),
                                 ],

@@ -163,32 +163,32 @@ class UsageDashboardPage extends StatelessWidget {
                   DsSurfaceCard(
                     backgroundColor: context.appTheme.primarySoft,
                     child: Column(
-                        children: [
-                          Icon(
-                            Icons.upgrade,
-                            size: 48,
-                            color: theme.colorScheme.primary,
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          Text(
-                            'Upgrade to unlock unlimited usage',
-                            style: theme.textTheme.titleMedium,
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: AppSpacing.sm),
-                          Text(
-                            'Get unlimited AI queries, coach connections, and more',
-                            style: theme.textTheme.bodySmall,
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          ElevatedButton(
-                            onPressed: () =>
-                                context.push('/subscriptions/pricing'),
-                            child: const Text('View Plans'),
-                          ),
-                        ],
-                      ),
+                      children: [
+                        Icon(
+                          Icons.upgrade,
+                          size: 48,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          'Upgrade to unlock unlimited usage',
+                          style: theme.textTheme.titleMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(
+                          'Get unlimited AI queries, coach connections, and more',
+                          style: theme.textTheme.bodySmall,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        ElevatedButton(
+                          onPressed: () =>
+                              context.push('/subscriptions/pricing'),
+                          child: const Text('View Plans'),
+                        ),
+                      ],
+                    ),
                   ),
               ],
             ),
@@ -208,24 +208,24 @@ class UsageDashboardPage extends StatelessWidget {
 
     return DsSurfaceCard(
       child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: theme.colorScheme.primary),
-                SizedBox(width: AppSpacing.sm),
-                Text(
-                  title,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: theme.colorScheme.primary),
+              SizedBox(width: AppSpacing.sm),
+              Text(
+                title,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
-              ],
-            ),
-            SizedBox(height: AppSpacing.lg),
-            ...children,
-          ],
-        ),
+              ),
+            ],
+          ),
+          SizedBox(height: AppSpacing.lg),
+          ...children,
+        ],
+      ),
     );
   }
 }

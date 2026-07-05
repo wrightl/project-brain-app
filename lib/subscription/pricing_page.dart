@@ -583,9 +583,8 @@ class _BillingOption extends StatelessWidget {
             Text(
               label,
               style: theme.textTheme.labelLarge?.copyWith(
-                color: isSelected
-                    ? theme.colorScheme.primary
-                    : appTheme.textMuted,
+                color:
+                    isSelected ? theme.colorScheme.primary : appTheme.textMuted,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
             ),

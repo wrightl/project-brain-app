@@ -139,48 +139,48 @@ class SubscriptionManagementPage extends StatelessWidget {
 
     return DsSurfaceCard(
       child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TierBadge(tier: subscription.tier),
-                if (subscription.isTrialing)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: AppSpacing.xs,
-                    ),
-                    decoration: BoxDecoration(
-                      color: appTheme.amber,
-                      borderRadius: AppRadius.circularPill,
-                    ),
-                    child: Text(
-                      'Trial',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TierBadge(tier: subscription.tier),
+              if (subscription.isTrialing)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: appTheme.amber,
+                    borderRadius: AppRadius.circularPill,
+                  ),
+                  child: Text(
+                    'Trial',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-              ],
+                ),
+            ],
+          ),
+          SizedBox(height: AppSpacing.sm),
+          Text(
+            'Current Plan',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
             ),
-            SizedBox(height: AppSpacing.sm),
-            Text(
-              'Current Plan',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          ),
+          SizedBox(height: AppSpacing.xs),
+          Text(
+            _getTierDescription(subscription.tier),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-            SizedBox(height: AppSpacing.xs),
-            Text(
-              _getTierDescription(subscription.tier),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -193,47 +193,47 @@ class SubscriptionManagementPage extends StatelessWidget {
 
     return DsSurfaceCard(
       child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Subscription Status',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Subscription Status',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
             ),
-            SizedBox(height: AppSpacing.md),
+          ),
+          SizedBox(height: AppSpacing.md),
+          _StatusRow(
+            label: 'Status',
+            value: subscription.status.displayName,
+            valueColor: _getStatusColor(subscription.status, theme),
+          ),
+          if (subscription.isTrialing && subscription.trialEndsAt != null)
             _StatusRow(
-              label: 'Status',
-              value: subscription.status.displayName,
-              valueColor: _getStatusColor(subscription.status, theme),
+              label: 'Trial Ends',
+              value: dateFormat.format(subscription.trialEndsAt!),
             ),
-            if (subscription.isTrialing && subscription.trialEndsAt != null)
-              _StatusRow(
-                label: 'Trial Ends',
-                value: dateFormat.format(subscription.trialEndsAt!),
-              ),
+          _StatusRow(
+            label: 'Current Period',
+            value: (subscription.currentPeriodStart != null &&
+                    subscription.currentPeriodEnd != null)
+                ? '${dateFormat.format(subscription.currentPeriodStart!)} - ${dateFormat.format(subscription.currentPeriodEnd!)}'
+                : 'N/A',
+          ),
+          if (subscription.canceledAt != null)
             _StatusRow(
-              label: 'Current Period',
-              value: (subscription.currentPeriodStart != null &&
-                      subscription.currentPeriodEnd != null)
-                  ? '${dateFormat.format(subscription.currentPeriodStart!)} - ${dateFormat.format(subscription.currentPeriodEnd!)}'
+              label: 'Canceled On',
+              value: dateFormat.format(subscription.canceledAt!),
+              valueColor: theme.colorScheme.error,
+            ),
+          if (!subscription.isCanceled && !subscription.isExpired)
+            _StatusRow(
+              label: 'Next Billing Date',
+              value: (subscription.currentPeriodEnd != null)
+                  ? dateFormat.format(subscription.currentPeriodEnd!)
                   : 'N/A',
             ),
-            if (subscription.canceledAt != null)
-              _StatusRow(
-                label: 'Canceled On',
-                value: dateFormat.format(subscription.canceledAt!),
-                valueColor: theme.colorScheme.error,
-              ),
-            if (!subscription.isCanceled && !subscription.isExpired)
-              _StatusRow(
-                label: 'Next Billing Date',
-                value: (subscription.currentPeriodEnd != null)
-                    ? dateFormat.format(subscription.currentPeriodEnd!)
-                    : 'N/A',
-              ),
-          ],
-        ),
+        ],
+      ),
     );
   }
 
@@ -244,31 +244,31 @@ class SubscriptionManagementPage extends StatelessWidget {
   ) {
     return DsSurfaceCard(
       child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Quick Actions',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            SizedBox(height: AppSpacing.md),
-            if (subscription.tier != SubscriptionTier.free &&
-                !subscription.isCanceled)
-              ListTile(
-                leading: const Icon(Icons.cancel),
-                title: const Text('Cancel Subscription'),
-                subtitle: const Text('Cancel at the end of current period'),
-                onTap: () => _showCancelDialog(context, provider),
-              ),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Quick Actions',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          SizedBox(height: AppSpacing.md),
+          if (subscription.tier != SubscriptionTier.free &&
+              !subscription.isCanceled)
             ListTile(
-              leading: const Icon(Icons.upgrade),
-              title: const Text('Change Plan'),
-              subtitle: const Text('Upgrade or downgrade your plan'),
-              onTap: () => context.push('/subscriptions/pricing'),
+              leading: const Icon(Icons.cancel),
+              title: const Text('Cancel Subscription'),
+              subtitle: const Text('Cancel at the end of current period'),
+              onTap: () => _showCancelDialog(context, provider),
             ),
-          ],
-        ),
+          ListTile(
+            leading: const Icon(Icons.upgrade),
+            title: const Text('Change Plan'),
+            subtitle: const Text('Upgrade or downgrade your plan'),
+            onTap: () => context.push('/subscriptions/pricing'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -281,46 +281,46 @@ class SubscriptionManagementPage extends StatelessWidget {
 
     return DsSurfaceCard(
       child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Usage Summary',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Usage Summary',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
-                TextButton(
-                  onPressed: () => context.push('/subscriptions/usage'),
-                  child: const Text('View Details'),
-                ),
-              ],
-            ),
-            SizedBox(height: AppSpacing.md),
-            _UsageSummaryRow(
-              label: 'AI Queries (Today)',
-              value: '${usage.aiQueries.daily}',
-              limit: provider.getDailyAIQueryLimit(),
-            ),
-            _UsageSummaryRow(
-              label: 'AI Queries (This Month)',
-              value: '${usage.aiQueries.monthly}',
-              limit: provider.getMonthlyAIQueryLimit(),
-            ),
-            _UsageSummaryRow(
-              label: 'Coach Messages (This Month)',
-              value: '${usage.coachMessages.monthly}',
-              limit: provider.getMonthlyCoachMessageLimit(),
-            ),
-            _UsageSummaryRow(
-              label: 'File Storage',
-              value: '${usage.fileStorage.megabytes.toStringAsFixed(1)} MB',
-              limit: provider.getFileStorageLimitMB()?.toInt(),
-            ),
-          ],
-        ),
+              ),
+              TextButton(
+                onPressed: () => context.push('/subscriptions/usage'),
+                child: const Text('View Details'),
+              ),
+            ],
+          ),
+          SizedBox(height: AppSpacing.md),
+          _UsageSummaryRow(
+            label: 'AI Queries (Today)',
+            value: '${usage.aiQueries.daily}',
+            limit: provider.getDailyAIQueryLimit(),
+          ),
+          _UsageSummaryRow(
+            label: 'AI Queries (This Month)',
+            value: '${usage.aiQueries.monthly}',
+            limit: provider.getMonthlyAIQueryLimit(),
+          ),
+          _UsageSummaryRow(
+            label: 'Coach Messages (This Month)',
+            value: '${usage.coachMessages.monthly}',
+            limit: provider.getMonthlyCoachMessageLimit(),
+          ),
+          _UsageSummaryRow(
+            label: 'File Storage',
+            value: '${usage.fileStorage.megabytes.toStringAsFixed(1)} MB',
+            limit: provider.getFileStorageLimitMB()?.toInt(),
+          ),
+        ],
+      ),
     );
   }
 

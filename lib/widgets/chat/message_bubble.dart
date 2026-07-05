@@ -111,13 +111,10 @@ class _MessageBubbleState extends State<MessageBubble> {
           vertical: AppSpacing.md,
         ),
         decoration: BoxDecoration(
-          color: isUser
-              ? theme.colorScheme.primary
-              : theme.colorScheme.surface,
+          color: isUser ? theme.colorScheme.primary : theme.colorScheme.surface,
           borderRadius: borderRadius,
-          border: isUser
-              ? null
-              : Border.all(color: context.appTheme.borderColor),
+          border:
+              isUser ? null : Border.all(color: context.appTheme.borderColor),
         ),
         child: MarkdownBody(
           data: _processedContent,

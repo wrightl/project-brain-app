@@ -173,7 +173,8 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
                       ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surface,
-                        border: Border(top: BorderSide(color: appTheme.borderColor)),
+                        border: Border(
+                            top: BorderSide(color: appTheme.borderColor)),
                       ),
                       child: Row(
                         children: [
@@ -181,8 +182,7 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
                             child: TextField(
                               controller: _controller,
                               decoration: InputDecoration(
-                                hintText:
-                                    "Tell me what you're dealing with...",
+                                hintText: "Tell me what you're dealing with...",
                                 filled: true,
                                 fillColor: theme.scaffoldBackgroundColor,
                                 border: OutlineInputBorder(
@@ -410,9 +410,8 @@ class _StrategyCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: DsSurfaceCard(
         onTap: onTap,
-        borderColor: isSelected
-            ? theme.colorScheme.primary
-            : appTheme.borderColor,
+        borderColor:
+            isSelected ? theme.colorScheme.primary : appTheme.borderColor,
         backgroundColor:
             isSelected ? appTheme.primarySoft : theme.colorScheme.surface,
         child: Column(

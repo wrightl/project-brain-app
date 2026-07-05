@@ -50,8 +50,8 @@ class LoginPage extends StatelessWidget {
               if (authProvider.hasError) ...[
                 const SizedBox(height: AppSpacing.lg),
                 DsSurfaceCard(
-                  backgroundColor: theme.colorScheme.errorContainer
-                      .withValues(alpha: 0.35),
+                  backgroundColor:
+                      theme.colorScheme.errorContainer.withValues(alpha: 0.35),
                   borderColor: theme.colorScheme.error.withValues(alpha: 0.3),
                   child: Text(
                     authProvider.errorMessage!,

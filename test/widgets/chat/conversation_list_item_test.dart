@@ -53,10 +53,12 @@ void main() {
       );
 
       final material = tester.widget<Material>(
-        find.descendant(
-          of: find.byType(ConversationListItem),
-          matching: find.byType(Material),
-        ).first,
+        find
+            .descendant(
+              of: find.byType(ConversationListItem),
+              matching: find.byType(Material),
+            )
+            .first,
       );
 
       expect(material.color, isNotNull);
@@ -86,10 +88,12 @@ void main() {
       );
 
       final material = tester.widget<Material>(
-        find.descendant(
-          of: find.byType(ConversationListItem),
-          matching: find.byType(Material),
-        ).first,
+        find
+            .descendant(
+              of: find.byType(ConversationListItem),
+              matching: find.byType(Material),
+            )
+            .first,
       );
 
       expect(material.color, Colors.transparent);

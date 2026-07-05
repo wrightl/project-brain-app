@@ -352,7 +352,8 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           CircleAvatar(
             radius: 32,
-            backgroundColor: appColors?.primarySoft ?? colorScheme.primaryContainer,
+            backgroundColor:
+                appColors?.primarySoft ?? colorScheme.primaryContainer,
             backgroundImage:
                 hasPicture ? CachedNetworkImageProvider(picture) : null,
             child: hasPicture
@@ -370,7 +371,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   Text(
                     email,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: appColors?.textMuted ?? colorScheme.onSurfaceVariant,
+                      color:
+                          appColors?.textMuted ?? colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -425,7 +427,8 @@ class _ProfilePageState extends State<ProfilePage> {
                           border: isLast
                               ? null
                               : Border(
-                                  bottom: BorderSide(color: appTheme.borderColor),
+                                  bottom:
+                                      BorderSide(color: appTheme.borderColor),
                                 ),
                         ),
                         child: Row(
@@ -437,7 +440,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                   : appTheme.textMuted,
                               backgroundColor: isSelected
                                   ? appTheme.primarySoft
-                                  : appTheme.borderColor.withValues(alpha: 0.35),
+                                  : appTheme.borderColor
+                                      .withValues(alpha: 0.35),
                               size: 40,
                               iconSize: 20,
                               borderRadius: 12,

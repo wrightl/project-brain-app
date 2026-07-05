@@ -283,8 +283,7 @@ class _HeroCard extends StatelessWidget {
                   value: progress,
                   strokeWidth: 6,
                   backgroundColor: Colors.white.withValues(alpha: 0.2),
-                  valueColor:
-                      const AlwaysStoppedAnimation<Color>(Colors.white),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
                 Text(
                   pctLabel,

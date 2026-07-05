@@ -84,8 +84,7 @@ class _JournalListPageState extends State<JournalListPage> {
                   if (provider.isLoading && provider.items.isEmpty) {
                     return const Center(child: CircularProgressIndicator());
                   }
-                  if (provider.errorMessage != null &&
-                      provider.items.isEmpty) {
+                  if (provider.errorMessage != null && provider.items.isEmpty) {
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -161,8 +160,8 @@ class _JournalListPageState extends State<JournalListPage> {
                         AppSpacing.lg,
                         AppSpacing.xxl,
                       ),
-                      itemCount:
-                          provider.items.length + (provider.hasNextPage ? 1 : 0),
+                      itemCount: provider.items.length +
+                          (provider.hasNextPage ? 1 : 0),
                       itemBuilder: (context, index) {
                         if (index >= provider.items.length) {
                           return const Padding(
@@ -231,7 +230,9 @@ class _JournalListItem extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            titleLine.length > 60 ? '${titleLine.substring(0, 60)}…' : titleLine,
+            titleLine.length > 60
+                ? '${titleLine.substring(0, 60)}…'
+                : titleLine,
             style: theme.textTheme.titleSmall,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

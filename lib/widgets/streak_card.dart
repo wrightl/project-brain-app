@@ -56,7 +56,9 @@ class StreakCard extends StatelessWidget {
                           ? '$currentStreak day${currentStreak == 1 ? '' : 's'} streak'
                           : (noStreakMessage ?? 'No streak yet'),
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: hasStreak ? streakColor : theme.colorScheme.onSurface,
+                        color: hasStreak
+                            ? streakColor
+                            : theme.colorScheme.onSurface,
                       ),
                     ),
                     if (hasStreak && bestStreak > 0)

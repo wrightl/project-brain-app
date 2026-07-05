@@ -436,117 +436,83 @@ class _FindCoachPageState extends State<FindCoachPage> {
     final appTheme = context.appTheme;
     return DsSurfaceCard(
       child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Filter by Specialisms',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Filter by Specialisms',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
-                if (_selectedSpecialisms.isNotEmpty ||
-                    _selectedAgeGroups.isNotEmpty)
-                  TextButton.icon(
-                    onPressed: _clearFilters,
-                    icon: const Icon(Icons.clear, size: 16),
-                    label: const Text('Clear'),
-                  ),
-              ],
+              ),
+              if (_selectedSpecialisms.isNotEmpty ||
+                  _selectedAgeGroups.isNotEmpty)
+                TextButton.icon(
+                  onPressed: _clearFilters,
+                  icon: const Icon(Icons.clear, size: 16),
+                  label: const Text('Clear'),
+                ),
+            ],
+          ),
+          SizedBox(height: AppSpacing.sm),
+          Text(
+            'Select specialisms to find coaches who specialise in them',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
-            SizedBox(height: AppSpacing.sm),
+          ),
+          SizedBox(height: AppSpacing.md),
+          if (_isLoadingSpecialisms)
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  SizedBox(width: AppSpacing.md),
+                  Text(
+                    'Loading specialisms...',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.7,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else if (_specialismsLoadError != null)
             Text(
-              'Select specialisms to find coaches who specialise in them',
+              _specialismsLoadError!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            )
+          else if (_specialisms.isEmpty)
+            Text(
+              'No specialisms available.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
-            ),
-            SizedBox(height: AppSpacing.md),
-            if (_isLoadingSpecialisms)
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                    SizedBox(width: AppSpacing.md),
-                    Text(
-                      'Loading specialisms...',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.7,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else if (_specialismsLoadError != null)
-              Text(
-                _specialismsLoadError!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.error,
-                ),
-              )
-            else if (_specialisms.isEmpty)
-              Text(
-                'No specialisms available.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
-              )
-            else
-              Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
-                children: _specialisms.map((specialism) {
-                  final isSelected = _selectedSpecialisms.contains(specialism);
-                  return FilterChip(
-                    label: Text(specialism),
-                    selected: isSelected,
-                    onSelected: (_) => _toggleSpecialism(specialism),
-                    selectedColor: appTheme.primarySoft,
-                    checkmarkColor: theme.colorScheme.primary,
-                    side: BorderSide(
-                      color: isSelected
-                          ? theme.colorScheme.primary
-                          : appTheme.borderColor,
-                    ),
-                  );
-                }).toList(),
-              ),
-            SizedBox(height: AppSpacing.s20),
-            Text(
-              'Filter by Age Groups',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: AppSpacing.sm),
-            Text(
-              'Select age groups to find coaches who work with them',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
-            ),
-            SizedBox(height: AppSpacing.md),
+            )
+          else
             Wrap(
               spacing: AppSpacing.sm,
               runSpacing: AppSpacing.sm,
-              children: _ageGroups.map((ageGroup) {
-                final isSelected = _selectedAgeGroups.contains(ageGroup);
+              children: _specialisms.map((specialism) {
+                final isSelected = _selectedSpecialisms.contains(specialism);
                 return FilterChip(
-                  label: Text(ageGroup),
+                  label: Text(specialism),
                   selected: isSelected,
-                  onSelected: (_) => _toggleAgeGroup(ageGroup),
+                  onSelected: (_) => _toggleSpecialism(specialism),
                   selectedColor: appTheme.primarySoft,
                   checkmarkColor: theme.colorScheme.primary,
                   side: BorderSide(
@@ -557,86 +523,120 @@ class _FindCoachPageState extends State<FindCoachPage> {
                 );
               }).toList(),
             ),
-          ],
-        ),
+          SizedBox(height: AppSpacing.s20),
+          Text(
+            'Filter by Age Groups',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: AppSpacing.sm),
+          Text(
+            'Select age groups to find coaches who work with them',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+          ),
+          SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: _ageGroups.map((ageGroup) {
+              final isSelected = _selectedAgeGroups.contains(ageGroup);
+              return FilterChip(
+                label: Text(ageGroup),
+                selected: isSelected,
+                onSelected: (_) => _toggleAgeGroup(ageGroup),
+                selectedColor: appTheme.primarySoft,
+                checkmarkColor: theme.colorScheme.primary,
+                side: BorderSide(
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : appTheme.borderColor,
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildLocationCard(ThemeData theme) {
     return DsSurfaceCard(
       child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Location',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Location',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
             ),
-            SizedBox(height: AppSpacing.md),
-            CountrySearchField(
-              countries: _countries,
-              value: _selectedCountry,
-              onChanged: _onCountryChanged,
-              isLoading: _isLoadingCountries,
+          ),
+          SizedBox(height: AppSpacing.md),
+          CountrySearchField(
+            countries: _countries,
+            value: _selectedCountry,
+            onChanged: _onCountryChanged,
+            isLoading: _isLoadingCountries,
+          ),
+          SizedBox(height: AppSpacing.md),
+          CitySearchField(
+            key: ValueKey(_selectedCountry?.code ?? 'no-country'),
+            locationService: _locationService,
+            countryCode: _selectedCountry?.code,
+            value: _selectedCity,
+            onChanged: _onCityChanged,
+          ),
+          SizedBox(height: AppSpacing.md),
+          DropdownButtonFormField<int>(
+            initialValue: _distanceMiles,
+            decoration: InputDecoration(
+              labelText: 'Distance',
+              prefixIcon: const Icon(Icons.social_distance),
+              helperText: _searchCenter == null
+                  ? 'Select a city or use current location to enable distance search.'
+                  : null,
             ),
-            SizedBox(height: AppSpacing.md),
-            CitySearchField(
-              key: ValueKey(_selectedCountry?.code ?? 'no-country'),
-              locationService: _locationService,
-              countryCode: _selectedCountry?.code,
-              value: _selectedCity,
-              onChanged: _onCityChanged,
-            ),
-            SizedBox(height: AppSpacing.md),
-            DropdownButtonFormField<int>(
-              initialValue: _distanceMiles,
-              decoration: InputDecoration(
-                labelText: 'Distance',
-                prefixIcon: const Icon(Icons.social_distance),
-                helperText: _searchCenter == null
-                    ? 'Select a city or use current location to enable distance search.'
-                    : null,
-              ),
-              items: _distanceOptions
-                  .map(
-                    (miles) => DropdownMenuItem(
-                      value: miles,
-                      child: Text('$miles miles'),
-                    ),
-                  )
-                  .toList(),
-              onChanged: _searchCenter == null
+            items: _distanceOptions
+                .map(
+                  (miles) => DropdownMenuItem(
+                    value: miles,
+                    child: Text('$miles miles'),
+                  ),
+                )
+                .toList(),
+            onChanged: _searchCenter == null
+                ? null
+                : (value) {
+                    if (value != null) {
+                      setState(() => _distanceMiles = value);
+                    }
+                  },
+          ),
+          SizedBox(height: AppSpacing.md),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: (_isLoading || _isAcquiringLocation)
                   ? null
-                  : (value) {
-                      if (value != null) {
-                        setState(() => _distanceMiles = value);
-                      }
-                    },
-            ),
-            SizedBox(height: AppSpacing.md),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: (_isLoading || _isAcquiringLocation)
-                    ? null
-                    : _searchByCurrentLocation,
-                icon: _isAcquiringLocation
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.my_location),
-                label: Text(
-                  _isAcquiringLocation
-                      ? 'Getting your location…'
-                      : 'Use current location',
-                ),
+                  : _searchByCurrentLocation,
+              icon: _isAcquiringLocation
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.my_location),
+              label: Text(
+                _isAcquiringLocation
+                    ? 'Getting your location…'
+                    : 'Use current location',
               ),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -797,9 +797,8 @@ class _FindCoachPageState extends State<FindCoachPage> {
       padding: AppInsets.listItemBottom,
       child: DsSurfaceCard(
         onTap: () => context.push('/network/coaches/${coach.profileId}'),
-        borderColor: isHighlighted
-            ? theme.colorScheme.primary
-            : appTheme.borderColor,
+        borderColor:
+            isHighlighted ? theme.colorScheme.primary : appTheme.borderColor,
         child: Row(
           children: [
             IconBubble(

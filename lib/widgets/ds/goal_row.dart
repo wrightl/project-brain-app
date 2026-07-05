@@ -39,8 +39,7 @@ class GoalRow extends StatelessWidget {
                 Text(
                   title,
                   style: theme.textTheme.titleSmall?.copyWith(
-                    decoration:
-                        completed ? TextDecoration.lineThrough : null,
+                    decoration: completed ? TextDecoration.lineThrough : null,
                     color: completed
                         ? appTheme.textMuted
                         : theme.colorScheme.onSurface,

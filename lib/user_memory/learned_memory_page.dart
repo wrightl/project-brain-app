@@ -121,7 +121,8 @@ class _LearnedMemoryPageState extends State<LearnedMemoryPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Learned memories', style: theme.textTheme.headlineSmall),
+                  Text('Learned memories',
+                      style: theme.textTheme.headlineSmall),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     'Facts and experiences the assistant has learned from your conversations.',

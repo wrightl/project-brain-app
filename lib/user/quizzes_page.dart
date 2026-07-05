@@ -148,88 +148,87 @@ class _QuizzesPageState extends State<QuizzesPage> {
                     _insightsErrorMessage != null)
                   DsSurfaceCard(
                     child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              IconBubble(
-                                icon: Icons.insights,
-                                color: appTheme.sky,
-                                backgroundColor: appTheme.skySoft,
-                                size: 40,
-                                iconSize: 20,
-                                borderRadius: 12,
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                              Text(
-                                'Quiz Insights',
-                                style: theme.textTheme.titleMedium,
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: AppSpacing.lg),
-                          if (_isLoadingInsights)
-                            const Center(child: CircularProgressIndicator())
-                          else if (_insightsErrorMessage != null)
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            IconBubble(
+                              icon: Icons.insights,
+                              color: appTheme.sky,
+                              backgroundColor: appTheme.skySoft,
+                              size: 40,
+                              iconSize: 20,
+                              borderRadius: 12,
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
                             Text(
-                              _insightsErrorMessage!,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.error,
+                              'Quiz Insights',
+                              style: theme.textTheme.titleMedium,
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: AppSpacing.lg),
+                        if (_isLoadingInsights)
+                          const Center(child: CircularProgressIndicator())
+                        else if (_insightsErrorMessage != null)
+                          Text(
+                            _insightsErrorMessage!,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.error,
+                            ),
+                          )
+                        else if (_insights != null) ...[
+                          if (_insights!.summary.isNotEmpty)
+                            Text(
+                              _insights!.summary,
+                              style: theme.textTheme.bodyLarge,
+                            ),
+                          if (_insights!.keyInsights.isNotEmpty) ...[
+                            SizedBox(height: AppSpacing.lg),
+                            Text(
+                              'Key Insights:',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
                               ),
-                            )
-                          else if (_insights != null) ...[
-                            if (_insights!.summary.isNotEmpty)
-                              Text(
-                                _insights!.summary,
-                                style: theme.textTheme.bodyLarge,
-                              ),
-                            if (_insights!.keyInsights.isNotEmpty) ...[
-                              SizedBox(height: AppSpacing.lg),
-                              Text(
-                                'Key Insights:',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              SizedBox(height: AppSpacing.sm),
-                              ..._insights!.keyInsights.map((insight) =>
-                                  Padding(
-                                    padding:
-                                        EdgeInsets.only(bottom: AppSpacing.sm),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Icon(
-                                          Icons.check_circle,
-                                          size: 20,
-                                          color: theme.colorScheme.primary,
+                            ),
+                            SizedBox(height: AppSpacing.sm),
+                            ..._insights!.keyInsights.map((insight) => Padding(
+                                  padding:
+                                      EdgeInsets.only(bottom: AppSpacing.sm),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Icon(
+                                        Icons.check_circle,
+                                        size: 20,
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                      SizedBox(width: AppSpacing.sm),
+                                      Expanded(
+                                        child: Text(
+                                          insight,
+                                          style: theme.textTheme.bodyMedium,
                                         ),
-                                        SizedBox(width: AppSpacing.sm),
-                                        Expanded(
-                                          child: Text(
-                                            insight,
-                                            style: theme.textTheme.bodyMedium,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )),
-                            ],
-                            if (_insights!.lastUpdated != null) ...[
-                              SizedBox(height: AppSpacing.lg),
-                              Text(
-                                'Last updated: ${_formatDate(_insights!.lastUpdated)}',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurface
-                                      .withValues(alpha: 0.6),
-                                ),
+                                      ),
+                                    ],
+                                  ),
+                                )),
+                          ],
+                          if (_insights!.lastUpdated != null) ...[
+                            SizedBox(height: AppSpacing.lg),
+                            Text(
+                              'Last updated: ${_formatDate(_insights!.lastUpdated)}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.6),
                               ),
-                            ],
+                            ),
                           ],
                         ],
-                      ),
+                      ],
                     ),
+                  ),
 
                 const SizedBox(height: AppSpacing.xl),
                 SectionHeader(title: 'Available Quizzes'),
@@ -426,7 +425,8 @@ class _QuizzesPageState extends State<QuizzesPage> {
                                     const SizedBox(height: AppSpacing.micro),
                                     Text(
                                       'Score: ${response.score}',
-                                      style: theme.textTheme.bodySmall?.copyWith(
+                                      style:
+                                          theme.textTheme.bodySmall?.copyWith(
                                         color: appTheme.green,
                                         fontWeight: FontWeight.w600,
                                       ),

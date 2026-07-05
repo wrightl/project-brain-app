@@ -243,17 +243,14 @@ class AIService extends HttpService {
 
   static List<Citation> parseAgentCitations(dynamic value) {
     if (value is! List) return [];
-    return value
-        .whereType<Map>()
-        .map((item) {
-          final map = Map<String, dynamic>.from(item);
-          return Citation(
-            url: map['storageUrl'] as String? ?? '',
-            title: map['sourceFile'] as String? ?? 'Source',
-            description: map['sourcePage'] as String?,
-          );
-        })
-        .toList();
+    return value.whereType<Map>().map((item) {
+      final map = Map<String, dynamic>.from(item);
+      return Citation(
+        url: map['storageUrl'] as String? ?? '',
+        title: map['sourceFile'] as String? ?? 'Source',
+        description: map['sourcePage'] as String?,
+      );
+    }).toList();
   }
 
   static List<ToolExecution> parseToolExecutions(dynamic value) {
