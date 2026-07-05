@@ -7,6 +7,7 @@ import 'package:projectbrain/models/chatmessage.dart';
 import 'package:projectbrain/widgets/chat/typing_indicator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 
 /// Reusable message bubble widget for displaying chat messages
 class MessageBubble extends StatefulWidget {
@@ -60,12 +61,18 @@ class _MessageBubbleState extends State<MessageBubble> {
     if (isEmpty && widget.showTypingIndicator) {
       return Container(
         alignment: Alignment.centerLeft,
-        padding: EdgeInsets.all(AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         child: Container(
           padding: AppInsets.card,
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: AppRadius.circularSm,
+            color: theme.colorScheme.surface,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(18),
+              topRight: Radius.circular(18),
+              bottomRight: Radius.circular(18),
+              bottomLeft: Radius.circular(4),
+            ),
+            border: Border.all(color: context.appTheme.borderColor),
           ),
           child: TypingIndicator(
             dotColor: theme.colorScheme.onSurfaceVariant,
@@ -78,20 +85,39 @@ class _MessageBubbleState extends State<MessageBubble> {
       return const SizedBox.shrink();
     }
 
+    final borderRadius = isUser
+        ? const BorderRadius.only(
+            topLeft: Radius.circular(18),
+            topRight: Radius.circular(18),
+            bottomLeft: Radius.circular(18),
+            bottomRight: Radius.circular(4),
+          )
+        : const BorderRadius.only(
+            topLeft: Radius.circular(18),
+            topRight: Radius.circular(18),
+            bottomRight: Radius.circular(18),
+            bottomLeft: Radius.circular(4),
+          );
+
     return Container(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      padding: isUser
-          ? EdgeInsets.all(AppSpacing.sm)
-              .add(EdgeInsets.only(left: AppSpacing.s20))
-          : EdgeInsets.all(AppSpacing.sm)
-              .add(EdgeInsets.only(right: AppSpacing.s20)),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
+      ),
       child: Container(
-        padding: EdgeInsets.all(AppSpacing.md),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
         decoration: BoxDecoration(
           color: isUser
               ? theme.colorScheme.primary
-              : theme.colorScheme.surfaceContainerHighest,
-          borderRadius: AppRadius.circularSm,
+              : theme.colorScheme.surface,
+          borderRadius: borderRadius,
+          border: isUser
+              ? null
+              : Border.all(color: context.appTheme.borderColor),
         ),
         child: MarkdownBody(
           data: _processedContent,

@@ -12,6 +12,8 @@ import 'package:projectbrain/widgets/location/city_search_field.dart';
 import 'package:projectbrain/widgets/location/country_search_field.dart';
 import 'package:projectbrain/widgets/maps/coach_results_map.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 
 enum ResultsView { list, map }
 
@@ -431,10 +433,9 @@ class _FindCoachPageState extends State<FindCoachPage> {
   }
 
   Widget _buildFiltersCard(ThemeData theme) {
-    return Card(
-      child: Padding(
-        padding: AppInsets.screen,
-        child: Column(
+    final appTheme = context.appTheme;
+    return DsSurfaceCard(
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -512,8 +513,13 @@ class _FindCoachPageState extends State<FindCoachPage> {
                     label: Text(specialism),
                     selected: isSelected,
                     onSelected: (_) => _toggleSpecialism(specialism),
-                    selectedColor: theme.colorScheme.primaryContainer,
-                    checkmarkColor: theme.colorScheme.onPrimaryContainer,
+                    selectedColor: appTheme.primarySoft,
+                    checkmarkColor: theme.colorScheme.primary,
+                    side: BorderSide(
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : appTheme.borderColor,
+                    ),
                   );
                 }).toList(),
               ),
@@ -541,22 +547,24 @@ class _FindCoachPageState extends State<FindCoachPage> {
                   label: Text(ageGroup),
                   selected: isSelected,
                   onSelected: (_) => _toggleAgeGroup(ageGroup),
-                  selectedColor: theme.colorScheme.primaryContainer,
-                  checkmarkColor: theme.colorScheme.onPrimaryContainer,
+                  selectedColor: appTheme.primarySoft,
+                  checkmarkColor: theme.colorScheme.primary,
+                  side: BorderSide(
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : appTheme.borderColor,
+                  ),
                 );
               }).toList(),
             ),
           ],
         ),
-      ),
     );
   }
 
   Widget _buildLocationCard(ThemeData theme) {
-    return Card(
-      child: Padding(
-        padding: AppInsets.screen,
-        child: Column(
+    return DsSurfaceCard(
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -585,7 +593,6 @@ class _FindCoachPageState extends State<FindCoachPage> {
               initialValue: _distanceMiles,
               decoration: InputDecoration(
                 labelText: 'Distance',
-                border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.social_distance),
                 helperText: _searchCenter == null
                     ? 'Select a city or use current location to enable distance search.'
@@ -630,7 +637,6 @@ class _FindCoachPageState extends State<FindCoachPage> {
             ),
           ],
         ),
-      ),
     );
   }
 
@@ -783,70 +789,44 @@ class _FindCoachPageState extends State<FindCoachPage> {
   }
 
   Widget _buildCoachCard(ThemeData theme, Coach coach) {
+    final appTheme = context.appTheme;
     final locationLabel = _coachLocationLabel(coach);
     final isHighlighted = _highlightedCoachId == coach.profileId;
 
-    return Card(
-      margin: AppInsets.listItemBottom,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.circularMd,
-        side: isHighlighted
-            ? BorderSide(color: theme.colorScheme.primary, width: 2)
-            : BorderSide.none,
-      ),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: theme.colorScheme.primaryContainer,
-          child: Icon(
-            Icons.person,
-            color: theme.colorScheme.onPrimaryContainer,
-          ),
-        ),
-        title: Text(
-          coach.fullName,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+    return Padding(
+      padding: AppInsets.listItemBottom,
+      child: DsSurfaceCard(
         onTap: () => context.push('/network/coaches/${coach.profileId}'),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        borderColor: isHighlighted
+            ? theme.colorScheme.primary
+            : appTheme.borderColor,
+        child: Row(
           children: [
-            if (locationLabel != null) ...[
-              SizedBox(height: AppSpacing.xs),
-              Row(
+            IconBubble(
+              icon: Icons.person_outline,
+              color: appTheme.teal,
+              backgroundColor: appTheme.tealSoft,
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.location_on,
-                    size: 16,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  Text(
+                    coach.fullName,
+                    style: theme.textTheme.titleSmall,
                   ),
-                  SizedBox(width: AppSpacing.xs),
-                  Expanded(
-                    child: Text(
+                  if (locationLabel != null) ...[
+                    const SizedBox(height: AppSpacing.micro),
+                    Text(
                       locationLabel,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
+                      style: theme.textTheme.bodySmall,
                     ),
-                  ),
+                  ],
                 ],
               ),
-            ],
-            if (coach.specialisms != null && coach.specialisms!.isNotEmpty) ...[
-              SizedBox(height: AppSpacing.xs),
-              Wrap(
-                spacing: AppSpacing.xs,
-                children: coach.specialisms!.take(3).map((spec) {
-                  return Chip(
-                    label: Text(spec),
-                    labelStyle: theme.textTheme.bodySmall,
-                    padding: EdgeInsets.zero,
-                  );
-                }).toList(),
-              ),
-            ],
+            ),
+            Icon(Icons.chevron_right, color: appTheme.textMuted, size: 20),
           ],
         ),
       ),

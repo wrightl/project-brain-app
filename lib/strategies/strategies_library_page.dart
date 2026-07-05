@@ -6,6 +6,8 @@ import 'package:projectbrain/models/strategies/coping_strategy_library_item.dart
 import 'package:projectbrain/strategies/strategies_localizations.dart';
 import 'package:projectbrain/strategies/strategies_provider.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 
 /// Strategies library screen: list saved strategies, rate, delete.
 class StrategiesLibraryPage extends StatefulWidget {
@@ -170,9 +172,9 @@ class _StrategyLibraryCard extends StatelessWidget {
     final dateStr = DateFormat.yMMMd().format(item.savedAt);
     final icon = _iconFor(item.iconKey);
 
-    return Card(
-      margin: AppInsets.listItemBottom,
-      child: Padding(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: DsSurfaceCard(
         padding: AppInsets.screen,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -181,39 +183,26 @@ class _StrategyLibraryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (icon != null)
-                  Padding(
-                    padding: EdgeInsets.only(right: AppSpacing.md),
-                    child:
-                        Icon(icon, color: theme.colorScheme.primary, size: 28),
+                  IconBubble(
+                    icon: icon,
+                    color: context.appTheme.amber,
+                    backgroundColor: context.appTheme.amberSoft,
                   ),
+                if (icon != null) const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        item.title,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      SizedBox(height: AppSpacing.xs),
+                      Text(item.title, style: theme.textTheme.titleSmall),
+                      const SizedBox(height: AppSpacing.xs),
                       Text(
                         item.description,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.8),
-                        ),
+                        style: theme.textTheme.bodySmall,
                         maxLines: 4,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: AppSpacing.sm),
-                      Text(
-                        dateStr,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.6),
-                        ),
-                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(dateStr, style: theme.textTheme.bodySmall),
                     ],
                   ),
                 ),
@@ -228,12 +217,10 @@ class _StrategyLibraryCard extends StatelessWidget {
                         children: [
                           Icon(Icons.delete_outline,
                               color: theme.colorScheme.error),
-                          SizedBox(width: AppSpacing.sm),
+                          const SizedBox(width: AppSpacing.sm),
                           Text(
                             StrategiesLocalizations.of(context).delete,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: theme.colorScheme.error,
-                            ),
+                            style: TextStyle(color: theme.colorScheme.error),
                           ),
                         ],
                       ),
@@ -242,7 +229,7 @@ class _StrategyLibraryCard extends StatelessWidget {
                 ),
               ],
             ),
-            SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.sm),
             Row(
               children: List.generate(5, (i) {
                 final star = i + 1;
@@ -251,11 +238,12 @@ class _StrategyLibraryCard extends StatelessWidget {
                   icon: Icon(
                     isFilled ? Icons.star : Icons.star_border,
                     color: isFilled
-                        ? (theme.colorScheme.primary)
-                        : theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                        ? context.appTheme.amber
+                        : context.appTheme.textMuted,
                   ),
                   onPressed: () => onRatingChanged(star),
-                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
                   constraints:
                       const BoxConstraints(minWidth: 32, minHeight: 32),
                 );

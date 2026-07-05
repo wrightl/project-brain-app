@@ -9,6 +9,7 @@ import 'package:projectbrain/models/subscription.dart';
 import 'package:projectbrain/subscription/widgets/tier_badge.dart';
 import 'package:projectbrain/subscription/widgets/stripe_checkout_webview.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 
 /// Pricing/Upgrade page showing all subscription tiers
 class PricingPage extends StatefulWidget {
@@ -84,11 +85,14 @@ class _PricingPageState extends State<PricingPage> {
   }
 
   Widget _buildBillingToggle() {
+    final appTheme = context.appTheme;
+
     return Container(
       padding: EdgeInsets.all(AppSpacing.xs),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: AppRadius.circularMd,
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: AppRadius.circularPill,
+        border: Border.all(color: appTheme.borderColor),
       ),
       child: Row(
         children: [
@@ -120,6 +124,7 @@ class _PricingPageState extends State<PricingPage> {
     bool isPopular = false,
   }) {
     final theme = Theme.of(context);
+    final appTheme = context.appTheme;
     final isCurrentTier = tier == currentTier;
     final price = _getPrice(tier, isAnnual);
     final period = isAnnual ? 'year' : 'month';
@@ -132,16 +137,16 @@ class _PricingPageState extends State<PricingPage> {
           color: isCurrentTier
               ? theme.colorScheme.primary
               : isPopular
-                  ? Colors.blue
-                  : theme.colorScheme.outline,
+                  ? theme.colorScheme.primary
+                  : appTheme.borderColor,
           width: isCurrentTier || isPopular ? 2 : 1,
         ),
         boxShadow: isPopular
             ? [
                 BoxShadow(
-                  color: Colors.blue.withValues(alpha: 0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                  blurRadius: 28,
+                  offset: const Offset(0, 8),
                 ),
               ]
             : null,
@@ -154,7 +159,7 @@ class _PricingPageState extends State<PricingPage> {
             padding: AppInsets.screen,
             decoration: BoxDecoration(
               color: isPopular
-                  ? Colors.blue.withValues(alpha: 0.1)
+                  ? appTheme.primarySoft
                   : theme.colorScheme.surfaceContainerHighest
                       .withValues(alpha: 0.5),
               borderRadius: const BorderRadius.only(
@@ -179,8 +184,8 @@ class _PricingPageState extends State<PricingPage> {
                                 vertical: AppSpacing.xs,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.blue,
-                                borderRadius: AppRadius.circularMd,
+                                color: theme.colorScheme.primary,
+                                borderRadius: AppRadius.circularPill,
                               ),
                               child: Text(
                                 'Most Popular',
@@ -416,11 +421,11 @@ class _PricingPageState extends State<PricingPage> {
         if (billingUrl.isEmpty) {
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
+            SnackBar(
+              content: const Text(
                 'Billing URL is not configured. Add SUBSCRIPTION_BILLING_WEB_URL to your environment.',
               ),
-              backgroundColor: Colors.orange,
+              backgroundColor: context.appTheme.amber,
             ),
           );
           return;
@@ -490,9 +495,9 @@ class _PricingPageState extends State<PricingPage> {
 
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Subscription upgraded successfully!'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Subscription upgraded successfully!'),
+            backgroundColor: context.appTheme.green,
           ),
         );
 
@@ -562,14 +567,16 @@ class _BillingOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final appTheme = context.appTheme;
 
     return InkWell(
       onTap: onTap,
+      borderRadius: AppRadius.circularPill,
       child: Container(
         padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
         decoration: BoxDecoration(
-          color: isSelected ? theme.colorScheme.primary : Colors.transparent,
-          borderRadius: AppRadius.circularSm,
+          color: isSelected ? appTheme.primarySoft : Colors.transparent,
+          borderRadius: AppRadius.circularPill,
         ),
         child: Column(
           children: [
@@ -577,9 +584,9 @@ class _BillingOption extends StatelessWidget {
               label,
               style: theme.textTheme.labelLarge?.copyWith(
                 color: isSelected
-                    ? theme.colorScheme.onPrimary
-                    : theme.colorScheme.onSurface,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ? theme.colorScheme.primary
+                    : appTheme.textMuted,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
             if (badge != null && isSelected)
@@ -588,7 +595,8 @@ class _BillingOption extends StatelessWidget {
                 child: Text(
                   badge!,
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onPrimary,
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),

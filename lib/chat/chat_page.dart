@@ -12,6 +12,8 @@ import 'package:projectbrain/widgets/chat/chat_input_field.dart';
 import 'package:projectbrain/widgets/chat/conversation_list_item.dart';
 import 'package:projectbrain/widgets/chat/typing_indicator.dart';
 import 'package:projectbrain/widgets/chat/citations_popout.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:provider/provider.dart';
 
 class ChatPage extends StatefulWidget {
@@ -72,31 +74,53 @@ class _ChatPageState extends State<ChatPage> {
   Widget build(BuildContext context) {
     // Only watch specific parts to avoid rebuilding TextField
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final theme = Theme.of(context);
+    final appTheme = context.appTheme;
+    final firstName = authProvider.profile?.name.split(' ').first ?? 'Buddy';
 
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title:
-            Text("${authProvider.profile?.name.split(' ').first}'s AI Buddy"),
+        title: Text("$firstName's AI Buddy"),
+        titleTextStyle: theme.textTheme.titleMedium,
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () {
-            _scaffoldKey.currentState?.openDrawer();
-          },
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
+            style: IconButton.styleFrom(
+              backgroundColor: appTheme.primarySoft,
+            ),
             onPressed: () {
               context.read<ChatProvider>().clearConversation();
             },
             tooltip: 'New conversation',
           ),
+          const SizedBox(width: AppSpacing.sm),
         ],
       ),
       drawer: Drawer(
+        backgroundColor: theme.scaffoldBackgroundColor,
         child: SafeArea(
-          child: FutureBuilder(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                  AppSpacing.lg,
+                  AppSpacing.sm,
+                ),
+                child: Text(
+                  'Conversations',
+                  style: theme.textTheme.titleMedium,
+                ),
+              ),
+              Expanded(
+                child: FutureBuilder(
               future: _conversationsFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -126,9 +150,19 @@ class _ChatPageState extends State<ChatPage> {
                     },
                   );
                 } else {
-                  return const Center(child: Text('No conversations found.'));
+                  return Center(
+                    child: Text(
+                      'No conversations found.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: appTheme.textMuted,
+                      ),
+                    ),
+                  );
                 }
               }),
+              ),
+            ],
+          ),
         ),
       ),
       body: Column(

@@ -11,6 +11,8 @@ import 'package:intl/intl.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 
 /// Voice notes page for managing recorded voice notes
 class VoiceNotesPage extends StatefulWidget {
@@ -751,21 +753,23 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                                 _currentlyPlayingId == voiceNote.id;
                             final isDownloading =
                                 _downloadingVoiceNoteId == voiceNote.id;
-                            return Card(
-                              margin: EdgeInsets.only(bottom: AppSpacing.sm),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  ListTile(
-                                    leading: CircleAvatar(
-                                      backgroundColor:
-                                          theme.colorScheme.primaryContainer,
-                                      child: Icon(
-                                        Icons.mic,
-                                        color: theme
-                                            .colorScheme.onPrimaryContainer,
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.only(bottom: AppSpacing.sm),
+                              child: DsSurfaceCard(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    ListTile(
+                                      leading: IconBubble(
+                                        icon: Icons.mic,
+                                        color: context.appTheme.teal,
+                                        backgroundColor:
+                                            context.appTheme.tealSoft,
+                                        size: 40,
+                                        iconSize: 20,
+                                        borderRadius: 12,
                                       ),
-                                    ),
                                     title: Text(
                                       voiceNote.description?.isNotEmpty == true
                                           ? voiceNote.description!
@@ -878,7 +882,8 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                                     ),
                                 ],
                               ),
-                            );
+                            ),
+                          );
                           },
                         ),
             ),

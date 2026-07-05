@@ -44,11 +44,9 @@ class ColorfulTheme {
 
     return buildAppTheme(
       colorScheme: colorScheme,
-      extension: AppThemeExtension(
-        devBadgeColor: Colors.orange,
+      scaffoldBackgroundColor: surface,
+      extension: AppThemeExtension.light(colorScheme: colorScheme).copyWith(
         stagingBadgeColor: brandBlue,
-        errorColor: colorScheme.error,
-        debugTextColor: colorScheme.error,
         streakColor: streakColor,
         achievementColor: brandPink,
       ),

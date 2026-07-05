@@ -67,7 +67,7 @@ void main() {
       );
 
       expect(find.byType(TextField), findsOneWidget);
-      expect(find.byIcon(Icons.send), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
     });
 
     testWidgets('accepts text input', (WidgetTester tester) async {
@@ -122,7 +122,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.send), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
     });
 
     testWidgets('text field is configured correctly',

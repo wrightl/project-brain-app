@@ -5,6 +5,7 @@ import 'package:projectbrain/onboarding/onboarding_provider.dart';
 import 'package:projectbrain/onboarding/onboarding_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -71,9 +72,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
       // Navigate back to first step
       _navigateToStep(provider, 0);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please complete all required fields'),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text('Please complete all required fields'),
+          backgroundColor: context.appTheme.errorColor,
         ),
       );
       return;
@@ -95,9 +96,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
       // Success - navigation will be handled by router redirect
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Onboarding complete!'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Text('Onboarding complete!'),
+          backgroundColor: context.appTheme.green,
         ),
       );
     } catch (error) {
@@ -108,7 +109,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${error.toString()}'),
-          backgroundColor: Colors.red,
+          backgroundColor: context.appTheme.errorColor,
           action: SnackBarAction(
             label: 'Retry',
             onPressed: () => _submitOnboarding(provider, authProvider),

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/models/agent/action_card.dart';
+import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 
 typedef PendingActionCallback = Future<void> Function(ActionCard card);
 
@@ -17,46 +20,60 @@ class ActionCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.indigo.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.indigo.shade200),
-      ),
+    final theme = Theme.of(context);
+    final appTheme = context.appTheme;
+
+    return DsSurfaceCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      backgroundColor: appTheme.primarySoft,
+      borderColor: theme.colorScheme.primary.withValues(alpha: 0.25),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            _titleFor(card),
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.indigo.shade900,
+          Row(
+            children: [
+              IconBubble(
+                icon: Icons.auto_awesome,
+                color: theme.colorScheme.primary,
+                backgroundColor: theme.colorScheme.surface,
+                size: 32,
+                iconSize: 16,
+                borderRadius: 8,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  _titleFor(card),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
+              ),
+            ],
           ),
           if (card.preview != null) ...[
-            const SizedBox(height: 4),
-            Text(card.preview!, style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: AppSpacing.sm),
+            Text(card.preview!, style: theme.textTheme.bodySmall),
           ],
           if (card.description != null) ...[
-            const SizedBox(height: 4),
-            Text(card.description!, style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: AppSpacing.xs),
+            Text(card.description!, style: theme.textTheme.bodySmall),
           ],
           if (card.message != null) ...[
-            const SizedBox(height: 4),
-            Text(card.message!, style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: AppSpacing.xs),
+            Text(card.message!, style: theme.textTheme.bodySmall),
           ],
           if (card.summary != null) ...[
-            const SizedBox(height: 4),
-            Text(card.summary!, style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: AppSpacing.xs),
+            Text(card.summary!, style: theme.textTheme.bodySmall),
           ],
           if (card.filename != null) ...[
-            const SizedBox(height: 4),
-            Text(card.filename!, style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: AppSpacing.xs),
+            Text(card.filename!, style: theme.textTheme.bodySmall),
           ],
           if (card.cardType == 'pending_confirmation') ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.md),
             Row(
               children: [
                 FilledButton(
@@ -65,7 +82,7 @@ class ActionCardWidget extends StatelessWidget {
                       : () => onConfirmPendingAction!(card),
                   child: const Text('Confirm'),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 OutlinedButton(
                   onPressed: onCancelPendingAction == null
                       ? null
@@ -89,7 +106,9 @@ class ActionCardWidget extends StatelessWidget {
       case 'goal_streak':
         return 'Goal streak';
       case 'strategy_saved':
-        return card.title != null ? 'Strategy saved: ${card.title}' : 'Strategy saved';
+        return card.title != null
+            ? 'Strategy saved: ${card.title}'
+            : 'Strategy saved';
       case 'coaches_found':
         return 'Coaches found';
       case 'document_uploaded':

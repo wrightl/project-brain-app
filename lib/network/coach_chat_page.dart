@@ -12,6 +12,7 @@ import 'package:intl/intl.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 
 /// Chat page for communicating with connected coaches.
 class CoachChatPage extends StatefulWidget {
@@ -413,16 +414,36 @@ class _CoachChatPageState extends State<CoachChatPage> {
                               ? Alignment.centerLeft
                               : Alignment.centerRight,
                           child: Container(
-                            margin: EdgeInsets.only(bottom: AppSpacing.sm),
-                            padding: EdgeInsets.all(AppSpacing.md),
+                            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg,
+                              vertical: AppSpacing.md,
+                            ),
                             constraints: BoxConstraints(
-                              maxWidth: MediaQuery.of(context).size.width * 0.7,
+                              maxWidth: MediaQuery.of(context).size.width * 0.75,
                             ),
                             decoration: BoxDecoration(
                               color: message.isFromCoach
-                                  ? theme.colorScheme.surfaceContainerHighest
-                                  : theme.colorScheme.primaryContainer,
-                              borderRadius: AppRadius.circularMd,
+                                  ? theme.colorScheme.surface
+                                  : theme.colorScheme.primary,
+                              borderRadius: message.isFromCoach
+                                  ? const BorderRadius.only(
+                                      topLeft: Radius.circular(18),
+                                      topRight: Radius.circular(18),
+                                      bottomRight: Radius.circular(18),
+                                      bottomLeft: Radius.circular(4),
+                                    )
+                                  : const BorderRadius.only(
+                                      topLeft: Radius.circular(18),
+                                      topRight: Radius.circular(18),
+                                      bottomLeft: Radius.circular(18),
+                                      bottomRight: Radius.circular(4),
+                                    ),
+                              border: message.isFromCoach
+                                  ? Border.all(
+                                      color: context.appTheme.borderColor,
+                                    )
+                                  : null,
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,7 +451,11 @@ class _CoachChatPageState extends State<CoachChatPage> {
                                 if (message.text != null)
                                   Text(
                                     message.text!,
-                                    style: theme.textTheme.bodyMedium,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: message.isFromCoach
+                                          ? theme.colorScheme.onSurface
+                                          : theme.colorScheme.onPrimary,
+                                    ),
                                   ),
                                 if (message.audioUrl != null)
                                   const Row(
@@ -444,8 +469,10 @@ class _CoachChatPageState extends State<CoachChatPage> {
                                 Text(
                                   _formatTime(message.createdAt),
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurface
-                                        .withValues(alpha: 0.6),
+                                    color: message.isFromCoach
+                                        ? context.appTheme.textMuted
+                                        : theme.colorScheme.onPrimary
+                                            .withValues(alpha: 0.7),
                                   ),
                                 ),
                               ],
@@ -483,11 +510,16 @@ class _CoachChatPageState extends State<CoachChatPage> {
             SafeArea(
               top: false,
               child: Container(
-                padding: EdgeInsets.all(AppSpacing.sm),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.sm,
+                  AppSpacing.md,
+                  AppSpacing.md,
+                ),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
                   border: Border(
-                    top: BorderSide(color: theme.dividerColor),
+                    top: BorderSide(color: context.appTheme.borderColor),
                   ),
                 ),
                 child: Row(
@@ -501,12 +533,21 @@ class _CoachChatPageState extends State<CoachChatPage> {
                     Expanded(
                       child: TextField(
                         controller: _textController,
-                        decoration: const InputDecoration(
-                          hintText: 'Type a message...',
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(
+                        decoration: InputDecoration(
+                          hintText: 'Message coach…',
+                          filled: true,
+                          fillColor: theme.scaffoldBackgroundColor,
+                          contentPadding: const EdgeInsets.symmetric(
                             horizontal: AppSpacing.lg,
-                            vertical: AppSpacing.sm,
+                            vertical: AppSpacing.s14,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: AppRadius.circularPill,
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: AppRadius.circularPill,
+                            borderSide: BorderSide.none,
                           ),
                         ),
                         maxLines: null,
@@ -514,15 +555,20 @@ class _CoachChatPageState extends State<CoachChatPage> {
                         onSubmitted: (_) => _sendTextMessage(),
                       ),
                     ),
-                    IconButton(
-                      icon: _isSending
+                    FilledButton(
+                      onPressed: _isSending ? null : _sendTextMessage,
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(44, 44),
+                        padding: EdgeInsets.zero,
+                        shape: const CircleBorder(),
+                      ),
+                      child: _isSending
                           ? const SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Icon(Icons.send),
-                      onPressed: _isSending ? null : _sendTextMessage,
+                          : const Icon(Icons.arrow_upward, size: 20),
                     ),
                   ],
                 ),

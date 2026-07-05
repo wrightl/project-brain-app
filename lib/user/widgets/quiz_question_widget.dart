@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:projectbrain/models/quiz.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 
 /// Widget for rendering quiz questions with appropriate input types
 class QuizQuestionWidget extends StatefulWidget {
@@ -349,19 +350,84 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
       );
     }
 
-    return RadioGroup<String>(
-      groupValue: _currentValue is String ? _currentValue as String : null,
-      onChanged: (value) {
-        if (value != null) _handleChanged(value);
-      },
-      child: Column(
-        children: widget.question.choices!.map((choice) {
-          return RadioListTile<String>(
-            title: Text(choice),
-            value: choice,
-          );
-        }).toList(),
-      ),
+    final appTheme = context.appTheme;
+    final selected =
+        _currentValue is String ? _currentValue as String : null;
+
+    return Column(
+      children: widget.question.choices!.asMap().entries.map((entry) {
+        final index = entry.key;
+        final choice = entry.value;
+        final letter = String.fromCharCode(65 + index);
+        final isSelected = selected == choice;
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _handleChanged(choice),
+              borderRadius: AppRadius.circularLg,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? appTheme.primarySoft
+                      : theme.colorScheme.surface,
+                  borderRadius: AppRadius.circularLg,
+                  border: Border.all(
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : appTheme.borderColor,
+                    width: isSelected ? 2 : 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? theme.colorScheme.primary
+                            : appTheme.borderColor.withValues(alpha: 0.35),
+                        borderRadius: AppRadius.circularSm,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        letter,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: isSelected
+                              ? Colors.white
+                              : theme.colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Text(
+                        choice,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                    if (isSelected)
+                      Icon(
+                        Icons.check_circle,
+                        color: theme.colorScheme.primary,
+                        size: 22,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -375,26 +441,93 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
       );
     }
 
+    final appTheme = context.appTheme;
     final selectedValues =
         _currentValue is List ? List<String>.from(_currentValue) : <String>[];
 
     return Column(
-      children: widget.question.choices!.map((choice) {
+      children: widget.question.choices!.asMap().entries.map((entry) {
+        final index = entry.key;
+        final choice = entry.value;
+        final letter = String.fromCharCode(65 + index);
         final isSelected = selectedValues.contains(choice);
-        return CheckboxListTile(
-          title: Text(choice),
-          value: isSelected,
-          onChanged: (checked) {
-            final newList = List<String>.from(selectedValues);
-            if (checked == true) {
-              if (!newList.contains(choice)) {
-                newList.add(choice);
-              }
-            } else {
-              newList.remove(choice);
-            }
-            _handleChanged(newList.isEmpty ? null : newList);
-          },
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                final newList = List<String>.from(selectedValues);
+                if (isSelected) {
+                  newList.remove(choice);
+                } else {
+                  newList.add(choice);
+                }
+                _handleChanged(newList.isEmpty ? null : newList);
+              },
+              borderRadius: AppRadius.circularLg,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? appTheme.primarySoft
+                      : theme.colorScheme.surface,
+                  borderRadius: AppRadius.circularLg,
+                  border: Border.all(
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : appTheme.borderColor,
+                    width: isSelected ? 2 : 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? theme.colorScheme.primary
+                            : appTheme.borderColor.withValues(alpha: 0.35),
+                        borderRadius: AppRadius.circularSm,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        letter,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: isSelected
+                              ? Colors.white
+                              : theme.colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Text(
+                        choice,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      isSelected
+                          ? Icons.check_box
+                          : Icons.check_box_outline_blank,
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : appTheme.textMuted,
+                      size: 22,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         );
       }).toList(),
     );

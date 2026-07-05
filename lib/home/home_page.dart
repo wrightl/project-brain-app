@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:projectbrain/authentication/auth_provider.dart';
 import 'package:projectbrain/goals/egg_goals_provider.dart';
-import 'package:projectbrain/journal/journal_localizations.dart';
 import 'package:projectbrain/journal/journal_provider.dart';
 import 'package:projectbrain/strategies/strategies_localizations.dart';
 import 'package:projectbrain/strategies/strategies_provider.dart';
-import 'package:projectbrain/widgets/link_list.dart';
-import 'package:projectbrain/widgets/streak_card.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/widgets/ds/goal_row.dart';
 import 'package:projectbrain/widgets/today_goal_progress_block.dart';
 import 'package:provider/provider.dart';
-import 'package:projectbrain/helpers/themes/app_spacing.dart';
 
-/// Home page of the application
+/// Home page of the application.
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -21,26 +21,20 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  bool _showToday = false;
-  bool _showLinks = false;
+  bool _showContent = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final journalProvider = context.read<JournalProvider>();
-      journalProvider.loadStreakSummary();
-      journalProvider.loadEntryCount();
-      journalProvider.loadRecentEntries(count: 3);
+      context.read<JournalProvider>().loadStreakSummary();
+      context.read<JournalProvider>().loadEntryCount();
+      context.read<JournalProvider>().loadRecentEntries(count: 3);
       context.read<StrategiesProvider>().loadLibrary();
       context.read<EggGoalsProvider>().getTodaysGoals();
       context.read<EggGoalsProvider>().loadGoalStreakSummary();
-      // Staggered entrance
-      Future.delayed(const Duration(milliseconds: 50), () {
-        if (mounted) setState(() => _showToday = true);
-      });
-      Future.delayed(const Duration(milliseconds: 150), () {
-        if (mounted) setState(() => _showLinks = true);
+      Future.delayed(const Duration(milliseconds: 80), () {
+        if (mounted) setState(() => _showContent = true);
       });
     });
   }
@@ -48,44 +42,8 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final name = authProvider.profile?.name.split(' ').first ?? 'there';
-    final theme = Theme.of(context);
-    final l10n = JournalLocalizations.of(context);
+    final firstName = authProvider.profile?.name.split(' ').first ?? 'there';
     final strategiesL10n = StrategiesLocalizations.of(context);
-
-    // Short list of high-value actions (3–5 items); rest moved to Profile
-    final links = [
-      NavigationLink(
-        icon: Icons.check_circle,
-        title: 'Goals',
-        subtitle: 'Set and track your 3 daily goals',
-        onTap: () => context.go('/goals'),
-      ),
-      NavigationLink(
-        icon: Icons.book,
-        title: l10n.journal,
-        subtitle: 'Write and reflect with journal entries',
-        onTap: () => context.go('/journal'),
-      ),
-      NavigationLink(
-        icon: Icons.assistant,
-        title: 'Chat',
-        subtitle: 'Start a conversation with your AI assistant',
-        onTap: () => context.go('/ai'),
-      ),
-      NavigationLink(
-        icon: Icons.psychology,
-        title: strategiesL10n.copingStrategies,
-        subtitle: strategiesL10n.getNewStrategies,
-        onTap: () => context.go('/strategies/chat'),
-      ),
-      NavigationLink(
-        icon: Icons.person,
-        title: 'Profile',
-        subtitle: 'Account, resources, quizzes & more',
-        onTap: () => context.go('/user'),
-      ),
-    ];
 
     return Scaffold(
       body: SafeArea(
@@ -102,161 +60,314 @@ class _HomePageState extends State<HomePage> {
             journalProvider.loadRecentEntries(count: 3);
             strategiesProvider.loadLibrary();
           },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: AppInsets.page,
+          child: AnimatedOpacity(
+            opacity: _showContent ? 1 : 0,
+            duration: const Duration(milliseconds: 250),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.sm,
+                AppSpacing.lg,
+                AppSpacing.xxl,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _HomeHeader(firstName: firstName),
+                  const SizedBox(height: AppSpacing.xl),
+                  Consumer2<EggGoalsProvider, JournalProvider>(
+                    builder: (context, goalsProvider, journalProvider, _) {
+                      final progress = goalsProvider.getCompletionProgress();
+                      final completed = progress['completed'] ?? 0;
+                      final total = progress['total'] ?? 3;
+                      final goalStreak =
+                          goalsProvider.goalStreakSummary?.currentStreak ?? 0;
+                      final pct =
+                          total > 0 ? (completed / total).clamp(0.0, 1.0) : 0.0;
+
+                      return _HeroCard(
+                        firstName: firstName,
+                        completed: completed,
+                        total: total > 0 ? total : 3,
+                        streakDays: goalStreak,
+                        progress: pct,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  _FeatureGrid(
+                    strategiesLabel: strategiesL10n.copingStrategies,
+                    strategiesSubtitle: strategiesL10n.getNewStrategies,
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  Consumer<EggGoalsProvider>(
+                    builder: (context, goalsProvider, _) {
+                      final visibleGoals = goalsProvider.goals
+                          .where((g) =>
+                              g.message.isNotEmpty &&
+                              g.message != 'No Egg Goal Set')
+                          .take(2)
+                          .toList();
+
+                      if (visibleGoals.isEmpty) {
+                        return TodayGoalProgressBlock(
+                          completed: 0,
+                          total: 3,
+                          hasGoals: false,
+                          onTap: () => context.go('/goals'),
+                        );
+                      }
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SectionHeader(
+                            title: "Today's goals",
+                            actionLabel: 'See all',
+                            onAction: () => context.go('/goals'),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          ...visibleGoals.map(
+                            (goal) => Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: AppSpacing.sm,
+                              ),
+                              child: GoalRow(
+                                title: goal.message,
+                                completed: goal.completed,
+                                meta: 'Daily goal',
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeHeader extends StatelessWidget {
+  const _HomeHeader({required this.firstName});
+
+  final String firstName;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final appTheme = context.appTheme;
+    final hour = DateTime.now().hour;
+    final greeting = hour < 12
+        ? 'Good morning'
+        : hour < 17
+            ? 'Good afternoon'
+            : 'Good evening';
+
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(greeting, style: theme.textTheme.bodySmall),
+              Text(
+                firstName,
+                style: theme.textTheme.headlineSmall,
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          onPressed: () {},
+          style: IconButton.styleFrom(
+            backgroundColor: theme.colorScheme.surface,
+            side: BorderSide(color: appTheme.borderColor),
+          ),
+          icon: Icon(Icons.notifications_outlined, color: appTheme.textMuted),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        CircleAvatar(
+          radius: 22,
+          backgroundColor: appTheme.primarySoft,
+          child: Text(
+            firstName.isNotEmpty ? firstName[0].toUpperCase() : '?',
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: theme.colorScheme.primary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HeroCard extends StatelessWidget {
+  const _HeroCard({
+    required this.firstName,
+    required this.completed,
+    required this.total,
+    required this.streakDays,
+    required this.progress,
+  });
+
+  final String firstName;
+  final int completed;
+  final int total;
+  final int streakDays;
+  final double progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final pctLabel = '${(progress * 100).round()}%';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary,
+        borderRadius: AppRadius.circularXl,
+      ),
+      child: Row(
+        children: [
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                // Welcome
+              children: [
+                if (streakDays > 0)
+                  Row(
+                    children: [
+                      const Icon(Icons.local_fire_department,
+                          color: Color(0xFFFFD79A), size: 16),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        '$streakDays day streak',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: const Color(0xFFFFD79A),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                if (streakDays > 0) const SizedBox(height: AppSpacing.sm),
                 Text(
-                  'Welcome, $name!',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                  "You're on a roll, $firstName",
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: Colors.white,
                   ),
                 ),
-                SizedBox(height: AppSpacing.sm),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
-                  'Here’s your progress today.',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
-                ),
-                SizedBox(height: AppSpacing.xl),
-
-                // Today block: goals + journal streak (entrance animation)
-                AnimatedOpacity(
-                  opacity: _showToday ? 1 : 0,
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeOut,
-                  child: AnimatedSlide(
-                    offset: _showToday ? Offset.zero : const Offset(0, 0.05),
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeOut,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Today',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        SizedBox(height: AppSpacing.md),
-                        Consumer<EggGoalsProvider>(
-                          builder: (context, goalsProvider, _) {
-                            final progress =
-                                goalsProvider.getCompletionProgress();
-                            final completed = progress['completed'] ?? 0;
-                            final total = progress['total'] ?? 3;
-                            final hasGoals = goalsProvider.goals.any((g) =>
-                                g.message.isNotEmpty &&
-                                g.message != 'No Egg Goal Set');
-                            return TodayGoalProgressBlock(
-                              completed: completed,
-                              total: total > 0 ? total : 3,
-                              hasGoals: hasGoals,
-                              onTap: () => context.go('/goals'),
-                            );
-                          },
-                        ),
-                        SizedBox(height: AppSpacing.md),
-                        Consumer<JournalProvider>(
-                          builder: (context, journalProvider, _) {
-                            final streak = journalProvider.streakSummary;
-                            if (streak == null) return const SizedBox.shrink();
-                            return StreakCard(
-                              title: l10n.journalStreak,
-                              currentStreak: streak.currentStreak,
-                              bestStreak: streak.longestStreak,
-                              noStreakMessage: l10n.noStreakYet,
-                              ctaLabel: 'Write today',
-                              onCtaTap: () => context.go('/journal'),
-                            );
-                          },
-                        ),
-                        Consumer<EggGoalsProvider>(
-                          builder: (context, goalsProvider, _) {
-                            final summary = goalsProvider.goalStreakSummary;
-                            if (summary == null) return const SizedBox.shrink();
-                            return Column(
-                              children: [
-                                SizedBox(height: AppSpacing.md),
-                                StreakCard(
-                                  title: 'Goal streak',
-                                  currentStreak: summary.currentStreak,
-                                  bestStreak: summary.longestStreak,
-                                  ctaLabel: 'View goals',
-                                  onCtaTap: () => context.go('/goals'),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                        Consumer<JournalProvider>(
-                          builder: (context, journalProvider, _) {
-                            final recent = journalProvider.recentEntries;
-                            if (recent.isEmpty) return const SizedBox.shrink();
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(height: AppSpacing.md),
-                                Text(
-                                  l10n.recentEntries,
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                ...recent.take(3).map((e) => ListTile(
-                                      title: Text(
-                                        e.summary ?? e.content,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      trailing: const Icon(Icons.chevron_right),
-                                      onTap: () =>
-                                          context.go('/journal/${e.id}'),
-                                    )),
-                                TextButton(
-                                  onPressed: () => context.go('/journal'),
-                                  child: Text(l10n.seeAll),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(height: AppSpacing.xl),
-
-                // Quick links (short list, entrance animation)
-                AnimatedOpacity(
-                  opacity: _showLinks ? 1 : 0,
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeOut,
-                  child: AnimatedSlide(
-                    offset: _showLinks ? Offset.zero : const Offset(0, 0.05),
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeOut,
-                    child: LinkList(
-                      links: links,
-                      sectionTitle: 'Quick links',
-                    ),
+                  '$completed of $total goals done today',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.8),
                   ),
                 ),
               ],
             ),
           ),
+          SizedBox(
+            width: 72,
+            height: 72,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CircularProgressIndicator(
+                  value: progress,
+                  strokeWidth: 6,
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+                Text(
+                  pctLabel,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeatureGrid extends StatelessWidget {
+  const _FeatureGrid({
+    required this.strategiesLabel,
+    required this.strategiesSubtitle,
+  });
+
+  final String strategiesLabel;
+  final String strategiesSubtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final appTheme = context.appTheme;
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: FeatureTile(
+                icon: Icons.forum_outlined,
+                title: 'Coaching',
+                subtitle: 'Chat with your coach anytime.',
+                backgroundColor: appTheme.tealSoft,
+                iconColor: appTheme.teal,
+                onTap: () => context.go('/network'),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: FeatureTile(
+                icon: Icons.air,
+                title: 'Coping',
+                subtitle: 'Quick strategies for tough moments.',
+                backgroundColor: appTheme.amberSoft,
+                iconColor: appTheme.amber,
+                onTap: () => context.go('/strategies/chat'),
+              ),
+            ),
+          ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.go('/goals'),
-        icon: const Icon(Icons.check_circle),
-        label: const Text('Goals'),
-      ),
+        const SizedBox(height: AppSpacing.md),
+        Row(
+          children: [
+            Expanded(
+              child: FeatureTile(
+                icon: Icons.book_outlined,
+                title: 'Journal',
+                subtitle: 'Capture wins and reflections.',
+                backgroundColor: appTheme.coralSoft,
+                iconColor: appTheme.coral,
+                onTap: () => context.go('/journal'),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: FeatureTile(
+                icon: Icons.flag_outlined,
+                title: 'Goals',
+                subtitle: 'Small steps, every day.',
+                backgroundColor: appTheme.greenSoft,
+                iconColor: appTheme.green,
+                onTap: () => context.go('/goals'),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

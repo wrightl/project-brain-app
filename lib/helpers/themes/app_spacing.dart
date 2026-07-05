@@ -28,11 +28,13 @@ abstract class AppRadius {
   static const double sm = 8;
   static const double md = 12;
   static const double lg = 16;
-  static const double pill = 20;
+  static const double xl = 24;
+  static const double pill = 999;
 
   static final BorderRadius circularSm = BorderRadius.circular(sm);
   static final BorderRadius circularMd = BorderRadius.circular(md);
   static final BorderRadius circularLg = BorderRadius.circular(lg);
+  static final BorderRadius circularXl = BorderRadius.circular(xl);
   static final BorderRadius circularPill = BorderRadius.circular(pill);
 }
 
@@ -69,14 +71,17 @@ abstract class AppGap {
 
 /// Component-level card spacing.
 abstract class AppCard {
-  static const double radius = AppRadius.md;
-  static const double elevation = 1.0;
+  static const double radius = AppRadius.lg;
+  static const double elevation = 0.0;
   static const EdgeInsets padding = AppInsets.card;
 }
 
 /// Component-level button spacing.
 abstract class AppButton {
-  static const EdgeInsets padding = AppInsets.button;
-  static const double radius = AppRadius.sm;
-  static const double elevation = 1;
+  static const EdgeInsets padding = EdgeInsets.symmetric(
+    horizontal: AppSpacing.xl,
+    vertical: AppSpacing.s14,
+  );
+  static const double radius = AppRadius.pill;
+  static const double elevation = 0;
 }

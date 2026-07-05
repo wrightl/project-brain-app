@@ -10,6 +10,8 @@ import 'package:projectbrain/helpers/theme.dart';
 import 'package:projectbrain/helpers/theme_mode_provider.dart';
 import 'package:projectbrain/services/auth/auth_exception.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -168,9 +170,9 @@ class _ProfilePageState extends State<ProfilePage> {
           _isEditing = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile updated successfully!'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Profile updated successfully!'),
+            backgroundColor: context.appTheme.green,
           ),
         );
       }
@@ -179,7 +181,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error updating profile: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: context.appTheme.errorColor,
           ),
         );
       }
@@ -233,9 +235,7 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 _buildEnvironmentBadge(theme, colorScheme, appColors),
                 SizedBox(height: AppSpacing.xl),
-                _buildProfileAvatar(authProvider),
-                SizedBox(height: AppSpacing.lg),
-                _buildProfileEmail(authProvider, theme, colorScheme),
+                _buildIdentityCard(authProvider, theme, colorScheme, appColors),
                 SizedBox(height: AppSpacing.xxl),
                 _buildFullNameField(theme),
                 SizedBox(height: AppSpacing.lg),
@@ -335,8 +335,57 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  /// Identity card with avatar and email.
+  Widget _buildIdentityCard(
+    AuthProvider authProvider,
+    ThemeData theme,
+    ColorScheme colorScheme,
+    AppThemeExtension? appColors,
+  ) {
+    final picture = authProvider.profile?.picture;
+    final hasPicture = picture != null && picture.isNotEmpty;
+    final name = authProvider.profile?.name ?? 'Your profile';
+    final email = authProvider.profile?.email ?? '';
+
+    return DsSurfaceCard(
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 32,
+            backgroundColor: appColors?.primarySoft ?? colorScheme.primaryContainer,
+            backgroundImage:
+                hasPicture ? CachedNetworkImageProvider(picture) : null,
+            child: hasPicture
+                ? null
+                : Icon(Icons.person, size: 32, color: colorScheme.primary),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name, style: theme.textTheme.titleMedium),
+                if (email.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.micro),
+                  Text(
+                    email,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: appColors?.textMuted ?? colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Theme mode selector (from [AppThemes] registry)
   Widget _buildThemeSection(ThemeData theme) {
+    final appTheme = context.appTheme;
+
     return Consumer<ThemeModeProvider>(
       builder: (context, themeModeProvider, _) {
         return Column(
@@ -345,22 +394,75 @@ class _ProfilePageState extends State<ProfilePage> {
             Text(
               'Appearance',
               style: theme.textTheme.titleSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
             SizedBox(height: AppSpacing.sm),
-            Card(
+            DsSurfaceCard(
+              padding: EdgeInsets.zero,
               child: Column(
-                children: AppThemes.all.map((option) {
+                children: AppThemes.all.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final option = entry.value;
                   final isSelected = themeModeProvider.mode == option.id;
-                  return ListTile(
-                    leading: Icon(option.icon),
-                    title: Text(option.label),
-                    trailing: isSelected
-                        ? Icon(Icons.check, color: theme.colorScheme.primary)
-                        : null,
-                    onTap: () => themeModeProvider.setMode(option.id),
+                  final isLast = index == AppThemes.all.length - 1;
+
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => themeModeProvider.setMode(option.id),
+                      borderRadius: isLast
+                          ? const BorderRadius.vertical(
+                              bottom: Radius.circular(16),
+                            )
+                          : null,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg,
+                          vertical: AppSpacing.md,
+                        ),
+                        decoration: BoxDecoration(
+                          border: isLast
+                              ? null
+                              : Border(
+                                  bottom: BorderSide(color: appTheme.borderColor),
+                                ),
+                        ),
+                        child: Row(
+                          children: [
+                            IconBubble(
+                              icon: option.icon,
+                              color: isSelected
+                                  ? theme.colorScheme.primary
+                                  : appTheme.textMuted,
+                              backgroundColor: isSelected
+                                  ? appTheme.primarySoft
+                                  : appTheme.borderColor.withValues(alpha: 0.35),
+                              size: 40,
+                              iconSize: 20,
+                              borderRadius: 12,
+                            ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: Text(
+                                option.label,
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: isSelected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            if (isSelected)
+                              Icon(
+                                Icons.check_circle,
+                                color: theme.colorScheme.primary,
+                                size: 22,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
                   );
                 }).toList(),
               ),
@@ -371,43 +473,12 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  /// Profile avatar widget
-  Widget _buildProfileAvatar(AuthProvider authProvider) {
-    final picture = authProvider.profile?.picture;
-    final hasPicture = picture != null && picture.isNotEmpty;
-    return Center(
-      child: CircleAvatar(
-        radius: 50,
-        // CachedNetworkImageProvider caches avatars across rebuilds/sessions.
-        backgroundImage:
-            hasPicture ? CachedNetworkImageProvider(picture) : null,
-        child: hasPicture ? null : const Icon(Icons.person, size: 50),
-      ),
-    );
-  }
-
-  /// Profile email widget (read-only)
-  Widget _buildProfileEmail(
-    AuthProvider authProvider,
-    ThemeData theme,
-    ColorScheme colorScheme,
-  ) {
-    return Text(
-      authProvider.profile?.email ?? '',
-      style: theme.textTheme.bodyMedium?.copyWith(
-        color: colorScheme.onSurfaceVariant,
-      ),
-      textAlign: TextAlign.center,
-    );
-  }
-
   /// Full name field
   Widget _buildFullNameField(ThemeData theme) {
     return TextFormField(
       controller: _fullNameController,
       decoration: const InputDecoration(
         labelText: 'Full Name',
-        border: OutlineInputBorder(),
         prefixIcon: Icon(Icons.person),
       ),
       enabled: _isEditing,
@@ -422,7 +493,6 @@ class _ProfilePageState extends State<ProfilePage> {
       readOnly: true,
       decoration: const InputDecoration(
         labelText: 'Date of Birth',
-        border: OutlineInputBorder(),
         prefixIcon: Icon(Icons.calendar_today),
         suffixIcon: Icon(Icons.arrow_drop_down),
       ),
@@ -436,7 +506,6 @@ class _ProfilePageState extends State<ProfilePage> {
     return DropdownButtonFormField<String>(
       decoration: const InputDecoration(
         labelText: 'Pronouns',
-        border: OutlineInputBorder(),
         prefixIcon: Icon(Icons.person_outline),
       ),
       initialValue: _pronoun.isEmpty ? null : _pronoun,
@@ -465,7 +534,6 @@ class _ProfilePageState extends State<ProfilePage> {
       controller: _customPronounController,
       decoration: const InputDecoration(
         labelText: 'Enter your pronouns',
-        border: OutlineInputBorder(),
         hintText: 'e.g., ze/zir, ey/em, etc.',
         prefixIcon: Icon(Icons.edit),
       ),
@@ -482,34 +550,43 @@ class _ProfilePageState extends State<ProfilePage> {
   /// Neurodiverse traits section
   Widget _buildNeurodiverseTraitsSection(
       ThemeData theme, ColorScheme colorScheme) {
+    final appTheme = context.appTheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Neurodiverse Traits',
-          style: theme.textTheme.titleMedium,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
         ),
         SizedBox(height: AppSpacing.sm),
         Text(
           'Select any traits that apply to you.',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
+          style: theme.textTheme.bodySmall,
         ),
         SizedBox(height: AppSpacing.lg),
-        Wrap(
-          spacing: AppSpacing.md,
-          runSpacing: AppSpacing.md,
-          children: _neurodiverseTraits.map((trait) {
-            final isSelected = _selectedTraits.contains(trait);
-            return FilterChip(
-              label: Text(trait),
-              selected: isSelected,
-              onSelected: _isEditing ? (_) => _toggleTrait(trait) : null,
-              selectedColor: colorScheme.primaryContainer,
-              checkmarkColor: colorScheme.onPrimaryContainer,
-            );
-          }).toList(),
+        DsSurfaceCard(
+          child: Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: _neurodiverseTraits.map((trait) {
+              final isSelected = _selectedTraits.contains(trait);
+              return FilterChip(
+                label: Text(trait),
+                selected: isSelected,
+                onSelected: _isEditing ? (_) => _toggleTrait(trait) : null,
+                selectedColor: appTheme.primarySoft,
+                checkmarkColor: theme.colorScheme.primary,
+                side: BorderSide(
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : appTheme.borderColor,
+                ),
+              );
+            }).toList(),
+          ),
         ),
         if (_selectedTraits.isNotEmpty) ...[
           SizedBox(height: AppSpacing.lg),

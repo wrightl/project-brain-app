@@ -6,6 +6,8 @@ import 'package:projectbrain/models/quiz.dart';
 import 'package:projectbrain/services/quiz_service.dart';
 import 'package:intl/intl.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 
 /// Quizzes page for managing neurodiversity quizzes
 class QuizzesPage extends StatefulWidget {
@@ -122,43 +124,46 @@ class _QuizzesPageState extends State<QuizzesPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final appTheme = context.appTheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Quizzes'),
-      ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _loadAllData,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: AppInsets.screen,
+            padding: AppInsets.page,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Insights Section
+                Text('Quizzes', style: theme.textTheme.headlineSmall),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Identify neurodiverse traits and track your insights.',
+                  style: theme.textTheme.bodySmall,
+                ),
+                const SizedBox(height: AppSpacing.xl),
                 if (_insights != null ||
                     _isLoadingInsights ||
                     _insightsErrorMessage != null)
-                  Card(
-                    margin: EdgeInsets.only(bottom: AppSpacing.lg),
-                    child: Padding(
-                      padding: AppInsets.screen,
-                      child: Column(
+                  DsSurfaceCard(
+                    child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
-                              Icon(
-                                Icons.insights,
-                                color: theme.colorScheme.primary,
+                              IconBubble(
+                                icon: Icons.insights,
+                                color: appTheme.sky,
+                                backgroundColor: appTheme.skySoft,
+                                size: 40,
+                                iconSize: 20,
+                                borderRadius: 12,
                               ),
-                              SizedBox(width: AppSpacing.sm),
+                              const SizedBox(width: AppSpacing.sm),
                               Text(
                                 'Quiz Insights',
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: theme.textTheme.titleMedium,
                               ),
                             ],
                           ),
@@ -225,22 +230,10 @@ class _QuizzesPageState extends State<QuizzesPage> {
                         ],
                       ),
                     ),
-                  ),
 
-                // Quizzes Section
-                Row(
-                  children: [
-                    Text(
-                      'Available Quizzes',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: AppSpacing.lg),
-
-                // Error message
+                const SizedBox(height: AppSpacing.xl),
+                SectionHeader(title: 'Available Quizzes'),
+                const SizedBox(height: AppSpacing.lg),
                 if (_errorMessage != null)
                   Container(
                     width: double.infinity,
@@ -295,72 +288,61 @@ class _QuizzesPageState extends State<QuizzesPage> {
                   )
                 // Quizzes list
                 else
-                  ..._quizzes.map((quiz) => Card(
-                        margin: AppInsets.listItemBottom,
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: theme.colorScheme.primaryContainer,
-                            child: Icon(
-                              Icons.quiz,
-                              color: theme.colorScheme.onPrimaryContainer,
+                  ..._quizzes.map(
+                    (quiz) => Padding(
+                      padding: AppInsets.listItemBottom,
+                      child: DsSurfaceCard(
+                        onTap: () async {
+                          await context.push('/quizzes/${quiz.id}');
+                          if (mounted) _refreshAfterSubmission();
+                        },
+                        child: Row(
+                          children: [
+                            IconBubble(
+                              icon: Icons.quiz_outlined,
+                              color: appTheme.sky,
+                              backgroundColor: appTheme.skySoft,
                             ),
-                          ),
-                          title: Text(
-                            quiz.title,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (quiz.description.isNotEmpty) ...[
-                                SizedBox(height: AppSpacing.xs),
-                                Text(
-                                  quiz.description,
-                                  style: theme.textTheme.bodySmall,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                              SizedBox(height: AppSpacing.xs),
-                              Text(
-                                _formatDate(quiz.createdAt),
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurface
-                                      .withValues(alpha: 0.6),
-                                ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    quiz.title,
+                                    style: theme.textTheme.titleSmall,
+                                  ),
+                                  if (quiz.description.isNotEmpty) ...[
+                                    const SizedBox(height: AppSpacing.micro),
+                                    Text(
+                                      quiz.description,
+                                      style: theme.textTheme.bodySmall,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                  const SizedBox(height: AppSpacing.micro),
+                                  Text(
+                                    _formatDate(quiz.createdAt),
+                                    style: theme.textTheme.labelSmall,
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          isThreeLine: quiz.description.isNotEmpty,
-                          onTap: () async {
-                            await context.push('/quizzes/${quiz.id}');
-                            // Refresh insights and completed quizzes after returning
-                            // This ensures we show the latest data after quiz submission
-                            if (mounted) {
-                              _refreshAfterSubmission();
-                            }
-                          },
+                            ),
+                            Icon(
+                              Icons.chevron_right,
+                              color: appTheme.textMuted,
+                              size: 20,
+                            ),
+                          ],
                         ),
-                      )),
-
-                SizedBox(height: AppSpacing.xxl),
-
-                // Completed Quizzes Section
-                Row(
-                  children: [
-                    Text(
-                      'Completed Quizzes',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ],
-                ),
-                SizedBox(height: AppSpacing.lg),
+                  ),
 
-                // Completed quizzes error message
+                const SizedBox(height: AppSpacing.xl),
+                SectionHeader(title: 'Completed Quizzes'),
+                const SizedBox(height: AppSpacing.lg),
                 if (_completedErrorMessage != null)
                   Container(
                     width: double.infinity,
@@ -415,75 +397,59 @@ class _QuizzesPageState extends State<QuizzesPage> {
                   )
                 // Completed quizzes list
                 else
-                  ..._completedQuizzes.map((response) {
-                    return Card(
-                      margin: AppInsets.listItemBottom,
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: theme.colorScheme.secondaryContainer,
-                          child: Icon(
-                            Icons.check_circle,
-                            color: theme.colorScheme.onSecondaryContainer,
-                          ),
-                        ),
-                        title: Text(
-                          response.quizTitle ?? 'Quiz ${response.quizId}',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                  ..._completedQuizzes.map(
+                    (response) => Padding(
+                      padding: AppInsets.listItemBottom,
+                      child: DsSurfaceCard(
+                        onTap: () async {
+                          await context.push('/quizzes/${response.quizId}');
+                          if (mounted) _refreshAfterSubmission();
+                        },
+                        child: Row(
                           children: [
-                            if (response.score != null) ...[
-                              SizedBox(height: AppSpacing.xs),
-                              Row(
+                            IconBubble(
+                              icon: Icons.check_circle_outline,
+                              color: appTheme.green,
+                              backgroundColor: appTheme.greenSoft,
+                            ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Icon(
-                                    Icons.star,
-                                    size: 16,
-                                    color: theme.colorScheme.primary,
-                                  ),
-                                  SizedBox(width: AppSpacing.xs),
                                   Text(
-                                    'Score: ${response.score}',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.primary,
-                                      fontWeight: FontWeight.w600,
+                                    response.quizTitle ??
+                                        'Quiz ${response.quizId}',
+                                    style: theme.textTheme.titleSmall,
+                                  ),
+                                  if (response.score != null) ...[
+                                    const SizedBox(height: AppSpacing.micro),
+                                    Text(
+                                      'Score: ${response.score}',
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: appTheme.green,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
+                                  ],
+                                  const SizedBox(height: AppSpacing.micro),
+                                  Text(
+                                    'Completed: ${_formatDate(response.completedAt)}',
+                                    style: theme.textTheme.labelSmall,
                                   ),
                                 ],
                               ),
-                            ],
-                            SizedBox(height: AppSpacing.xs),
-                            Text(
-                              'Completed: ${_formatDate(response.completedAt)}',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface
-                                    .withValues(alpha: 0.6),
-                              ),
+                            ),
+                            Icon(
+                              Icons.chevron_right,
+                              color: appTheme.textMuted,
+                              size: 20,
                             ),
                           ],
                         ),
-                        trailing: Icon(
-                          Icons.chevron_right,
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.5),
-                        ),
-                        isThreeLine: response.score != null,
-                        onTap: () async {
-                          // TODO: Navigate to quiz results/details page
-                          // For now, navigate back to quiz view
-                          await context.push('/quizzes/${response.quizId}');
-                          // Refresh insights and completed quizzes after returning
-                          // This ensures we show the latest data after quiz submission
-                          if (mounted) {
-                            _refreshAfterSubmission();
-                          }
-                        },
                       ),
-                    );
-                  }),
+                    ),
+                  ),
               ],
             ),
           ),

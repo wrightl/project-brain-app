@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 
-/// Celebration page shown when user completes a single goal
+/// Celebration page shown when user completes a single goal.
 class SingleGoalCelebrationPage extends StatelessWidget {
   const SingleGoalCelebrationPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final appTheme = context.appTheme;
 
     return Scaffold(
       body: SafeArea(
@@ -17,60 +20,42 @@ class SingleGoalCelebrationPage extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Celebration icon
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.green.withValues(alpha: 0.1),
-                ),
-                child: const Icon(
-                  Icons.check_circle,
-                  size: 80,
-                  color: Colors.green,
-                ),
+              IconBubble(
+                icon: Icons.check_circle,
+                color: appTheme.green,
+                backgroundColor: appTheme.greenSoft,
+                size: 96,
+                iconSize: 48,
+                borderRadius: 24,
               ),
-              SizedBox(height: AppSpacing.xxl),
-
-              // Congratulations message
+              const SizedBox(height: AppSpacing.xxl),
               Text(
                 'Great Job!',
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: appTheme.green,
                 ),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: AppSpacing.lg),
-
+              const SizedBox(height: AppSpacing.lg),
               Text(
                 'You completed one of your goals!',
-                style: theme.textTheme.titleLarge,
+                style: theme.textTheme.titleMedium,
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: AppSpacing.sm),
-
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 'Keep up the momentum and tackle the rest!',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
+                style: theme.textTheme.bodySmall,
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: AppSpacing.xxxl),
-
-              // Back to goals button
+              const SizedBox(height: AppSpacing.xxxl),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Pop back to goals list (will use reverse transition)
-                    context.pop();
-                  },
+                  onPressed: () => context.pop(),
                   style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                    backgroundColor: Colors.green,
+                    backgroundColor: appTheme.green,
+                    foregroundColor: Colors.white,
                   ),
                   child: const Text('Back to Goals'),
                 ),

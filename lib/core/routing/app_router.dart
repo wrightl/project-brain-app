@@ -402,21 +402,27 @@ class AppRouter {
   /// Calculate the selected navigation index based on current route
   int _calculateSelectedIndex(String location) {
     if (location.startsWith('/subscriptions')) {
-      // Subscription pages don't have bottom nav, return -1 or handle separately
       return -1;
     }
     if (location.startsWith('/goals') || location.startsWith('/strategies')) {
-      return 0; // Home-driven flows
+      return 1;
+    }
+    if (location.startsWith('/ai')) {
+      return 2;
+    }
+    if (location.startsWith('/network')) {
+      return 3;
     }
     if (location.startsWith('/user') ||
         location.startsWith('/profile') ||
         location.startsWith('/voicenotes') ||
         location.startsWith('/quizzes') ||
         location.startsWith('/resources')) {
-      return 3;
+      return 4;
     }
-    if (location.startsWith('/network')) return 2;
-    if (location.startsWith('/ai')) return 1;
+    if (location.startsWith('/journal')) {
+      return 0;
+    }
     return 0;
   }
 
@@ -426,10 +432,12 @@ class AppRouter {
       case 0:
         context.go('/');
       case 1:
-        context.go('/ai');
+        context.go('/goals');
       case 2:
-        context.go('/network');
+        context.go('/ai');
       case 3:
+        context.go('/network');
+      case 4:
         context.go('/user');
     }
   }

@@ -5,6 +5,8 @@ import 'package:projectbrain/subscription/subscription_provider.dart';
 import 'package:projectbrain/subscription/widgets/usage_meter.dart';
 import 'package:projectbrain/models/subscription.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 
 /// Usage dashboard page showing detailed usage statistics
 class UsageDashboardPage extends StatelessWidget {
@@ -158,49 +160,35 @@ class UsageDashboardPage extends StatelessWidget {
 
                 // Upgrade prompt if on free tier
                 if (subscriptionProvider.currentTier == SubscriptionTier.free)
-                  Card(
-                    color: theme.colorScheme.primaryContainer,
-                    child: Padding(
-                      padding: AppInsets.screen,
-                      child: Column(
+                  DsSurfaceCard(
+                    backgroundColor: context.appTheme.primarySoft,
+                    child: Column(
                         children: [
                           Icon(
                             Icons.upgrade,
                             size: 48,
-                            color: theme.colorScheme.onPrimaryContainer,
+                            color: theme.colorScheme.primary,
                           ),
-                          SizedBox(height: AppSpacing.md),
+                          const SizedBox(height: AppSpacing.md),
                           Text(
                             'Upgrade to unlock unlimited usage',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: theme.colorScheme.onPrimaryContainer,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: theme.textTheme.titleMedium,
                             textAlign: TextAlign.center,
                           ),
-                          SizedBox(height: AppSpacing.sm),
+                          const SizedBox(height: AppSpacing.sm),
                           Text(
                             'Get unlimited AI queries, coach connections, and more',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onPrimaryContainer,
-                            ),
+                            style: theme.textTheme.bodySmall,
                             textAlign: TextAlign.center,
                           ),
-                          SizedBox(height: AppSpacing.lg),
+                          const SizedBox(height: AppSpacing.lg),
                           ElevatedButton(
-                            onPressed: () {
-                              // Navigate to pricing page
-                              context.push('/subscriptions/pricing');
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: theme.colorScheme.primary,
-                              foregroundColor: theme.colorScheme.onPrimary,
-                            ),
+                            onPressed: () =>
+                                context.push('/subscriptions/pricing'),
                             child: const Text('View Plans'),
                           ),
                         ],
                       ),
-                    ),
                   ),
               ],
             ),
@@ -218,10 +206,8 @@ class UsageDashboardPage extends StatelessWidget {
   ) {
     final theme = Theme.of(context);
 
-    return Card(
-      child: Padding(
-        padding: AppInsets.screen,
-        child: Column(
+    return DsSurfaceCard(
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -240,7 +226,6 @@ class UsageDashboardPage extends StatelessWidget {
             ...children,
           ],
         ),
-      ),
     );
   }
 }

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 
-/// Custom bottom navigation bar with outline icons for inactive items
-/// and filled icons for active items, with a top border indicator
+/// Floating capsule bottom navigation bar (ProjectBrain design system).
 class CustomBottomNavBar extends StatelessWidget {
   final int selectedIndex;
-  final Function(int) onDestinationSelected;
+  final ValueChanged<int> onDestinationSelected;
 
   const CustomBottomNavBar({
     super.key,
@@ -13,119 +13,148 @@ class CustomBottomNavBar extends StatelessWidget {
     required this.onDestinationSelected,
   });
 
+  static const _destinations = [
+    _NavDestination(
+      icon: Icons.home_outlined,
+      selectedIcon: Icons.home,
+      label: 'Home',
+    ),
+    _NavDestination(
+      icon: Icons.flag_outlined,
+      selectedIcon: Icons.flag,
+      label: 'Goals',
+    ),
+    _NavDestination(
+      icon: Icons.assistant_outlined,
+      selectedIcon: Icons.assistant,
+      label: 'Chat',
+    ),
+    _NavDestination(
+      icon: Icons.forum_outlined,
+      selectedIcon: Icons.forum,
+      label: 'Coach',
+    ),
+    _NavDestination(
+      icon: Icons.person_outline,
+      selectedIcon: Icons.person,
+      label: 'Profile',
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final appTheme = context.appTheme;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 4,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          0,
+          AppSpacing.lg,
+          AppSpacing.md,
+        ),
         child: Container(
-          height: kBottomNavigationBarHeight,
-          padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          padding: const EdgeInsets.all(AppSpacing.xs + 2),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: AppRadius.circularPill,
+            border: Border.all(color: appTheme.borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: colorScheme.onSurface.withValues(alpha: 0.08),
+                blurRadius: 24,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildNavItem(
-                context: context,
-                index: 0,
-                icon: Icons.home_outlined,
-                selectedIcon: Icons.home,
-                label: 'Home',
-                colorScheme: colorScheme,
-              ),
-              _buildNavItem(
-                context: context,
-                index: 1,
-                icon: Icons.assistant_outlined,
-                selectedIcon: Icons.assistant,
-                label: 'Chat',
-                colorScheme: colorScheme,
-              ),
-              _buildNavItem(
-                context: context,
-                index: 2,
-                icon: Icons.people_outline,
-                selectedIcon: Icons.people,
-                label: 'Network',
-                colorScheme: colorScheme,
-              ),
-              _buildNavItem(
-                context: context,
-                index: 3,
-                icon: Icons.person_outline,
-                selectedIcon: Icons.person,
-                label: 'Profile',
-                colorScheme: colorScheme,
-              ),
+              for (var i = 0; i < _destinations.length; i++)
+                Expanded(
+                  child: _NavTab(
+                    destination: _destinations[i],
+                    isSelected: selectedIndex == i,
+                    onTap: () => onDestinationSelected(i),
+                  ),
+                ),
             ],
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildNavItem({
-    required BuildContext context,
-    required int index,
-    required IconData icon,
-    required IconData selectedIcon,
-    required String label,
-    required ColorScheme colorScheme,
-  }) {
-    final isSelected = selectedIndex == index;
-    final theme = Theme.of(context);
+class _NavDestination {
+  const _NavDestination({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+  });
 
-    return Expanded(
-      child: Semantics(
-        button: true,
-        selected: isSelected,
-        label: label,
-        child: GestureDetector(
-          onTap: () => onDestinationSelected(index),
-          behavior: HitTestBehavior.opaque,
-          child: Container(
-            // Ensure the tap target spans the full nav height (>= 48dp).
-            constraints: const BoxConstraints(minHeight: 48),
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
+}
+
+class _NavTab extends StatelessWidget {
+  const _NavTab({
+    required this.destination,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final _NavDestination destination;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final appTheme = context.appTheme;
+    final activeColor = colorScheme.primary;
+    final inactiveColor = appTheme.textMuted;
+
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: destination.label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: AppRadius.circularPill,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(
+              vertical: AppSpacing.sm,
+              horizontal: AppSpacing.xs,
+            ),
             decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(
-                  color: isSelected ? colorScheme.primary : Colors.transparent,
-                  width: 3.0,
-                ),
-              ),
+              color: isSelected ? appTheme.primarySoft : Colors.transparent,
+              borderRadius: AppRadius.circularPill,
             ),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  isSelected ? selectedIcon : icon,
-                  color: isSelected
-                      ? colorScheme.primary
-                      : colorScheme.onSurface.withValues(alpha: 0.6),
-                  size: 24,
+                  isSelected ? destination.selectedIcon : destination.icon,
+                  size: 22,
+                  color: isSelected ? activeColor : inactiveColor,
                 ),
-                SizedBox(height: AppSpacing.xs),
-                // ExcludeSemantics: the label is already announced via the
-                // Semantics wrapper above; avoid duplicate read-out.
+                const SizedBox(height: AppSpacing.xs),
                 ExcludeSemantics(
                   child: Text(
-                    label,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: isSelected
-                          ? colorScheme.primary
-                          : colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
+                    destination.label,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          fontSize: 10,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color: isSelected ? activeColor : inactiveColor,
+                        ),
                   ),
                 ),
               ],

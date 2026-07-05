@@ -33,7 +33,7 @@ void main() {
     );
   });
 
-  testWidgets('JournalListPage has AppBar with Journal title', (tester) async {
+  testWidgets('JournalListPage shows Journal title in header', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: ChangeNotifierProvider<JournalProvider>.value(
@@ -46,7 +46,7 @@ void main() {
     expect(find.text('Journal'), findsOneWidget);
   });
 
-  testWidgets('JournalListPage has FAB for new entry', (tester) async {
+  testWidgets('JournalListPage has add button for new entry', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: ChangeNotifierProvider<JournalProvider>.value(
@@ -56,7 +56,6 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.byType(FloatingActionButton), findsOneWidget);
-    expect(find.text('New entry'), findsOneWidget);
+    expect(find.byIcon(Icons.add), findsWidgets);
   });
 }

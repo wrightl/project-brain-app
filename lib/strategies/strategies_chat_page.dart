@@ -11,6 +11,8 @@ import 'package:projectbrain/strategies/strategies_localizations.dart';
 import 'package:projectbrain/strategies/strategies_provider.dart';
 import 'package:projectbrain/widgets/chat/typing_indicator.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 
 /// Strategies chat screen: greeting, example prompts, send message, show suggested strategies, select & save.
 class StrategiesChatPage extends StatefulWidget {
@@ -34,6 +36,7 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final appTheme = context.appTheme;
     final l10n = StrategiesLocalizations.of(context);
     final authProvider = context.watch<AuthProvider>();
     final name = authProvider.profile?.name ?? 'User';
@@ -89,18 +92,24 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
                         SizedBox(height: AppSpacing.md),
                         _ExampleChip(
                           label: l10n.examplePrompt1,
+                          color: appTheme.amber,
+                          backgroundColor: appTheme.amberSoft,
                           onTap: () =>
                               chatProvider.sendMessage(l10n.examplePrompt1),
                         ),
-                        SizedBox(height: AppSpacing.sm),
+                        const SizedBox(height: AppSpacing.sm),
                         _ExampleChip(
                           label: l10n.examplePrompt2,
+                          color: appTheme.coral,
+                          backgroundColor: appTheme.coralSoft,
                           onTap: () =>
                               chatProvider.sendMessage(l10n.examplePrompt2),
                         ),
-                        SizedBox(height: AppSpacing.sm),
+                        const SizedBox(height: AppSpacing.sm),
                         _ExampleChip(
                           label: l10n.examplePrompt3,
+                          color: appTheme.teal,
+                          backgroundColor: appTheme.tealSoft,
                           onTap: () =>
                               chatProvider.sendMessage(l10n.examplePrompt3),
                         ),
@@ -155,28 +164,55 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
                       ),
                     ),
                   SafeArea(
-                    child: Padding(
-                      padding: EdgeInsets.all(AppSpacing.sm),
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.md,
+                        AppSpacing.sm,
+                        AppSpacing.md,
+                        AppSpacing.md,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        border: Border(top: BorderSide(color: appTheme.borderColor)),
+                      ),
                       child: Row(
                         children: [
                           Expanded(
                             child: TextField(
                               controller: _controller,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText:
-                                    'Tell me what you\'re dealing with...',
-                                border: OutlineInputBorder(),
+                                    "Tell me what you're dealing with...",
+                                filled: true,
+                                fillColor: theme.scaffoldBackgroundColor,
+                                border: OutlineInputBorder(
+                                  borderRadius: AppRadius.circularPill,
+                                  borderSide: BorderSide.none,
+                                ),
                               ),
                               enabled: !chatProvider.isLoading,
                               onSubmitted: (text) => _send(context, text),
                             ),
                           ),
-                          SizedBox(width: AppSpacing.sm),
-                          IconButton.filled(
-                            onPressed: chatProvider.isLoading
-                                ? null
-                                : () => _send(context, _controller.text),
-                            icon: const Icon(Icons.send),
+                          const SizedBox(width: AppSpacing.sm),
+                          Material(
+                            color: theme.colorScheme.primary,
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              onTap: chatProvider.isLoading
+                                  ? null
+                                  : () => _send(context, _controller.text),
+                              customBorder: const CircleBorder(),
+                              child: SizedBox(
+                                width: 44,
+                                height: 44,
+                                child: Icon(
+                                  Icons.arrow_upward,
+                                  color: theme.colorScheme.onPrimary,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -233,37 +269,37 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
 
 class _ExampleChip extends StatelessWidget {
   final String label;
+  final Color color;
+  final Color backgroundColor;
   final VoidCallback onTap;
 
-  const _ExampleChip({required this.label, required this.onTap});
+  const _ExampleChip({
+    required this.label,
+    required this.color,
+    required this.backgroundColor,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return InkWell(
+    return DsSurfaceCard(
       onTap: onTap,
-      borderRadius: AppRadius.circularPill,
-      child: Container(
-        padding: AppInsets.card,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: theme.colorScheme.outline.withValues(alpha: 0.5),
+      child: Row(
+        children: [
+          IconBubble(
+            icon: Icons.chat_bubble_outline,
+            color: color,
+            backgroundColor: backgroundColor,
+            size: 36,
+            iconSize: 18,
+            borderRadius: 10,
           ),
-          borderRadius: AppRadius.circularPill,
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.chat_bubble_outline,
-                size: 20, color: theme.colorScheme.primary),
-            SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Text(
-                label,
-                style: theme.textTheme.bodyMedium,
-              ),
-            ),
-          ],
-        ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Text(label, style: theme.textTheme.bodyMedium),
+          ),
+        ],
       ),
     );
   }
@@ -285,43 +321,55 @@ class _TurnTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final appTheme = context.appTheme;
     final l10n = StrategiesLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // User message
         Align(
           alignment: Alignment.centerRight,
           child: Container(
-            margin: EdgeInsets.only(bottom: AppSpacing.sm),
-            padding: EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg, vertical: AppSpacing.s10),
+            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
             decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer,
-              borderRadius: AppRadius.circularLg,
+              color: theme.colorScheme.primary,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(18),
+                topRight: Radius.circular(18),
+                bottomLeft: Radius.circular(18),
+                bottomRight: Radius.circular(4),
+              ),
             ),
             child: Text(
               turn.userMessage,
-              style: theme.textTheme.bodyMedium,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onPrimary,
+              ),
             ),
           ),
         ),
-        // Assistant text
         if (turn.assistantText.isNotEmpty)
           Container(
             margin: AppInsets.listItemBottom,
-            padding: EdgeInsets.all(AppSpacing.md),
+            padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest
-                  .withValues(alpha: 0.5),
-              borderRadius: AppRadius.circularMd,
+              color: theme.colorScheme.surface,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(18),
+                topRight: Radius.circular(18),
+                bottomRight: Radius.circular(18),
+                bottomLeft: Radius.circular(4),
+              ),
+              border: Border.all(color: appTheme.borderColor),
             ),
             child: Text(
               turn.assistantText,
               style: theme.textTheme.bodyMedium,
             ),
           ),
-        // Strategy cards
         if (turn.strategies != null && turn.strategies!.isNotEmpty)
           ...turn.strategies!.map((s) => _StrategyCard(
                 strategy: s,
@@ -356,58 +404,52 @@ class _StrategyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final appTheme = context.appTheme;
     final icon = _iconFor(strategy.iconKey);
-    return Card(
-      margin: EdgeInsets.only(bottom: AppSpacing.sm),
-      child: InkWell(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: DsSurfaceCard(
         onTap: onTap,
-        borderRadius: AppRadius.circularMd,
-        child: Container(
-          padding: AppInsets.screen,
-          decoration: BoxDecoration(
-            borderRadius: AppRadius.circularMd,
-            border: isSelected
-                ? Border.all(color: theme.colorScheme.primary, width: 2)
-                : null,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  if (icon != null)
-                    Padding(
-                      padding: EdgeInsets.only(right: AppSpacing.md),
-                      child: Icon(icon, color: theme.colorScheme.primary),
-                    ),
-                  Expanded(
-                    child: Text(
-                      strategy.title,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+        borderColor: isSelected
+            ? theme.colorScheme.primary
+            : appTheme.borderColor,
+        backgroundColor:
+            isSelected ? appTheme.primarySoft : theme.colorScheme.surface,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (icon != null)
+                  IconBubble(
+                    icon: icon,
+                    color: appTheme.amber,
+                    backgroundColor: appTheme.amberSoft,
+                    size: 36,
+                    iconSize: 18,
+                    borderRadius: 10,
                   ),
-                  if (isSelected)
-                    Icon(Icons.check_circle, color: theme.colorScheme.primary),
-                ],
-              ),
-              SizedBox(height: AppSpacing.sm),
-              Text(
-                strategy.description,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                if (icon != null) const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Text(
+                    strategy.title,
+                    style: theme.textTheme.titleSmall,
+                  ),
                 ),
-              ),
-              if (onLearnMore != null) ...[
-                SizedBox(height: AppSpacing.sm),
-                TextButton(
-                  onPressed: onLearnMore,
-                  child: Text(l10n.learnMore),
-                ),
+                if (isSelected)
+                  Icon(Icons.check_circle, color: theme.colorScheme.primary),
               ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(strategy.description, style: theme.textTheme.bodySmall),
+            if (onLearnMore != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              TextButton(
+                onPressed: onLearnMore,
+                child: Text(l10n.learnMore),
+              ),
             ],
-          ),
+          ],
         ),
       ),
     );

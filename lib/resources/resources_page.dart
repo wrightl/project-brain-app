@@ -8,6 +8,8 @@ import 'package:projectbrain/subscription/subscription_provider.dart';
 import 'package:projectbrain/subscription/widgets/upgrade_prompt.dart';
 import 'package:projectbrain/models/subscription.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 
 /// Resources page for managing user files
 class ResourcesPage extends StatefulWidget {
@@ -352,21 +354,47 @@ class _ResourcesPageState extends State<ResourcesPage> {
                   : RefreshIndicator(
                       onRefresh: _loadResources,
                       child: ListView.builder(
+                        padding: AppInsets.screen,
                         itemCount: _resources.length,
                         itemBuilder: (context, index) {
                           final resource = _resources[index];
-                          return ListTile(
-                            leading: const Icon(Icons.insert_drive_file),
-                            title: Text(resource.fileName),
-                            trailing: IconButton(
-                              icon: Icon(Icons.delete,
-                                  color: Theme.of(context).colorScheme.error),
-                              onPressed: () => _deleteResource(resource),
-                              tooltip: 'Delete',
+                          return Padding(
+                            padding: const EdgeInsets.only(
+                              bottom: AppSpacing.sm,
                             ),
-                            onTap: () {
-                              // Could add file preview or download functionality here
-                            },
+                            child: DsSurfaceCard(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.lg,
+                                vertical: AppSpacing.md,
+                              ),
+                              child: Row(
+                                children: [
+                                  IconBubble(
+                                    icon: Icons.insert_drive_file_outlined,
+                                    color: context.appTheme.sky,
+                                    backgroundColor: context.appTheme.skySoft,
+                                    size: 40,
+                                    iconSize: 20,
+                                  ),
+                                  const SizedBox(width: AppSpacing.md),
+                                  Expanded(
+                                    child: Text(
+                                      resource.fileName,
+                                      style: theme.textTheme.titleSmall,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.delete_outline,
+                                      color: theme.colorScheme.error,
+                                    ),
+                                    onPressed: () =>
+                                        _deleteResource(resource),
+                                    tooltip: 'Delete',
+                                  ),
+                                ],
+                              ),
+                            ),
                           );
                         },
                       ),

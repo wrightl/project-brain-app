@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/models/agent/user_choice_prompt.dart';
 
 class UserChoiceChips extends StatelessWidget {
@@ -19,33 +21,37 @@ class UserChoiceChips extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    final theme = Theme.of(context);
+    final appTheme = context.appTheme;
+
     return Padding(
-      padding: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.only(top: AppSpacing.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (choices.prompt != null && choices.prompt!.isNotEmpty) ...[
             Text(
               choices.prompt!,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey.shade700,
-                    fontWeight: FontWeight.w500,
-                  ),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: appTheme.textMuted,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
           ],
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
             children: choices.options.map((option) {
               return ActionChip(
                 label: Text(option.label),
                 onPressed: disabled ? null : () => onSelect(option.label),
-                backgroundColor: Colors.white,
-                side: BorderSide(color: Colors.grey.shade300),
-                labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey.shade800,
-                    ),
+                backgroundColor: theme.colorScheme.surface,
+                side: BorderSide(color: appTheme.borderColor),
+                labelStyle: theme.textTheme.bodyMedium,
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppRadius.circularPill,
+                ),
               );
             }).toList(),
           ),

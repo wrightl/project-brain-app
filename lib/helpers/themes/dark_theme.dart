@@ -1,31 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/helpers/themes/design_palette.dart';
 import 'package:projectbrain/helpers/themes/theme_builder.dart';
-import 'package:projectbrain/utils/colors.dart';
 
-/// Dark theme configuration.
+/// Dark theme — derived from the ProjectBrain design system palette.
 class DarkTheme {
   DarkTheme._();
 
-  static const Color streakColor = Color(0xFF81C784);
-  static const Color achievementColor = Color(0xFFFFD54F);
-
   static ThemeData build() {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: HexColor.fromHex('#7291DF'),
-      brightness: Brightness.dark,
+    final colorScheme = ColorScheme.dark(
+      primary: DesignPalette.darkPrimary,
+      onPrimary: DesignPalette.textPrimary,
+      primaryContainer: DesignPalette.darkPrimarySoft,
+      onPrimaryContainer: DesignPalette.darkPrimary,
+      secondary: const Color(0xFF4DD0C8),
+      onSecondary: DesignPalette.textPrimary,
+      secondaryContainer: const Color(0xFF1A3D3A),
+      onSecondaryContainer: const Color(0xFF4DD0C8),
+      tertiary: const Color(0xFFFF8A9A),
+      onTertiary: DesignPalette.textPrimary,
+      tertiaryContainer: const Color(0xFF3D2028),
+      onTertiaryContainer: const Color(0xFFFF8A9A),
+      error: DesignPalette.error,
+      onError: DesignPalette.onPrimary,
+      surface: DesignPalette.darkSurface,
+      onSurface: DesignPalette.darkTextPrimary,
+      onSurfaceVariant: DesignPalette.darkTextSecondary,
+      outline: DesignPalette.darkBorder,
+      outlineVariant: DesignPalette.darkBorder,
+      surfaceContainerHighest: DesignPalette.darkSurfaceHigh,
     );
 
     return buildAppTheme(
       colorScheme: colorScheme,
-      extension: AppThemeExtension(
-        devBadgeColor: Colors.orange.shade700,
-        stagingBadgeColor: Colors.blue.shade700,
-        errorColor: colorScheme.error,
-        debugTextColor: colorScheme.error,
-        streakColor: streakColor,
-        achievementColor: achievementColor,
-      ),
+      scaffoldBackgroundColor: DesignPalette.darkBg,
+      extension: AppThemeExtension.dark(colorScheme: colorScheme),
     );
   }
 }

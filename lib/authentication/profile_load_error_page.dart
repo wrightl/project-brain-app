@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:projectbrain/authentication/auth_provider.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 import 'package:provider/provider.dart';
 
 class ProfileLoadErrorPage extends StatelessWidget {
@@ -10,45 +12,51 @@ class ProfileLoadErrorPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final theme = Theme.of(context);
+    final appTheme = context.appTheme;
 
     return Scaffold(
-      body: Center(
+      body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+          padding: AppInsets.page,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.error_outline,
-                size: 48,
+              IconBubble(
+                icon: Icons.error_outline,
                 color: theme.colorScheme.error,
+                backgroundColor: theme.colorScheme.errorContainer
+                    .withValues(alpha: 0.35),
+                size: 72,
+                iconSize: 36,
+                borderRadius: 20,
               ),
-              SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: AppSpacing.lg),
               Text(
-                'Couldn\'t load your profile',
+                "Couldn't load your profile",
                 textAlign: TextAlign.center,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: theme.textTheme.titleMedium,
               ),
-              SizedBox(height: AppSpacing.sm),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 authProvider.errorMessage ??
                     'Check your connection and try again.',
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: appTheme.textMuted,
                 ),
               ),
-              SizedBox(height: AppSpacing.xl),
+              const SizedBox(height: AppSpacing.xl),
               if (authProvider.isLoading)
                 const CircularProgressIndicator()
               else
-                FilledButton(
-                  onPressed: () => authProvider.refreshUserData(),
-                  child: const Text('Retry'),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => authProvider.refreshUserData(),
+                    child: const Text('Retry'),
+                  ),
                 ),
-              SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.md),
               if (!authProvider.isLoading)
                 TextButton(
                   onPressed: () => authProvider.logout(),

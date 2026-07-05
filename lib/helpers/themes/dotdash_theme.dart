@@ -37,11 +37,9 @@ class DotDashTheme {
 
     return buildAppTheme(
       colorScheme: colorScheme,
-      extension: AppThemeExtension(
-        devBadgeColor: Colors.orange,
+      scaffoldBackgroundColor: Colors.white,
+      extension: AppThemeExtension.light(colorScheme: colorScheme).copyWith(
         stagingBadgeColor: periwinkle,
-        errorColor: colorScheme.error,
-        debugTextColor: colorScheme.error,
         streakColor: periwinkle,
         achievementColor: pinkLilac,
       ),

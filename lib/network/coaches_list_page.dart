@@ -5,6 +5,8 @@ import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/models/connection.dart';
 import 'package:projectbrain/services/connection_service.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 
 /// Talk to a Coach — list connected coaches with message and manage actions.
 class CoachesListPage extends StatefulWidget {
@@ -132,8 +134,9 @@ class _CoachesListPageState extends State<CoachesListPage> {
   }
 
   Color _statusColor(Connection connection, ThemeData theme) {
-    if (connection.isAccepted) return Colors.green;
-    if (connection.isPending) return Colors.orange;
+    final appTheme = theme.extension<AppThemeExtension>();
+    if (connection.isAccepted) return appTheme?.green ?? Colors.green;
+    if (connection.isPending) return appTheme?.amber ?? Colors.orange;
     return theme.colorScheme.onSurface.withValues(alpha: 0.6);
   }
 
@@ -258,26 +261,25 @@ class _CoachesListPageState extends State<CoachesListPage> {
                       final isRemoving = _removingIds.contains(connection.id);
                       final statusColor = _statusColor(connection, theme);
 
-                      return Card(
-                        margin: AppInsets.listItemBottom,
-                        child: Padding(
-                          padding: AppInsets.screen,
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: DsSurfaceCard(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
                                 children: [
                                   CircleAvatar(
-                                    radius: 24,
-                                    backgroundColor:
-                                        theme.colorScheme.primaryContainer,
-                                    child: Icon(
-                                      Icons.person,
-                                      color:
-                                          theme.colorScheme.onPrimaryContainer,
+                                    radius: 22,
+                                    backgroundColor: context.appTheme.tealSoft,
+                                    child: Text(
+                                      _initials(connection.coachName),
+                                      style: theme.textTheme.titleSmall?.copyWith(
+                                        color: context.appTheme.teal,
+                                      ),
                                     ),
                                   ),
-                                  SizedBox(width: AppSpacing.md),
+                                  const SizedBox(width: AppSpacing.md),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
@@ -285,31 +287,14 @@ class _CoachesListPageState extends State<CoachesListPage> {
                                       children: [
                                         Text(
                                           connection.coachName ?? 'Coach',
-                                          style: theme.textTheme.titleMedium
-                                              ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                          style: theme.textTheme.titleSmall,
                                         ),
-                                        SizedBox(height: AppSpacing.xs),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: AppSpacing.sm,
-                                            vertical: AppSpacing.micro,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: statusColor.withValues(
-                                              alpha: 0.15,
-                                            ),
-                                            borderRadius: AppRadius.circularMd,
-                                          ),
-                                          child: Text(
-                                            _statusLabel(connection),
-                                            style: theme.textTheme.labelSmall
-                                                ?.copyWith(
-                                              color: statusColor,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
+                                        const SizedBox(height: AppSpacing.xs),
+                                        AccentTag(
+                                          label: _statusLabel(connection),
+                                          color: statusColor,
+                                          backgroundColor:
+                                              statusColor.withValues(alpha: 0.15),
                                         ),
                                       ],
                                     ),
@@ -406,5 +391,14 @@ class _CoachesListPageState extends State<CoachesListPage> {
         ),
       ),
     );
+  }
+
+  String _initials(String? name) {
+    if (name == null || name.isEmpty) return '?';
+    final parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return name[0].toUpperCase();
   }
 }

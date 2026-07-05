@@ -5,6 +5,8 @@ import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/goals/egg_goals_provider.dart';
 import 'package:projectbrain/services/egg_goals_service.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 
 /// Page for entering/editing daily goals
 class GoalEntryPage extends StatefulWidget {
@@ -34,12 +36,10 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final appTheme = context.appTheme;
     final goalsProvider = Provider.of<EggGoalsProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Set Your Daily Goals'),
-      ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
@@ -59,21 +59,37 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text('Set your goals', style: theme.textTheme.headlineSmall),
+                const SizedBox(height: AppSpacing.sm),
                 Text(
-                  'What would you like to accomplish today?',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+                  'Set up to 3 goals for today. Mark them complete as you go.',
+                  style: theme.textTheme.bodySmall,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                DsSurfaceCard(
+                  backgroundColor: appTheme.primarySoft,
+                  borderColor: theme.colorScheme.primary.withValues(alpha: 0.2),
+                  child: Row(
+                    children: [
+                      IconBubble(
+                        icon: Icons.auto_awesome_outlined,
+                        color: theme.colorScheme.primary,
+                        backgroundColor: theme.colorScheme.surface,
+                        size: 36,
+                        iconSize: 18,
+                        borderRadius: 10,
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Text(
+                          'Need inspiration? Let AI suggest goals based on your profile.',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                SizedBox(height: AppSpacing.sm),
-                Text(
-                  'Set up to 3 goals for today. You can mark them as complete as you finish them.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
-                ),
-                SizedBox(height: AppSpacing.lg),
-
+                const SizedBox(height: AppSpacing.md),
                 OutlinedButton.icon(
                   onPressed: (goalsProvider.isLoading || _suggestingGoals)
                       ? null
@@ -138,10 +154,10 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
                     decoration: InputDecoration(
                       labelText: 'Goal ${i + 1}',
                       hintText: 'Enter your goal here...',
-                      border: OutlineInputBorder(
-                        borderRadius: AppRadius.circularMd,
+                      prefixIcon: Icon(
+                        Icons.check_circle_outline,
+                        color: appTheme.green,
                       ),
-                      prefixIcon: const Icon(Icons.check_circle_outline),
                     ),
                     maxLines: 2,
                   ),

@@ -1,27 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 
 /// Model for a navigation link
 class NavigationLink {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
   const NavigationLink({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.iconColor,
+    this.iconBackgroundColor,
   });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final Color? iconColor;
+  final Color? iconBackgroundColor;
 }
 
-/// Reusable widget that displays a list of navigation links
+/// Reusable widget that displays a list of navigation links.
 class LinkList extends StatelessWidget {
-  final List<NavigationLink> links;
-  final String? sectionTitle;
-  final double spacing;
-
   const LinkList({
     super.key,
     required this.links,
@@ -29,34 +31,25 @@ class LinkList extends StatelessWidget {
     this.spacing = AppSpacing.md,
   });
 
+  final List<NavigationLink> links;
+  final String? sectionTitle;
+  final double spacing;
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (sectionTitle != null) ...[
-          Text(
-            sectionTitle!,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(height: AppSpacing.lg),
+          SectionHeader(title: sectionTitle!),
+          const SizedBox(height: AppSpacing.lg),
         ],
         ...links.asMap().entries.map((entry) {
           final index = entry.key;
           final link = entry.value;
           return Column(
             children: [
-              _buildLinkCard(
-                context: context,
-                icon: link.icon,
-                title: link.title,
-                subtitle: link.subtitle,
-                onTap: link.onTap,
-              ),
+              _LinkRow(link: link),
               if (index < links.length - 1) SizedBox(height: spacing),
             ],
           );
@@ -64,51 +57,52 @@ class LinkList extends StatelessWidget {
       ],
     );
   }
+}
 
-  Widget _buildLinkCard({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
+class _LinkRow extends StatelessWidget {
+  const _LinkRow({required this.link});
+
+  final NavigationLink link;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final appTheme = context.appTheme;
+    final iconColor = link.iconColor ?? theme.colorScheme.primary;
+    final iconBg = link.iconBackgroundColor ?? appTheme.primarySoft;
 
-    return Card(
-      child: ListTile(
-        leading: Container(
-          padding: EdgeInsets.all(AppSpacing.sm),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withValues(alpha: 0.1),
-            borderRadius: AppRadius.circularSm,
+    return DsSurfaceCard(
+      onTap: link.onTap,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      child: Row(
+        children: [
+          IconBubble(
+            icon: link.icon,
+            color: iconColor,
+            backgroundColor: iconBg,
           ),
-          child: Icon(
-            icon,
-            color: theme.colorScheme.primary,
-            size: 24,
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  link.title,
+                  style: theme.textTheme.titleSmall,
+                ),
+                const SizedBox(height: AppSpacing.micro),
+                Text(
+                  link.subtitle,
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
           ),
-        ),
-        title: Text(
-          title,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-          ),
-        ),
-        trailing: Icon(
-          Icons.chevron_right,
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-        ),
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.sm,
-        ),
+          Icon(Icons.chevron_right, color: appTheme.textMuted, size: 20),
+        ],
       ),
     );
   }

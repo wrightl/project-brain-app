@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:projectbrain/goals/egg_goals_provider.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/widgets/ds/goal_row.dart';
 
-/// Page displaying the list of daily goals with checkboxes and progress
+/// Page displaying the list of daily goals with checkboxes and progress.
 class GoalsListPage extends StatelessWidget {
   const GoalsListPage({super.key});
 
@@ -14,18 +18,6 @@ class GoalsListPage extends StatelessWidget {
     final goalsProvider = Provider.of<EggGoalsProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Daily Goals'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () {
-              context.go('/goals/entry');
-            },
-            tooltip: 'Edit Goals',
-          ),
-        ],
-      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -35,9 +27,6 @@ class GoalsListPage extends StatelessWidget {
                 child: _buildBody(context, goalsProvider),
               ),
             ),
-
-            // Progress tracker at bottom
-            _buildProgressTracker(context, goalsProvider),
           ],
         ),
       ),
@@ -46,9 +35,9 @@ class GoalsListPage extends StatelessWidget {
 
   Widget _buildBody(BuildContext context, EggGoalsProvider provider) {
     final theme = Theme.of(context);
-
-    // Keep the original index so toggleGoalCompletion targets the right goal.
+    final appTheme = context.appTheme;
     final visibleGoals = <({int index, EggGoal goal})>[];
+
     for (var i = 0; i < provider.goals.length; i++) {
       final g = provider.goals[i];
       if (g.message.isNotEmpty && g.message != 'No Egg Goal Set') {
@@ -56,7 +45,12 @@ class GoalsListPage extends StatelessWidget {
       }
     }
 
-    // First load with nothing cached yet.
+    final progress = provider.getCompletionProgress();
+    final completed = progress['completed'] ?? 0;
+    final total = progress['total'] ?? 3;
+    final pct = total > 0 ? completed / total : 0.0;
+    final dateLabel = DateFormat('EEEE d MMMM').format(DateTime.now());
+
     if (provider.isLoading && visibleGoals.isEmpty) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -67,7 +61,6 @@ class GoalsListPage extends StatelessWidget {
       );
     }
 
-    // Error with nothing to show.
     if (provider.hasError && visibleGoals.isEmpty) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -75,13 +68,13 @@ class GoalsListPage extends StatelessWidget {
         children: [
           SizedBox(height: AppSpacing.emptyStateOffset),
           Icon(Icons.error_outline, size: 56, color: theme.colorScheme.error),
-          SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.lg),
           Text(
             provider.errorMessage ?? 'Failed to load goals',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyLarge,
           ),
-          SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.lg),
           Center(
             child: FilledButton(
               onPressed: () => context.read<EggGoalsProvider>().syncFromAPI(),
@@ -92,207 +85,145 @@ class GoalsListPage extends StatelessWidget {
       );
     }
 
-    // Empty state after a successful fetch.
-    if (visibleGoals.isEmpty) {
-      return ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: AppInsets.page,
-        children: [
-          SizedBox(height: AppSpacing.emptyStateOffset),
-          Icon(Icons.flag_outlined,
-              size: 64, color: theme.colorScheme.onSurfaceVariant),
-          SizedBox(height: AppSpacing.lg),
-          Text(
-            'No goals set yet',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.titleMedium,
-          ),
-          SizedBox(height: AppSpacing.sm),
-          Text(
-            'Tap the edit icon to set your daily goals.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      );
-    }
-
-    return ListView.builder(
+    return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: AppInsets.screen,
-      itemCount: visibleGoals.length,
-      itemBuilder: (context, index) {
-        final entry = visibleGoals[index];
-        return _buildGoalItem(context, entry.goal, entry.index, provider);
-      },
-    );
-  }
-
-  Widget _buildGoalItem(
-    BuildContext context,
-    EggGoal goal,
-    int index,
-    EggGoalsProvider provider,
-  ) {
-    final theme = Theme.of(context);
-    final isToggling = provider.isGoalToggling(index);
-
-    return Card(
-      margin: AppInsets.listItemBottom,
-      child: InkWell(
-        onTap: isToggling
-            ? null
-            : () async {
-          await provider.toggleGoalCompletion(index);
-          if (context.mounted) {
-            final progress = provider.getCompletionProgress();
-            final wasCompleted = goal.completed;
-            final nowCompleted = !wasCompleted;
-
-            // Navigate to celebration if completing a goal
-            if (nowCompleted && !wasCompleted) {
-              HapticFeedback.mediumImpact();
-              if (progress['completed'] == 3) {
-                // All goals completed
-                context.push('/goals/celebration/all');
-              } else {
-                // Single goal completed
-                context.push('/goals/celebration/single');
-              }
-            }
-          }
-        },
-        borderRadius: AppRadius.circularMd,
-        child: Padding(
-          padding: AppInsets.screen,
-          child: Row(
-            children: [
-              // Custom checkbox with egg theme
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: goal.completed ? Colors.green : Colors.orange,
-                    width: 3,
-                  ),
-                  color: goal.completed
-                      ? Colors.green.withValues(alpha: 0.1)
-                      : Colors.transparent,
-                ),
-                child: isToggling
-                    ? const Padding(
-                        padding: EdgeInsets.all(6),
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : goal.completed
-                        ? const Icon(
-                            Icons.check,
-                            color: Colors.green,
-                            size: 20,
-                          )
-                        : null,
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.xxl,
+      ),
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Daily goals', style: theme.textTheme.headlineSmall),
+                  Text(dateLabel, style: theme.textTheme.bodySmall),
+                ],
               ),
-              const SizedBox(width: AppSpacing.lg),
-              Expanded(
-                child: Text(
-                  goal.message,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    decoration:
-                        goal.completed ? TextDecoration.lineThrough : null,
-                    color: goal.completed
-                        ? theme.colorScheme.onSurface.withValues(alpha: 0.5)
-                        : null,
+            ),
+            Consumer<EggGoalsProvider>(
+              builder: (context, p, _) {
+                final streak = p.goalStreakSummary?.currentStreak ?? 0;
+                if (streak <= 0) return const SizedBox.shrink();
+                return AccentTag(
+                  label: '$streak day streak',
+                  color: appTheme.amber,
+                  backgroundColor: appTheme.amberSoft,
+                  icon: Icons.local_fire_department,
+                );
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        DsSurfaceCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '$completed of $total done',
+                    style: theme.textTheme.titleSmall,
                   ),
+                  Text(
+                    '${(pct * 100).round()}%',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              ClipRRect(
+                borderRadius: AppRadius.circularPill,
+                child: LinearProgressIndicator(
+                  value: pct,
+                  minHeight: 10,
+                  backgroundColor: appTheme.primarySoft,
                 ),
               ),
             ],
           ),
         ),
-      ),
+        const SizedBox(height: AppSpacing.lg),
+        if (visibleGoals.isEmpty)
+          DsSurfaceCard(
+            child: Column(
+              children: [
+                Icon(Icons.flag_outlined,
+                    size: 48, color: appTheme.textMuted),
+                const SizedBox(height: AppSpacing.md),
+                Text('No goals set yet', style: theme.textTheme.titleMedium),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Add your first goal to get started.',
+                  style: theme.textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          )
+        else
+          ...visibleGoals.map((entry) {
+            final goal = entry.goal;
+            final index = entry.index;
+            final isToggling = provider.isGoalToggling(index);
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: Opacity(
+                opacity: isToggling ? 0.6 : 1,
+                child: GoalRow(
+                  title: goal.message,
+                  completed: goal.completed,
+                  meta: 'Daily goal',
+                  onToggle: isToggling
+                      ? null
+                      : () => _toggleGoal(context, provider, goal, index),
+                ),
+              ),
+            );
+          }),
+        const SizedBox(height: AppSpacing.lg),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: () => context.go('/goals/entry'),
+            icon: const Icon(Icons.add, size: 20),
+            label: const Text('Add a goal'),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildProgressTracker(
+  Future<void> _toggleGoal(
     BuildContext context,
     EggGoalsProvider provider,
-  ) {
-    final theme = Theme.of(context);
+    EggGoal goal,
+    int index,
+  ) async {
+    await provider.toggleGoalCompletion(index);
+    if (!context.mounted) return;
+
     final progress = provider.getCompletionProgress();
-    final completed = progress['completed'] ?? 0;
-    final total = progress['total'] ?? 3;
-    final percentage = total > 0 ? (completed / total) : 0.0;
+    final wasCompleted = goal.completed;
+    final nowCompleted = !wasCompleted;
 
-    String message;
-    if (completed == 0) {
-      message = 'Get started on your goals!';
-    } else if (completed == total) {
-      message = 'Amazing! You completed all your goals! 🎉';
-    } else {
-      message = 'Great progress! Keep going!';
+    if (nowCompleted && !wasCompleted) {
+      HapticFeedback.mediumImpact();
+      if (progress['completed'] == 3) {
+        context.push('/goals/celebration/all');
+      } else {
+        context.push('/goals/celebration/single');
+      }
     }
-
-    return Container(
-      padding: AppInsets.page,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Progress bar
-          ClipRRect(
-            borderRadius: AppRadius.circularSm,
-            child: LinearProgressIndicator(
-              value: percentage,
-              minHeight: 8,
-              backgroundColor: theme.colorScheme.surfaceContainerHighest,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                completed == total ? Colors.green : theme.colorScheme.primary,
-              ),
-            ),
-          ),
-          SizedBox(height: AppSpacing.md),
-          // Progress text
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '$completed / $total goals completed',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                '${(percentage * 100).toInt()}%',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: AppSpacing.sm),
-          // Encouraging message
-          Text(
-            message,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
   }
 }

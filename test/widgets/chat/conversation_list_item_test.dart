@@ -27,7 +27,6 @@ void main() {
         ),
       );
 
-      // Should display conversation title
       expect(find.text('Test Conversation'), findsOneWidget);
     });
 
@@ -53,11 +52,14 @@ void main() {
         ),
       );
 
-      // Find the ListTile
-      final listTile = tester.widget<ListTile>(find.byType(ListTile));
+      final material = tester.widget<Material>(
+        find.descendant(
+          of: find.byType(ConversationListItem),
+          matching: find.byType(Material),
+        ).first,
+      );
 
-      // Active items should have tileColor set
-      expect(listTile.tileColor, isNotNull);
+      expect(material.color, isNotNull);
     });
 
     testWidgets('does not highlight inactive conversation',
@@ -83,11 +85,14 @@ void main() {
         ),
       );
 
-      // Find the ListTile
-      final listTile = tester.widget<ListTile>(find.byType(ListTile));
+      final material = tester.widget<Material>(
+        find.descendant(
+          of: find.byType(ConversationListItem),
+          matching: find.byType(Material),
+        ).first,
+      );
 
-      // Inactive items should not have tileColor
-      expect(listTile.tileColor, isNull);
+      expect(material.color, Colors.transparent);
     });
 
     testWidgets('calls onTap when tapped', (WidgetTester tester) async {
@@ -100,7 +105,7 @@ void main() {
         updatedAt: DateTime.now(),
       );
 
-      bool wasTapped = false;
+      var wasTapped = false;
 
       await tester.pumpWidget(
         MaterialApp(
@@ -116,11 +121,9 @@ void main() {
         ),
       );
 
-      // Tap the item
-      await tester.tap(find.byType(ListTile));
+      await tester.tap(find.byType(InkWell));
       await tester.pumpAndSettle();
 
-      // Verify onTap was called
       expect(wasTapped, isTrue);
     });
 
@@ -147,10 +150,7 @@ void main() {
         ),
       );
 
-      // Should render without overflow
       expect(tester.takeException(), isNull);
-
-      // Title should be displayed
       expect(find.text(longTitle), findsOneWidget);
     });
 
@@ -184,7 +184,6 @@ void main() {
         ),
       );
 
-      // Should render with theme (no errors)
       expect(find.text('Themed Conversation'), findsOneWidget);
     });
   });

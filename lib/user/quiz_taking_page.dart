@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/user/quiz_taking_provider.dart';
 import 'package:projectbrain/user/widgets/quiz_question_widget.dart';
 
@@ -236,13 +237,16 @@ class _QuizTakingViewState extends State<_QuizTakingView> {
                               ],
                             ),
                           ),
-                        LinearProgressIndicator(
-                          value: (provider.currentQuestionIndex + 1) /
-                              provider.visibleQuestions.length,
-                          backgroundColor:
-                              theme.colorScheme.surfaceContainerHighest,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            theme.colorScheme.primary,
+                        ClipRRect(
+                          borderRadius: AppRadius.circularPill,
+                          child: LinearProgressIndicator(
+                            value: (provider.currentQuestionIndex + 1) /
+                                provider.visibleQuestions.length,
+                            minHeight: 8,
+                            backgroundColor: context.appTheme.primarySoft,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              theme.colorScheme.primary,
+                            ),
                           ),
                         ),
                         Expanded(

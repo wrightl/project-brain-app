@@ -6,6 +6,8 @@ import 'package:projectbrain/subscription/subscription_provider.dart';
 import 'package:projectbrain/subscription/widgets/tier_badge.dart';
 import 'package:projectbrain/models/subscription.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 
 /// Subscription management page showing current subscription details
 class SubscriptionManagementPage extends StatelessWidget {
@@ -133,11 +135,10 @@ class SubscriptionManagementPage extends StatelessWidget {
     SubscriptionProvider provider,
   ) {
     final theme = Theme.of(context);
+    final appTheme = context.appTheme;
 
-    return Card(
-      child: Padding(
-        padding: AppInsets.screen,
-        child: Column(
+    return DsSurfaceCard(
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -151,8 +152,8 @@ class SubscriptionManagementPage extends StatelessWidget {
                       vertical: AppSpacing.xs,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.orange,
-                      borderRadius: AppRadius.circularMd,
+                      color: appTheme.amber,
+                      borderRadius: AppRadius.circularPill,
                     ),
                     child: Text(
                       'Trial',
@@ -180,7 +181,6 @@ class SubscriptionManagementPage extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 
@@ -191,10 +191,8 @@ class SubscriptionManagementPage extends StatelessWidget {
     final theme = Theme.of(context);
     final dateFormat = DateFormat('MMM d, yyyy');
 
-    return Card(
-      child: Padding(
-        padding: AppInsets.screen,
-        child: Column(
+    return DsSurfaceCard(
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -236,7 +234,6 @@ class SubscriptionManagementPage extends StatelessWidget {
               ),
           ],
         ),
-      ),
     );
   }
 
@@ -245,10 +242,8 @@ class SubscriptionManagementPage extends StatelessWidget {
     Subscription subscription,
     SubscriptionProvider provider,
   ) {
-    return Card(
-      child: Padding(
-        padding: AppInsets.screen,
-        child: Column(
+    return DsSurfaceCard(
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
@@ -274,7 +269,6 @@ class SubscriptionManagementPage extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 
@@ -285,10 +279,8 @@ class SubscriptionManagementPage extends StatelessWidget {
   ) {
     final theme = Theme.of(context);
 
-    return Card(
-      child: Padding(
-        padding: AppInsets.screen,
-        child: Column(
+    return DsSurfaceCard(
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -329,20 +321,21 @@ class SubscriptionManagementPage extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 
   Color _getStatusColor(SubscriptionStatus status, ThemeData theme) {
+    final appTheme = theme.extension<AppThemeExtension>() ??
+        AppThemeExtension.light(colorScheme: theme.colorScheme);
     switch (status) {
       case SubscriptionStatus.active:
-        return Colors.green;
+        return appTheme.green;
       case SubscriptionStatus.trialing:
-        return Colors.orange;
+        return appTheme.amber;
       case SubscriptionStatus.canceled:
         return theme.colorScheme.error;
       case SubscriptionStatus.expired:
-        return Colors.grey;
+        return appTheme.textMuted;
     }
   }
 
@@ -381,9 +374,9 @@ class SubscriptionManagementPage extends StatelessWidget {
                 await provider.cancelSubscription();
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Subscription canceled successfully'),
-                      backgroundColor: Colors.green,
+                    SnackBar(
+                      content: const Text('Subscription canceled successfully'),
+                      backgroundColor: context.appTheme.green,
                     ),
                   );
                 }
@@ -392,7 +385,7 @@ class SubscriptionManagementPage extends StatelessWidget {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Error: ${e.toString()}'),
-                      backgroundColor: Colors.red,
+                      backgroundColor: context.appTheme.errorColor,
                     ),
                   );
                 }

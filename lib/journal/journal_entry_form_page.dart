@@ -6,7 +6,9 @@ import 'package:projectbrain/journal/journal_localizations.dart';
 import 'package:projectbrain/journal/widgets/system_tag_field_builder.dart';
 import 'package:projectbrain/models/journal/journal_request_dtos.dart';
 import 'package:projectbrain/models/journal/system_tag.dart';
+import 'package:intl/intl.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 
 /// Create or edit journal entry (same form).
 class JournalEntryFormPage extends StatefulWidget {
@@ -164,12 +166,38 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
     final l10n = JournalLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => context.pop(),
+        ),
         title: Text(_isEdit ? l10n.editEntry : l10n.newEntry),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: AppSpacing.sm),
+            child: FilledButton(
+              onPressed: _isSaving ? null : _save,
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.sm,
+                ),
+              ),
+              child: _isSaving
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(l10n.save),
+            ),
+          ),
+        ],
       ),
       body: !_loaded
           ? const Center(child: CircularProgressIndicator())
           : Consumer<JournalProvider>(
               builder: (context, provider, _) {
+                final appTheme = context.appTheme;
                 final systemTags = provider.systemTags;
                 final userTags = provider.userTags;
                 final sortedSystemTags = List<SystemTag>.from(systemTags)
@@ -179,17 +207,27 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      TextField(
-                        controller: _contentController,
-                        maxLines: 6,
-                        decoration: InputDecoration(
-                          labelText: l10n.content,
-                          hintText: l10n.pleaseEnterContent,
-                          border: const OutlineInputBorder(),
-                          alignLabelWithHint: true,
+                      Text(
+                        DateFormat('EEEE d MMMM · HH:mm')
+                            .format(DateTime.now())
+                            .toUpperCase(),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          letterSpacing: 1,
+                          color: appTheme.textMuted,
                         ),
                       ),
-                      SizedBox(height: AppSpacing.xl),
+                      const SizedBox(height: AppSpacing.lg),
+                      TextField(
+                        controller: _contentController,
+                        maxLines: 8,
+                        style: theme.textTheme.bodyLarge,
+                        decoration: InputDecoration(
+                          hintText: l10n.pleaseEnterContent,
+                          border: InputBorder.none,
+                          filled: false,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
                       Text(
                         l10n.suggestedTags,
                         style: theme.textTheme.titleSmall?.copyWith(

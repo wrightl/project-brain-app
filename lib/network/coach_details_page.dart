@@ -8,6 +8,8 @@ import 'package:projectbrain/subscription/subscription_provider.dart';
 import 'package:projectbrain/subscription/widgets/upgrade_prompt.dart';
 import 'package:projectbrain/models/subscription.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
+import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 
 /// Page showing detailed information about a coach
 class CoachDetailsPage extends StatefulWidget {
@@ -119,7 +121,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                   ? 'Connected successfully'
                   : 'Connection request sent successfully',
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: context.appTheme.green,
           ),
         );
       }
@@ -132,7 +134,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: context.appTheme.errorColor,
           ),
         );
       }
@@ -153,9 +155,9 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Connection request cancelled'),
-            backgroundColor: Colors.orange,
+          SnackBar(
+            content: const Text('Connection request cancelled'),
+            backgroundColor: context.appTheme.amber,
           ),
         );
       }
@@ -168,7 +170,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: context.appTheme.errorColor,
           ),
         );
       }
@@ -266,7 +268,8 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
           label: const Text('Message'),
           style: ElevatedButton.styleFrom(
             padding: AppInsets.button,
-            backgroundColor: Colors.green,
+            backgroundColor: context.appTheme.green,
+            foregroundColor: Colors.white,
           ),
         );
     }
@@ -277,20 +280,14 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
     required Widget content,
   }) {
     final theme = Theme.of(context);
-    return Card(
-      margin: EdgeInsets.only(bottom: AppSpacing.lg),
-      child: Padding(
-        padding: AppInsets.screen,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+      child: DsSurfaceCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: AppSpacing.md),
+            Text(title, style: theme.textTheme.titleSmall),
+            const SizedBox(height: AppSpacing.md),
             content,
           ],
         ),
@@ -358,10 +355,11 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                         ),
 
                       // Connection status and button
-                      Card(
-                        color: _connectionStatus == ConnectionStatus.connected
-                            ? theme.colorScheme.primaryContainer
-                            : theme.colorScheme.surfaceContainerHighest,
+                      DsSurfaceCard(
+                        backgroundColor:
+                            _connectionStatus == ConnectionStatus.connected
+                                ? context.appTheme.tealSoft
+                                : null,
                         child: Padding(
                           padding: AppInsets.screen,
                           child: Row(
@@ -558,14 +556,10 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                             spacing: AppSpacing.sm,
                             runSpacing: AppSpacing.sm,
                             children: _coach!.specialisms!.map((spec) {
-                              return Chip(
-                                label: Text(spec),
-                                backgroundColor:
-                                    theme.colorScheme.primaryContainer,
-                                labelStyle:
-                                    theme.textTheme.labelLarge?.copyWith(
-                                  color: theme.colorScheme.onPrimaryContainer,
-                                ),
+                              return AccentTag(
+                                label: spec,
+                                color: context.appTheme.teal,
+                                backgroundColor: context.appTheme.tealSoft,
                               );
                             }).toList(),
                           ),
@@ -613,14 +607,10 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                             spacing: AppSpacing.sm,
                             runSpacing: AppSpacing.sm,
                             children: _coach!.ageGroups!.map((ageGroup) {
-                              return Chip(
-                                label: Text(ageGroup),
-                                backgroundColor:
-                                    theme.colorScheme.secondaryContainer,
-                                labelStyle:
-                                    theme.textTheme.labelLarge?.copyWith(
-                                  color: theme.colorScheme.onSecondaryContainer,
-                                ),
+                              return AccentTag(
+                                label: ageGroup,
+                                color: context.appTheme.sky,
+                                backgroundColor: context.appTheme.skySoft,
                               );
                             }).toList(),
                           ),
