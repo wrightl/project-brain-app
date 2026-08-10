@@ -28,6 +28,8 @@ class AuthProvider extends ChangeNotifier {
   bool _userProfileLoadFailed = false;
   User? _user;
   String? _errorMessage;
+  bool _biometricAvailable = false;
+  String _biometricUnlockLabel = 'Unlock with biometrics';
 
   AuthProvider({
     required this.authService,
@@ -45,10 +47,31 @@ class AuthProvider extends ChangeNotifier {
   bool get userProfileLoadFailed => _userProfileLoadFailed;
   String? get errorMessage => _errorMessage;
   bool get hasError => _errorMessage != null;
+  bool get hasStoredSession => authService.hasStoredSession;
+  bool get awaitingBiometricUnlock => authService.awaitingBiometricUnlock;
+  bool get biometricUnlockEnabled => authService.isBiometricUnlockEnabled;
+  bool get biometricAvailable => _biometricAvailable;
+  String get biometricUnlockLabel => _biometricUnlockLabel;
+  bool get showBiometricUnlock =>
+      !isLoggedIn &&
+      hasStoredSession &&
+      (awaitingBiometricUnlock || biometricUnlockEnabled);
 
   void _resetProfileLoadState() {
     _userProfileLoaded = false;
     _userProfileLoadFailed = false;
+  }
+
+  Future<void> _refreshBiometricAvailability() async {
+    try {
+      _biometricAvailable = await authService.isBiometricAvailable();
+      if (_biometricAvailable) {
+        _biometricUnlockLabel = await authService.biometricUnlockLabel();
+      }
+    } catch (e) {
+      logWarning('[AuthProvider] Failed to refresh biometric availability', e);
+      _biometricAvailable = false;
+    }
   }
 
   Future<void> init() async {
@@ -58,6 +81,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      await _refreshBiometricAvailability();
       await authService.init();
       if (!isLoggedIn) {
         _errorMessage = authService.consumeLaunchAuthMessage();
@@ -87,6 +111,7 @@ class AuthProvider extends ChangeNotifier {
       }
       await _fetchUserData();
       await _persistLastLoginEmail();
+      await _refreshBiometricAvailability();
 
       // Set user ID in analytics after successful login
       try {
@@ -113,6 +138,68 @@ class AuthProvider extends ChangeNotifier {
       _errorMessage = e.toString().replaceAll('AuthException: ', '');
     } finally {
       _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Unlock a stored session with biometrics (no Universal Login).
+  Future<void> unlockWithBiometrics() async {
+    _isLoading = true;
+    _errorMessage = null;
+    _resetProfileLoadState();
+    notifyListeners();
+
+    try {
+      final ok = await authService.unlockWithBiometrics();
+      if (!ok) {
+        _errorMessage = authService.consumeLaunchAuthMessage() ??
+            'Biometric unlock was canceled or failed.';
+        return;
+      }
+
+      if (sl.isRegistered<ApiHttpCacheCoordinator>()) {
+        sl<ApiHttpCacheCoordinator>().clearAllCaches();
+      }
+      await _fetchUserData();
+
+      try {
+        final userId = profile?.sub ?? _user?.id;
+        if (userId != null) {
+          await sl<ErrorReportingService>().setUserId(userId);
+        }
+        await sl<ErrorReportingService>().logEvent('biometric_unlock');
+      } catch (e) {
+        logError('[AuthProvider] Error setting analytics after unlock', e);
+      }
+
+      unawaited(_registerPushTokenAfterLogin());
+      unawaited(
+        sl<GoalsRealtimeService>()
+            .start(() => sl<EggGoalsProvider>().syncFromAPI()),
+      );
+    } catch (e) {
+      logError('[AuthProvider] Error during biometric unlock', e);
+      _errorMessage = e.toString().replaceAll('AuthException: ', '');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> setBiometricUnlockEnabled(bool enabled) async {
+    _errorMessage = null;
+    try {
+      if (enabled) {
+        await authService.enableBiometricUnlock();
+      } else {
+        await authService.disableBiometricUnlock();
+      }
+      await _refreshBiometricAvailability();
+    } catch (e) {
+      logError('[AuthProvider] Error updating biometric unlock', e);
+      _errorMessage = e.toString().replaceAll('AuthException: ', '');
+      rethrow;
+    } finally {
       notifyListeners();
     }
   }
@@ -147,6 +234,7 @@ class AuthProvider extends ChangeNotifier {
       _user = null;
       _onboardingComplete = false;
       _resetProfileLoadState();
+      await _refreshBiometricAvailability();
 
       // Clear user ID in analytics after logout
       try {

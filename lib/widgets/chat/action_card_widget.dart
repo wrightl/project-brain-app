@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:projectbrain/helpers/coach_agent_actions.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/models/agent/action_card.dart';
@@ -71,6 +72,62 @@ class ActionCardWidget extends StatelessWidget {
           if (card.filename != null) ...[
             const SizedBox(height: AppSpacing.xs),
             Text(card.filename!, style: theme.textTheme.bodySmall),
+          ],
+          if (card.cardType == 'coaches_found' && card.coaches.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.sm),
+            ...card.coaches.take(3).map((coach) {
+              final coachProfileId =
+                  coach['coachProfileId']?.toString() ?? '';
+              final name = coach['name']?.toString() ?? 'Coach';
+              final bio = coach['bio']?.toString();
+              final connectionStatus =
+                  coach['connectionStatus']?.toString();
+              final connectionId = coach['connectionId']?.toString();
+              final canMessage = connectionStatus == 'connected' &&
+                  connectionId != null &&
+                  connectionId.isNotEmpty;
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      bio != null && bio.isNotEmpty ? '$name — $bio' : name,
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    if (coachProfileId.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      Wrap(
+                        spacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.sm,
+                        children: [
+                          if (canMessage)
+                            FilledButton.icon(
+                              onPressed: () => CoachAgentActions.messageCoach(
+                                context,
+                                coachProfileId: coachProfileId,
+                                connectionId: connectionId,
+                                connectionStatus: connectionStatus,
+                              ),
+                              icon: const Icon(Icons.chat, size: 18),
+                              label: const Text('Message'),
+                            ),
+                          OutlinedButton.icon(
+                            onPressed: () => CoachAgentActions.viewCoachProfile(
+                              context,
+                              coachProfileId,
+                            ),
+                            icon: const Icon(Icons.person, size: 18),
+                            label: const Text('View profile'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            }),
           ],
           if (card.cardType == 'pending_confirmation') ...[
             const SizedBox(height: AppSpacing.md),

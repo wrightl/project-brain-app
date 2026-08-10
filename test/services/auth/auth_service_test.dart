@@ -4,13 +4,16 @@ import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:projectbrain/core/config/app_config.dart';
+import 'package:projectbrain/core/storage/preferences_service.dart';
 import 'package:projectbrain/models/auth0_user.dart';
 import 'package:projectbrain/services/auth/auth_exception.dart';
 import 'package:projectbrain/services/auth/auth_service.dart';
+import 'package:projectbrain/services/auth/biometric_unlock_service.dart';
 import 'package:projectbrain/services/auth/oauth_service.dart';
 import 'package:projectbrain/services/auth/token_manager.dart';
 import 'package:projectbrain/services/auth/token_storage.dart';
 import 'package:projectbrain/services/auth/user_profile_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../helpers/test_helpers.dart';
 
@@ -19,6 +22,9 @@ class MockOAuthService extends Mock implements OAuthService {}
 class MockTokenStorage extends Mock implements TokenStorage {}
 
 class MockUserProfileService extends Mock implements UserProfileService {}
+
+class MockBiometricUnlockService extends Mock
+    implements BiometricUnlockService {}
 
 String _jwtSegment(Map<String, dynamic> claims) {
   final json = utf8.encode(jsonEncode(claims));
@@ -51,6 +57,8 @@ void main() {
   late MockOAuthService mockOAuth;
   late MockTokenStorage mockStorage;
   late MockUserProfileService mockProfile;
+  late MockBiometricUnlockService mockBiometric;
+  late PreferencesService preferences;
   late TokenManager tokenManager;
   late AuthService authService;
 
@@ -65,20 +73,31 @@ void main() {
     );
   });
 
-  setUp(() {
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    preferences = PreferencesService(prefs);
+
     mockOAuth = MockOAuthService();
     mockStorage = MockTokenStorage();
     mockProfile = MockUserProfileService();
+    mockBiometric = MockBiometricUnlockService();
     when(() => mockStorage.clearAll()).thenAnswer((_) async {});
     when(() => mockStorage.getRefreshToken()).thenAnswer((_) async => null);
     when(() => mockStorage.deleteRefreshToken()).thenAnswer((_) async {});
-    when(() => mockOAuth.tryRestoreCredentialsWithBiometric(
-          minTtl: any(named: 'minTtl'),
-        )).thenAnswer((_) async => null);
     when(() => mockOAuth.tryRestoreCredentialsFromCredentialsManager(
           minTtl: any(named: 'minTtl'),
         )).thenAnswer((_) async => null);
+    when(() => mockOAuth.hasStoredCredentials(
+          minTtl: any(named: 'minTtl'),
+        )).thenAnswer((_) async => false);
     when(() => mockOAuth.clearLocalCredentials()).thenAnswer((_) async {});
+    when(() => mockBiometric.isSupported()).thenAnswer((_) async => true);
+    when(() => mockBiometric.unlockLabel())
+        .thenAnswer((_) async => 'Unlock with Face ID');
+    when(() => mockBiometric.authenticate(reason: any(named: 'reason')))
+        .thenAnswer((_) async => true);
+
     tokenManager = TokenManager(
       auth0: Auth0(AppConfig.authDomain, AppConfig.authClientId),
     );
@@ -87,7 +106,8 @@ void main() {
       tokenManager: tokenManager,
       tokenStorage: mockStorage,
       userProfileService: mockProfile,
-      enableBiometricLaunchGate: false,
+      preferencesService: preferences,
+      biometricUnlockService: mockBiometric,
     );
   });
 
@@ -127,10 +147,12 @@ void main() {
       expect(ok, isTrue);
       expect(authService.isLoggedIn, isTrue);
       expect(authService.profile?.sub, 'auth0|cm');
+      expect(authService.hasStoredSession, isTrue);
 
       verify(() => mockOAuth.tryRestoreCredentialsFromCredentialsManager(
             minTtl: any(named: 'minTtl'),
           )).called(1);
+      verifyNever(() => mockBiometric.authenticate(reason: any(named: 'reason')));
       verifyNever(() => mockStorage.getRefreshToken());
       verifyNever(() => mockOAuth.refreshCredentials(any()));
     });
@@ -234,22 +256,40 @@ void main() {
       expect(ok, isFalse);
       verify(() => mockStorage.deleteRefreshToken()).called(1);
     });
+
+    test('does not clear CredentialsManager on unexpected hydrate errors',
+        () async {
+      final access = makeTestJwt({
+        'aud': AppConfig.authAudience,
+        'exp': DateTime.now()
+                .add(const Duration(hours: 1))
+                .millisecondsSinceEpoch ~/
+            1000,
+      });
+      final creds = testCredentials(
+        accessToken: access,
+        idToken: '',
+        refreshToken: 'rt',
+      );
+      when(() => mockOAuth.tryRestoreCredentialsFromCredentialsManager(
+            minTtl: any(named: 'minTtl'),
+          )).thenAnswer((_) async => creds);
+      when(() => mockProfile.getUserProfile(access))
+          .thenThrow(Exception('network blip'));
+
+      final ok = await authService.init();
+
+      expect(ok, isFalse);
+      verifyNever(() => mockOAuth.clearLocalCredentials());
+    });
   });
 
-  group('AuthService.init (biometric launch gate)', () {
-    late AuthService biometricAuthService;
-
-    setUp(() {
-      biometricAuthService = AuthService(
-        oauthService: mockOAuth,
-        tokenManager: tokenManager,
-        tokenStorage: mockStorage,
-        userProfileService: mockProfile,
-        enableBiometricLaunchGate: true,
-      );
+  group('AuthService.init (biometric opt-in)', () {
+    setUp(() async {
+      await preferences.setBiometricUnlockEnabled(true);
     });
 
-    test('restores session from biometric-gated credentials', () async {
+    test('prompts biometric then restores session when enabled', () async {
       final access = makeTestJwt({
         'aud': AppConfig.authAudience,
         'exp': DateTime.now()
@@ -263,7 +303,10 @@ void main() {
         refreshToken: 'bio-rt',
       );
 
-      when(() => mockOAuth.tryRestoreCredentialsWithBiometric(
+      when(() => mockOAuth.hasStoredCredentials(
+            minTtl: any(named: 'minTtl'),
+          )).thenAnswer((_) async => true);
+      when(() => mockOAuth.tryRestoreCredentialsFromCredentialsManager(
             minTtl: any(named: 'minTtl'),
           )).thenAnswer((_) async => creds);
       when(() => mockProfile.getUserProfile(access)).thenAnswer(
@@ -277,36 +320,130 @@ void main() {
         ),
       );
 
-      final ok = await biometricAuthService.init();
+      final ok = await authService.init();
 
       expect(ok, isTrue);
-      expect(biometricAuthService.isLoggedIn, isTrue);
+      expect(authService.isLoggedIn, isTrue);
+      verify(() => mockBiometric.authenticate(reason: any(named: 'reason')))
+          .called(1);
       verifyNever(() => mockStorage.getRefreshToken());
-      verifyNever(() => mockOAuth.refreshCredentials(any()));
     });
 
-    test('does not bypass biometric gate when canceled/failed', () async {
-      when(() => mockOAuth.tryRestoreCredentialsWithBiometric(
+    test('keeps stored session when biometric is canceled', () async {
+      when(() => mockOAuth.hasStoredCredentials(
             minTtl: any(named: 'minTtl'),
-          )).thenThrow(AuthException('Biometric authentication failed'));
+          )).thenAnswer((_) async => true);
+      when(() => mockBiometric.authenticate(reason: any(named: 'reason')))
+          .thenThrow(AuthException('Biometric authentication failed'));
 
-      final ok = await biometricAuthService.init();
+      final ok = await authService.init();
 
       expect(ok, isFalse);
-      verifyNever(() => mockStorage.getRefreshToken());
-      verifyNever(() => mockOAuth.refreshCredentials(any()));
+      expect(authService.awaitingBiometricUnlock, isTrue);
+      expect(authService.hasStoredSession, isTrue);
+      expect(
+        authService.consumeLaunchAuthMessage(),
+        contains('Biometric unlock'),
+      );
+      verifyNever(() => mockOAuth.clearLocalCredentials());
+      verifyNever(
+          () => mockOAuth.tryRestoreCredentialsFromCredentialsManager(
+                minTtl: any(named: 'minTtl'),
+              ));
     });
 
-    test('returns logged-out when no biometric session is available', () async {
-      when(() => mockOAuth.tryRestoreCredentialsWithBiometric(
+    test('falls back to legacy migration when no stored credentials', () async {
+      when(() => mockOAuth.hasStoredCredentials(
             minTtl: any(named: 'minTtl'),
-          )).thenAnswer((_) async => null);
+          )).thenAnswer((_) async => false);
+      when(() => mockStorage.getRefreshToken())
+          .thenAnswer((_) async => 'legacy-rt');
 
-      final ok = await biometricAuthService.init();
+      final access = makeTestJwt({
+        'aud': AppConfig.authAudience,
+        'exp': DateTime.now()
+                .add(const Duration(hours: 1))
+                .millisecondsSinceEpoch ~/
+            1000,
+      });
+      final refreshed = testCredentials(
+        accessToken: access,
+        idToken: makeTestJwt({'sub': 'auth0|legacy'}),
+        refreshToken: 'new-rt',
+      );
+      when(() => mockOAuth.refreshCredentials('legacy-rt'))
+          .thenAnswer((_) async => refreshed);
+      when(() => mockProfile.getUserProfile(access)).thenAnswer(
+        (_) async => Auth0User(
+          nickname: 'legacy',
+          name: 'Legacy',
+          email: 'l@test.com',
+          picture: '',
+          updatedAt: '2024-01-01T00:00:00.000Z',
+          sub: 'auth0|legacy',
+        ),
+      );
 
-      expect(ok, isFalse);
-      verifyNever(() => mockOAuth.refreshCredentials(any()));
-      verify(() => mockStorage.getRefreshToken()).called(1);
+      final ok = await authService.init();
+
+      expect(ok, isTrue);
+      verifyNever(() => mockBiometric.authenticate(reason: any(named: 'reason')));
+    });
+  });
+
+  group('AuthService.unlockWithBiometrics', () {
+    test('restores session after successful unlock', () async {
+      await preferences.setBiometricUnlockEnabled(true);
+      final access = makeTestJwt({
+        'aud': AppConfig.authAudience,
+        'exp': DateTime.now()
+                .add(const Duration(hours: 1))
+                .millisecondsSinceEpoch ~/
+            1000,
+      });
+      final creds = testCredentials(
+        accessToken: access,
+        idToken: makeTestJwt({'sub': 'auth0|unlock'}),
+        refreshToken: 'rt',
+      );
+      when(() => mockOAuth.tryRestoreCredentialsFromCredentialsManager(
+            minTtl: any(named: 'minTtl'),
+          )).thenAnswer((_) async => creds);
+      when(() => mockProfile.getUserProfile(access)).thenAnswer(
+        (_) async => Auth0User(
+          nickname: 'u',
+          name: 'Unlock',
+          email: 'u@test.com',
+          picture: '',
+          updatedAt: '2024-01-01T00:00:00.000Z',
+          sub: 'auth0|unlock',
+        ),
+      );
+
+      final ok = await authService.unlockWithBiometrics();
+
+      expect(ok, isTrue);
+      expect(authService.isLoggedIn, isTrue);
+      expect(authService.awaitingBiometricUnlock, isFalse);
+    });
+  });
+
+  group('AuthService biometric preference', () {
+    test('enableBiometricUnlock persists preference after prompt', () async {
+      await authService.enableBiometricUnlock();
+      expect(preferences.biometricUnlockEnabled, isTrue);
+      verify(() => mockBiometric.authenticate(reason: any(named: 'reason')))
+          .called(1);
+    });
+
+    test('logout clears biometric preference and credentials', () async {
+      await preferences.setBiometricUnlockEnabled(true);
+      when(() => mockOAuth.logout()).thenAnswer((_) async {});
+
+      await authService.logout();
+
+      expect(preferences.biometricUnlockEnabled, isFalse);
+      verify(() => mockOAuth.clearLocalCredentials()).called(1);
     });
   });
 }

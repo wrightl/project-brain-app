@@ -278,6 +278,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ],
                 SizedBox(height: AppSpacing.xl),
+                _buildSecuritySection(authProvider, theme),
+                SizedBox(height: AppSpacing.xl),
                 _buildDebugTokenSection(
                     authProvider, theme, colorScheme, appColors, context),
                 SizedBox(height: AppSpacing.lg),
@@ -287,6 +289,62 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSecuritySection(AuthProvider authProvider, ThemeData theme) {
+    final available = authProvider.biometricAvailable;
+    final enabled = authProvider.biometricUnlockEnabled;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Security',
+          style: theme.textTheme.titleMedium,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        DsSurfaceCard(
+          child: SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Unlock with biometrics'),
+            subtitle: Text(
+              available
+                  ? 'Require Face ID, fingerprint, or device passcode when opening the app.'
+                  : 'Biometric unlock is not available on this device.',
+              style: theme.textTheme.bodySmall,
+            ),
+            value: available && enabled,
+            onChanged: !available
+                ? null
+                : (value) async {
+                    try {
+                      await authProvider.setBiometricUnlockEnabled(value);
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            value
+                                ? 'Biometric unlock enabled'
+                                : 'Biometric unlock disabled',
+                          ),
+                        ),
+                      );
+                    } catch (_) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            authProvider.errorMessage ??
+                                'Could not update biometric unlock',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+          ),
+        ),
+      ],
     );
   }
 

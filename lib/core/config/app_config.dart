@@ -39,20 +39,82 @@ class AppConfig {
     _environment =
         env ?? _getEnvironmentFromDefine() ?? _getDefaultEnvironment();
 
-    // Load environment-specific config
+    // Load environment-specific config from bundled assets (dev) or rely on
+    // --dart-define values injected at build time (staging/production IPA).
     final envFile = '.env.${_environment.name}';
     try {
       await dotenv.load(fileName: envFile);
       logInfo('[AppConfig] Loaded $envFile successfully');
     } catch (e) {
       logError('[AppConfig] Failed to load $envFile', e);
-      // Fallback to .env.dev for development
       if (_environment == Environment.dev) {
         await dotenv.load(fileName: '.env.dev');
+      } else if (_hasRequiredDartDefines()) {
+        // Staging/production IPAs inject config via --dart-define and do not
+        // ship .env assets. Still initialize dotenv so callers can safely read
+        // dotenv.env (empty map) without NotInitializedError.
+        dotenv.loadFromString(envString: '', isOptional: true);
+        logInfo(
+          '[AppConfig] Using --dart-define values (bundled $envFile not in IPA)',
+        );
       } else {
         throw Exception(
-            'Failed to load $_environment environment configuration');
+          'Failed to load $_environment environment configuration. '
+          'Bundle $envFile in pubspec assets or pass required values via '
+          '--dart-define (see scripts/build_ios.sh).',
+        );
       }
+    }
+
+    _validateRequiredConfig();
+  }
+
+  static const _requiredConfigKeys = [
+    'AUTH_DOMAIN',
+    'AUTH_CLIENT_ID',
+    'AUTH_AUDIENCE',
+    // 'LAUNCHDARKLY_CLIENT_SIDE_ID',
+  ];
+
+  static bool _hasRequiredDartDefines() {
+    for (final key in _requiredConfigKeys) {
+      if (_fromDartDefine(key).isEmpty) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /// Read a compile-time `--dart-define` / `--dart-define-from-file` value.
+  ///
+  /// On AOT platforms (iOS device / release), [String.fromEnvironment] only
+  /// returns a value when the name is a **const string literal**. Passing a
+  /// runtime [key] always yields `''`, so staging/production IPAs that rely on
+  /// dart-defines would fail [init]. Keep this switch in sync with env keys.
+  static String _fromDartDefine(String key) {
+    switch (key) {
+      case 'AUTH_DOMAIN':
+        return const String.fromEnvironment('AUTH_DOMAIN');
+      case 'AUTH_CLIENT_ID':
+        return const String.fromEnvironment('AUTH_CLIENT_ID');
+      case 'AUTH_AUDIENCE':
+        return const String.fromEnvironment('AUTH_AUDIENCE');
+      case 'LAUNCHDARKLY_CLIENT_SIDE_ID':
+        return const String.fromEnvironment('LAUNCHDARKLY_CLIENT_SIDE_ID');
+      case 'LAUNCHDARKLY_MOBILE_KEY':
+        return const String.fromEnvironment('LAUNCHDARKLY_MOBILE_KEY');
+      case 'SUBSCRIPTION_BILLING_WEB_URL':
+        return const String.fromEnvironment('SUBSCRIPTION_BILLING_WEB_URL');
+      case 'GOOGLE_MAPS_API_KEY':
+        return const String.fromEnvironment('GOOGLE_MAPS_API_KEY');
+      default:
+        return '';
+    }
+  }
+
+  static void _validateRequiredConfig() {
+    for (final key in _requiredConfigKeys) {
+      _getEnv(key);
     }
   }
 
@@ -136,8 +198,9 @@ class AppConfig {
   /// Check if running in local development mode
   /// Only allow SSL bypass in this mode
   static bool get isLocalDevelopment {
-    final audience = dotenv.env['AUTH_AUDIENCE'] ?? '';
-    return _environment == Environment.dev && audience.contains('localhost');
+    if (_environment != Environment.dev) return false;
+    final audience = getEnvOrDefault('AUTH_AUDIENCE', '');
+    return audience.contains('localhost');
   }
 
   /// Check if running in development environment
@@ -154,12 +217,12 @@ class AppConfig {
 
   /// Helper to get required environment variable (dart-define overrides bundled .env)
   static String _getEnv(String key) {
-    final fromDefine = String.fromEnvironment(key);
+    final fromDefine = _fromDartDefine(key);
     if (fromDefine.isNotEmpty) {
       return fromDefine;
     }
 
-    final value = dotenv.env[key];
+    final value = dotenv.isInitialized ? dotenv.env[key] : null;
     if (value == null || value.isEmpty) {
       throw Exception(
         'Missing required environment variable: $key. '
@@ -171,11 +234,12 @@ class AppConfig {
 
   /// Helper to get optional environment variable with default
   static String getEnvOrDefault(String key, String defaultValue) {
-    final fromDefine = String.fromEnvironment(key);
+    final fromDefine = _fromDartDefine(key);
     if (fromDefine.isNotEmpty) {
       return fromDefine;
     }
 
+    if (!dotenv.isInitialized) return defaultValue;
     return dotenv.env[key] ?? defaultValue;
   }
 }

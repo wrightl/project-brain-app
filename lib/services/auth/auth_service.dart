@@ -1,9 +1,10 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:auth0_flutter/auth0_flutter.dart';
+import 'package:projectbrain/core/storage/preferences_service.dart';
 import 'package:projectbrain/models/auth0_user.dart';
 import 'package:projectbrain/services/auth/auth_exception.dart';
+import 'package:projectbrain/services/auth/biometric_unlock_service.dart';
 import 'package:projectbrain/services/auth/oauth_service.dart';
 import 'package:projectbrain/services/auth/token_manager.dart';
 import 'package:projectbrain/services/auth/token_storage.dart';
@@ -18,8 +19,11 @@ class AuthService {
   final TokenManager _tokenManager;
   final TokenStorage _tokenStorage;
   final UserProfileService _userProfileService;
-  final bool _enableBiometricLaunchGate;
+  final PreferencesService? _preferencesService;
+  final BiometricUnlockService _biometricUnlockService;
   String? _launchAuthMessage;
+  bool _hasStoredSession = false;
+  bool _awaitingBiometricUnlock = false;
 
   Auth0User? _profile;
 
@@ -28,6 +32,17 @@ class AuthService {
 
   /// The authenticated user's profile
   Auth0User? get profile => _profile;
+
+  /// Whether CredentialsManager (or legacy storage) still has a session that
+  /// can be unlocked without going through Universal Login.
+  bool get hasStoredSession => _hasStoredSession;
+
+  /// True when a stored session exists but biometric unlock was canceled/failed.
+  bool get awaitingBiometricUnlock => _awaitingBiometricUnlock;
+
+  /// Whether the user has opted into biometric unlock on this device.
+  bool get isBiometricUnlockEnabled =>
+      _preferencesService?.biometricUnlockEnabled ?? false;
 
   /// One-time launch auth message (e.g., biometric canceled by user).
   String? consumeLaunchAuthMessage() {
@@ -42,13 +57,15 @@ class AuthService {
     TokenManager? tokenManager,
     TokenStorage? tokenStorage,
     UserProfileService? userProfileService,
-    bool? enableBiometricLaunchGate,
+    PreferencesService? preferencesService,
+    BiometricUnlockService? biometricUnlockService,
   })  : _oauthService = oauthService ?? OAuthService(),
         _tokenManager = tokenManager ?? TokenManager(),
         _tokenStorage = tokenStorage ?? TokenStorage(),
         _userProfileService = userProfileService ?? UserProfileService(),
-        _enableBiometricLaunchGate =
-            enableBiometricLaunchGate ?? Platform.isIOS;
+        _preferencesService = preferencesService,
+        _biometricUnlockService =
+            biometricUnlockService ?? BiometricUnlockService();
 
   /// Initialize the auth service and attempt to restore previous session
   ///
@@ -56,60 +73,149 @@ class AuthService {
   Future<bool> init() async {
     logInfo('[AuthService] Initializing...');
     _launchAuthMessage = null;
+    _awaitingBiometricUnlock = false;
+    _hasStoredSession = false;
 
     try {
-      Credentials? credentials = await _restoreFromCredentialsManager();
+      final biometricRequired = isBiometricUnlockEnabled;
+      if (biometricRequired) {
+        final hasSession = await _oauthService.hasStoredCredentials();
+        _hasStoredSession = hasSession;
+        if (!hasSession) {
+          // Still allow legacy migration without biometric when nothing is stored.
+          final migrated = await _migrateLegacyRefreshToken();
+          if (migrated == null) {
+            logDebug('[AuthService] No session available to restore');
+            return false;
+          }
+          return await _completeRestore(migrated);
+        }
+
+        try {
+          await _biometricUnlockService.authenticate(
+            reason: 'Unlock Project Brain',
+          );
+        } on AuthException catch (e) {
+          logWarning(
+              '[AuthService] Auth init blocked by biometric/local auth', e);
+          _awaitingBiometricUnlock = true;
+          _launchAuthMessage =
+              'Biometric unlock was canceled or failed. Unlock to continue.';
+          return false;
+        }
+      }
+
+      Credentials? credentials =
+          await _oauthService.tryRestoreCredentialsFromCredentialsManager();
 
       credentials ??= await _migrateLegacyRefreshToken();
 
       if (credentials == null) {
         logDebug('[AuthService] No session available to restore');
+        _hasStoredSession = false;
         return false;
       }
 
-      if (credentials.accessToken.isEmpty) {
-        await _clearSession();
-        return false;
-      }
-
-      final isValidAudience =
-          await _tokenManager.validateTokenAudience(credentials.accessToken);
-      if (!isValidAudience) {
-        logWarning('[AuthService] Invalid token audience, clearing session');
-        await _clearSession();
-        return false;
-      }
-
-      await _hydrateSessionFromCredentials(
-        credentials,
-        allowIdTokenProfileFallback: true,
-      );
-      logInfo('[AuthService] Session restored successfully');
-      return true;
+      _hasStoredSession = true;
+      return await _completeRestore(credentials);
     } on ApiException catch (e) {
       logError('[AuthService] API error during init: ${e.message}', e);
       await _clearSession();
       return false;
-    } on AuthException catch (e) {
-      logWarning('[AuthService] Auth init blocked by biometric/local auth', e);
-      _launchAuthMessage =
-          'Biometric unlock was canceled or failed. Please log in to continue.';
-      return false;
     } catch (e, stackTrace) {
       logError('[AuthService] Unexpected error during init', e, stackTrace);
-      await _clearSession();
+      // Do not wipe CredentialsManager on unexpected errors — session may still
+      // be valid on the next launch.
       return false;
     }
   }
 
-  Future<Credentials?> _restoreFromCredentialsManager() async {
-    if (_enableBiometricLaunchGate) {
-      logDebug('[AuthService] Using biometric-gated session restore');
-      return _oauthService.tryRestoreCredentialsWithBiometric();
+  /// Retry biometric unlock and restore the stored session (no Universal Login).
+  Future<bool> unlockWithBiometrics() async {
+    _launchAuthMessage = null;
+    try {
+      await _biometricUnlockService.authenticate(
+        reason: 'Unlock Project Brain',
+      );
+
+      final credentials =
+          await _oauthService.tryRestoreCredentialsFromCredentialsManager();
+      if (credentials == null) {
+        _hasStoredSession = false;
+        _awaitingBiometricUnlock = false;
+        _launchAuthMessage = 'No saved session found. Please log in.';
+        return false;
+      }
+
+      _hasStoredSession = true;
+      final ok = await _completeRestore(credentials);
+      if (ok) {
+        _awaitingBiometricUnlock = false;
+      }
+      return ok;
+    } on AuthException catch (e) {
+      logWarning('[AuthService] Biometric unlock failed', e);
+      _awaitingBiometricUnlock = true;
+      _launchAuthMessage =
+          'Biometric unlock was canceled or failed. Unlock to continue.';
+      return false;
+    } catch (e, stackTrace) {
+      logError('[AuthService] Unexpected error during biometric unlock', e,
+          stackTrace);
+      _awaitingBiometricUnlock = true;
+      _launchAuthMessage = 'Unable to unlock session. Please try again.';
+      return false;
+    }
+  }
+
+  /// Whether the device supports biometric / device-credential unlock.
+  Future<bool> isBiometricAvailable() => _biometricUnlockService.isSupported();
+
+  /// Label for the unlock button on the login screen.
+  Future<String> biometricUnlockLabel() =>
+      _biometricUnlockService.unlockLabel();
+
+  /// Enable biometric unlock after a successful confirmation prompt.
+  Future<void> enableBiometricUnlock() async {
+    final available = await isBiometricAvailable();
+    if (!available) {
+      throw AuthException('Biometric unlock is not available on this device');
+    }
+    await _biometricUnlockService.authenticate(
+      reason: 'Enable biometric unlock for Project Brain',
+    );
+    await _preferencesService?.setBiometricUnlockEnabled(true);
+    logInfo('[AuthService] Biometric unlock enabled');
+  }
+
+  /// Disable biometric unlock (does not clear Auth0 credentials).
+  Future<void> disableBiometricUnlock() async {
+    await _preferencesService?.setBiometricUnlockEnabled(false);
+    logInfo('[AuthService] Biometric unlock disabled');
+  }
+
+  Future<bool> _completeRestore(Credentials credentials) async {
+    if (credentials.accessToken.isEmpty) {
+      await _clearSession();
+      return false;
     }
 
-    logDebug('[AuthService] Restoring session from CredentialsManager');
-    return _oauthService.tryRestoreCredentialsFromCredentialsManager();
+    final isValidAudience =
+        await _tokenManager.validateTokenAudience(credentials.accessToken);
+    if (!isValidAudience) {
+      logWarning('[AuthService] Invalid token audience, clearing session');
+      await _clearSession();
+      return false;
+    }
+
+    await _hydrateSessionFromCredentials(
+      credentials,
+      allowIdTokenProfileFallback: true,
+    );
+    _hasStoredSession = true;
+    _awaitingBiometricUnlock = false;
+    logInfo('[AuthService] Session restored successfully');
+    return true;
   }
 
   /// One-time migration from legacy flutter_secure_storage refresh tokens.
@@ -144,6 +250,8 @@ class AuthService {
       credentials,
       allowIdTokenProfileFallback: true,
     );
+    _hasStoredSession = true;
+    _awaitingBiometricUnlock = false;
     logInfo('[AuthService] Login complete');
   }
 
@@ -265,8 +373,11 @@ class AuthService {
   Future<void> _clearSession() async {
     await _tokenStorage.clearAll();
     await _oauthService.clearLocalCredentials();
+    await _preferencesService?.clearBiometricUnlockEnabled();
     _tokenManager.clearAccessToken();
     _profile = null;
+    _hasStoredSession = false;
+    _awaitingBiometricUnlock = false;
   }
 
   /// Clean up resources

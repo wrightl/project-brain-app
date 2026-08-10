@@ -184,22 +184,21 @@ class _HomeHeader extends StatelessWidget {
             ],
           ),
         ),
-        IconButton(
-          onPressed: () {},
-          style: IconButton.styleFrom(
-            backgroundColor: theme.colorScheme.surface,
-            side: BorderSide(color: appTheme.borderColor),
-          ),
-          icon: Icon(Icons.notifications_outlined, color: appTheme.textMuted),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        CircleAvatar(
-          radius: 22,
-          backgroundColor: appTheme.primarySoft,
-          child: Text(
-            firstName.isNotEmpty ? firstName[0].toUpperCase() : '?',
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: theme.colorScheme.primary,
+        Semantics(
+          button: true,
+          label: 'Profile',
+          child: InkWell(
+            onTap: () => context.go('/user'),
+            customBorder: const CircleBorder(),
+            child: CircleAvatar(
+              radius: 22,
+              backgroundColor: appTheme.primarySoft,
+              child: Text(
+                firstName.isNotEmpty ? firstName[0].toUpperCase() : '?',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                ),
+              ),
             ),
           ),
         ),
@@ -258,7 +257,9 @@ class _HeroCard extends StatelessWidget {
                   ),
                 if (streakDays > 0) const SizedBox(height: AppSpacing.sm),
                 Text(
-                  "You're on a roll, $firstName",
+                  streakDays > 0
+                      ? "You're on a roll, $firstName"
+                      : "Ready when you are, $firstName",
                   style: theme.textTheme.titleLarge?.copyWith(
                     color: Colors.white,
                   ),

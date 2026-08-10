@@ -6,7 +6,7 @@ import 'package:projectbrain/models/agent/user_choice_prompt.dart';
 class UserChoiceChips extends StatelessWidget {
   final UserChoicePrompt choices;
   final bool disabled;
-  final ValueChanged<String> onSelect;
+  final ValueChanged<UserChoiceOption> onSelect;
 
   const UserChoiceChips({
     super.key,
@@ -45,7 +45,7 @@ class UserChoiceChips extends StatelessWidget {
             children: choices.options.map((option) {
               return ActionChip(
                 label: Text(option.label),
-                onPressed: disabled ? null : () => onSelect(option.label),
+                onPressed: disabled ? null : () => onSelect(option),
                 backgroundColor: theme.colorScheme.surface,
                 side: BorderSide(color: appTheme.borderColor),
                 labelStyle: theme.textTheme.bodyMedium,

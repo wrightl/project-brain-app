@@ -34,11 +34,6 @@ class CustomBottomNavBar extends StatelessWidget {
       selectedIcon: Icons.forum,
       label: 'Coach',
     ),
-    _NavDestination(
-      icon: Icons.person_outline,
-      selectedIcon: Icons.person,
-      label: 'Profile',
-    ),
   ];
 
   @override

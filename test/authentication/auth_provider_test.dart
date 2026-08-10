@@ -66,6 +66,13 @@ void main() {
     when(() => mockAuthService.isLoggedIn).thenReturn(false);
     when(() => mockAuthService.profile).thenReturn(null);
     when(() => mockAuthService.consumeLaunchAuthMessage()).thenReturn(null);
+    when(() => mockAuthService.hasStoredSession).thenReturn(false);
+    when(() => mockAuthService.awaitingBiometricUnlock).thenReturn(false);
+    when(() => mockAuthService.isBiometricUnlockEnabled).thenReturn(false);
+    when(() => mockAuthService.isBiometricAvailable())
+        .thenAnswer((_) async => false);
+    when(() => mockAuthService.biometricUnlockLabel())
+        .thenAnswer((_) async => 'Unlock with biometrics');
     when(() => mockAuthService.getAccessToken())
         .thenAnswer((_) async => 'test_jwt');
     authProvider = AuthProvider(
@@ -122,6 +129,24 @@ void main() {
       expect(authProvider.errorMessage, contains('Biometric unlock'));
     });
 
+    test('unlockWithBiometrics restores session without Universal Login',
+        () async {
+      when(() => mockAuthService.unlockWithBiometrics())
+          .thenAnswer((_) async => true);
+      when(() => mockAuthService.isLoggedIn).thenReturn(true);
+      final mockUser = MockAuth0User();
+      when(() => mockUser.sub).thenReturn('auth0|1');
+      when(() => mockUser.email).thenReturn('a@test.com');
+      when(() => mockAuthService.profile).thenReturn(mockUser);
+
+      await authProvider.unlockWithBiometrics();
+
+      expect(authProvider.isLoggedIn, isTrue);
+      expect(authProvider.user?.id, 'user-1');
+      verify(() => mockAuthService.unlockWithBiometrics()).called(1);
+      verifyNever(() => mockAuthService.login());
+    });
+
     test('handles initialization errors', () async {
       when(() => mockAuthService.init())
           .thenThrow(AuthException('Init failed'));
@@ -153,6 +178,7 @@ void main() {
     test('successful login updates state', () async {
       final mockUser = MockAuth0User();
       when(() => mockUser.sub).thenReturn('auth0|1');
+      when(() => mockUser.email).thenReturn('a@test.com');
       when(() => mockAuthService.login()).thenAnswer((_) async {});
       when(() => mockAuthService.isLoggedIn).thenReturn(true);
       when(() => mockAuthService.profile).thenReturn(mockUser);
@@ -171,6 +197,7 @@ void main() {
       usersMeStatusCode = 500;
       final mockUser = MockAuth0User();
       when(() => mockUser.sub).thenReturn('auth0|1');
+      when(() => mockUser.email).thenReturn('a@test.com');
       when(() => mockAuthService.login()).thenAnswer((_) async {});
       when(() => mockAuthService.isLoggedIn).thenReturn(true);
       when(() => mockAuthService.profile).thenReturn(mockUser);
@@ -188,6 +215,7 @@ void main() {
       usersMeIsOnboarded = false;
       final mockUser = MockAuth0User();
       when(() => mockUser.sub).thenReturn('auth0|1');
+      when(() => mockUser.email).thenReturn('a@test.com');
       when(() => mockAuthService.login()).thenAnswer((_) async {});
       when(() => mockAuthService.isLoggedIn).thenReturn(true);
       when(() => mockAuthService.profile).thenReturn(mockUser);
@@ -212,6 +240,7 @@ void main() {
     test('login clears previous errors', () async {
       final mockUser = MockAuth0User();
       when(() => mockUser.sub).thenReturn('auth0|1');
+      when(() => mockUser.email).thenReturn('a@test.com');
       when(() => mockAuthService.login())
           .thenThrow(AuthException('First error'));
       await authProvider.login();
@@ -232,6 +261,7 @@ void main() {
     test('successful logout clears state', () async {
       final mockUser = MockAuth0User();
       when(() => mockUser.sub).thenReturn('auth0|1');
+      when(() => mockUser.email).thenReturn('a@test.com');
       when(() => mockAuthService.login()).thenAnswer((_) async {});
       when(() => mockAuthService.isLoggedIn).thenReturn(true);
       when(() => mockAuthService.profile).thenReturn(mockUser);
@@ -298,6 +328,7 @@ void main() {
 
       final mockUser = MockAuth0User();
       when(() => mockUser.sub).thenReturn('auth0|1');
+      when(() => mockUser.email).thenReturn('a@test.com');
       when(() => mockAuthService.login()).thenAnswer((_) async {});
       when(() => mockAuthService.isLoggedIn).thenReturn(true);
       when(() => mockAuthService.profile).thenReturn(mockUser);

@@ -12,6 +12,7 @@ class PreferencesService {
   static const String _themeModeKey = 'theme_mode';
   static const String _lastLoginEmailKey = 'last_login_email';
   static const String _forceFreshLoginKey = 'force_fresh_login';
+  static const String _biometricUnlockEnabledKey = 'biometric_unlock_enabled';
 
   /// Get the last visited route
   String? get lastRoute => _prefs.getString(_lastRouteKey);
@@ -82,5 +83,17 @@ class PreferencesService {
 
   Future<bool> clearForceFreshLogin() async {
     return await _prefs.remove(_forceFreshLoginKey);
+  }
+
+  /// When true, cold-start session restore requires biometric / device unlock.
+  bool get biometricUnlockEnabled =>
+      _prefs.getBool(_biometricUnlockEnabledKey) ?? false;
+
+  Future<bool> setBiometricUnlockEnabled(bool value) async {
+    return await _prefs.setBool(_biometricUnlockEnabledKey, value);
+  }
+
+  Future<bool> clearBiometricUnlockEnabled() async {
+    return await _prefs.remove(_biometricUnlockEnabledKey);
   }
 }

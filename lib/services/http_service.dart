@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:math' as math;
 
 import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:http/http.dart' as http;
@@ -25,8 +26,9 @@ class _CircuitBreaker {
   int failureCount = 0;
   DateTime? openedAt;
 
-  static const int failureThreshold = 5;
-  static const Duration openDuration = Duration(seconds: 60);
+  /// High enough that a single cold-start retry burst (SQL resume) does not trip.
+  static const int failureThreshold = 12;
+  static const Duration openDuration = Duration(seconds: 30);
 
   bool get isOpen => state == _CircuitState.open;
 
@@ -35,7 +37,8 @@ class _CircuitBreaker {
     state = _CircuitState.closed;
   }
 
-  void recordFailure() {
+  void recordFailure({bool countTowardOpen = true}) {
+    if (!countTowardOpen) return;
     failureCount++;
     if (failureCount >= failureThreshold) {
       state = _CircuitState.open;
@@ -63,10 +66,11 @@ class HttpService {
   final AuthService authService;
   final String baseUrl = AppConfig.apiBaseUrl;
 
-  // HTTP configuration
+  // HTTP configuration — retry budget covers Azure SQL serverless resume (~60–90s)
   static const Duration defaultTimeout = Duration(seconds: 30);
-  static const int maxRetries = 3;
-  static const Duration retryDelay = Duration(seconds: 1);
+  static const int maxRetries = 8;
+  static const Duration retryDelay = Duration(seconds: 2);
+  static const Duration maxRetryDelay = Duration(seconds: 15);
   static const Duration defaultCacheDuration = Duration(minutes: 5);
 
   /// Max distinct GET paths kept in memory (LRU by last access).
@@ -263,37 +267,47 @@ class HttpService {
 
     int attempt = 0;
     Exception? lastException;
+    http.Response? lastErrorResponse;
 
     while (attempt < maxRetries) {
       attempt++;
       try {
         final response = await request();
 
-        // Check for server errors that should be retried
+        // Check for server errors that should be retried (incl. 503 starting gate)
         if (response.statusCode >= 500 && attempt < maxRetries) {
-          circuitBreaker.recordFailure();
+          // 503 during warmup should not trip the circuit mid-burst
+          circuitBreaker.recordFailure(
+            countTowardOpen: response.statusCode != 503,
+          );
+          final delay = _retryDelayFor(response, attempt);
           logDebug(
-              '[HttpService] $method $path failed with ${response.statusCode}, retrying (attempt $attempt/$maxRetries)');
-          await Future.delayed(retryDelay * attempt);
+              '[HttpService] $method $path failed with ${response.statusCode}, retrying in ${delay.inMilliseconds}ms (attempt $attempt/$maxRetries)');
+          await Future.delayed(delay);
+          lastErrorResponse = response;
           continue;
         }
 
         // Success - record in circuit breaker
         if (response.statusCode < 500) {
           circuitBreaker.recordSuccess();
+        } else {
+          circuitBreaker.recordFailure();
         }
 
         return response;
       } on Exception catch (error, stackTrace) {
         lastException = error;
-        circuitBreaker.recordFailure();
+        // Transient network during scale-from-0: don't trip circuit until exhausted
+        circuitBreaker.recordFailure(countTowardOpen: attempt >= maxRetries);
         logDebug(
             '[HttpService] $method $path failed (attempt $attempt/$maxRetries): $error');
 
         if (attempt < maxRetries) {
+          final delay = _backoffDelay(attempt);
           logDebug(
-              '[HttpService] Retrying in ${retryDelay.inSeconds * attempt}s...');
-          await Future.delayed(retryDelay * attempt);
+              '[HttpService] Retrying in ${delay.inMilliseconds}ms...');
+          await Future.delayed(delay);
         } else {
           logDebug('[HttpService] Max retries reached for $method $path');
           logDebug('[HttpService] Stack trace: $stackTrace');
@@ -301,8 +315,31 @@ class HttpService {
       }
     }
 
+    if (lastErrorResponse != null && lastException == null) {
+      return lastErrorResponse;
+    }
+
     throw lastException ??
         Exception('Failed to $method $path after $maxRetries attempts');
+  }
+
+  static Duration _retryDelayFor(http.Response response, int attempt) {
+    final retryAfter = response.headers['retry-after'];
+    if (retryAfter != null) {
+      final seconds = int.tryParse(retryAfter.trim());
+      if (seconds != null && seconds > 0) {
+        final fromHeader = Duration(seconds: seconds);
+        return fromHeader > maxRetryDelay ? maxRetryDelay : fromHeader;
+      }
+    }
+    return _backoffDelay(attempt);
+  }
+
+  static Duration _backoffDelay(int attempt) {
+    final millis =
+        (retryDelay.inMilliseconds * math.pow(2, attempt - 1).toInt())
+            .clamp(retryDelay.inMilliseconds, maxRetryDelay.inMilliseconds);
+    return Duration(milliseconds: millis);
   }
 
   /// Get circuit breaker status for debugging

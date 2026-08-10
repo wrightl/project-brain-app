@@ -127,6 +127,18 @@ class OAuthService {
     return credentials;
   }
 
+  /// Returns true when CredentialsManager reports a valid (or refreshable) session.
+  Future<bool> hasStoredCredentials({int minTtl = 60}) async {
+    try {
+      return await _auth0.credentialsManager.hasValidCredentials(
+        minTtl: minTtl,
+      );
+    } catch (e) {
+      logDebug('[OAuthService] hasStoredCredentials failed: $e');
+      return false;
+    }
+  }
+
   /// Returns credentials persisted by the native SDK after [login], if valid.
   ///
   /// [minTtl] is the minimum remaining access token lifetime in seconds.
@@ -152,42 +164,6 @@ class OAuthService {
     } catch (e) {
       logDebug('[OAuthService] CredentialsManager restore failed: $e');
       return null;
-    }
-  }
-
-  /// Returns credentials from CredentialsManager, requiring local auth when configured.
-  ///
-  /// Returns null when no session is available. Throws [AuthException] when
-  /// a biometric/local-auth challenge fails or is canceled.
-  Future<Credentials?> tryRestoreCredentialsWithBiometric({
-    int minTtl = 60,
-  }) async {
-    try {
-      final credentials = await _auth0.credentialsManager.credentials(
-        minTtl: minTtl,
-      );
-      logDebug('[OAuthService] Restored credentials with biometric gate');
-      return credentials;
-    } on CredentialsManagerException catch (e) {
-      if (e.isNoCredentialsFound || e.isNoRefreshTokenFound) {
-        logDebug('[OAuthService] No stored credentials for biometric restore');
-        return null;
-      }
-
-      if (e.isTokenRenewFailed) {
-        logDebug('[OAuthService] Stored credentials could not be renewed');
-        return null;
-      }
-
-      logDebug('[OAuthService] Biometric/local auth failed: ${e.message}');
-      throw AuthException('Biometric authentication failed', e);
-    } catch (e, stackTrace) {
-      logDebug('[OAuthService] Biometric restore failed: $e');
-      throw AuthException(
-        'Failed to restore session with biometric authentication',
-        e,
-        stackTrace,
-      );
     }
   }
 }

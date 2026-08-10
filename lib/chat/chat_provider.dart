@@ -231,6 +231,11 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void markUserChoiceAnswered(int messageIndex) {
+    _answeredChoiceMessageIndexes.add(messageIndex);
+    notifyListeners();
+  }
+
   Future<void> selectUserChoice(int messageIndex, String label) async {
     if (_isSending) return;
     _answeredChoiceMessageIndexes.add(messageIndex);

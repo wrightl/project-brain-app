@@ -1,7 +1,6 @@
 import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:get_it/get_it.dart';
 import 'package:projectbrain/core/config/app_config.dart';
-import 'dart:io' show Platform;
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -12,6 +11,7 @@ import 'package:projectbrain/services/auth/token_storage.dart';
 import 'package:projectbrain/services/auth/token_manager.dart';
 import 'package:projectbrain/services/auth/oauth_service.dart';
 import 'package:projectbrain/services/auth/user_profile_service.dart';
+import 'package:projectbrain/services/auth/biometric_unlock_service.dart';
 import 'package:projectbrain/chat/chat_provider.dart';
 import 'package:projectbrain/core/storage/preferences_service.dart';
 import 'package:projectbrain/helpers/theme_mode_provider.dart';
@@ -75,22 +75,10 @@ Future<void> initializeDependencies() async {
   );
 
   // ===== Authentication Services =====
-  // Single Auth0 client (CredentialsManager + Authentication API share state)
+  // Single Auth0 client (CredentialsManager + Authentication API share state).
+  // Biometric unlock is opt-in via local_auth, not Auth0 LocalAuthentication.
   sl.registerLazySingleton<Auth0>(
-    () {
-      if (Platform.isIOS) {
-        return Auth0(
-          AppConfig.authDomain,
-          AppConfig.authClientId,
-          localAuthentication: const LocalAuthentication(
-            title: 'Unlock Project Brain',
-            cancelTitle: 'Cancel',
-            fallbackTitle: 'Use Passcode',
-          ),
-        );
-      }
-      return Auth0(AppConfig.authDomain, AppConfig.authClientId);
-    },
+    () => Auth0(AppConfig.authDomain, AppConfig.authClientId),
   );
 
   // Token Storage - handles secure storage of tokens
@@ -118,6 +106,11 @@ Future<void> initializeDependencies() async {
     () => UserProfileService(),
   );
 
+  // Biometric unlock (opt-in Face ID / fingerprint gate before session restore)
+  sl.registerLazySingleton<BiometricUnlockService>(
+    () => BiometricUnlockService(),
+  );
+
   // Auth Service - orchestrates authentication operations
   sl.registerLazySingleton<AuthService>(
     () => AuthService(
@@ -125,6 +118,8 @@ Future<void> initializeDependencies() async {
       tokenManager: sl<TokenManager>(),
       tokenStorage: sl<TokenStorage>(),
       userProfileService: sl<UserProfileService>(),
+      preferencesService: sl<PreferencesService>(),
+      biometricUnlockService: sl<BiometricUnlockService>(),
     ),
   );
 

@@ -20,6 +20,8 @@ class LoginPage extends StatelessWidget {
       );
     }
 
+    final showUnlock = authProvider.showBiometricUnlock;
+
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -43,7 +45,9 @@ class LoginPage extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'Your AI companion for focus, goals, and growth.',
+                showUnlock
+                    ? 'Unlock to continue where you left off.'
+                    : 'Your AI companion for focus, goals, and growth.',
                 style: theme.textTheme.bodySmall,
                 textAlign: TextAlign.center,
               ),
@@ -63,13 +67,31 @@ class LoginPage extends StatelessWidget {
                 ),
               ],
               const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => authProvider.login(),
-                  child: const Text('Login / Sign Up'),
+              if (showUnlock) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => authProvider.unlockWithBiometrics(),
+                    icon: const Icon(Icons.fingerprint),
+                    label: Text(authProvider.biometricUnlockLabel),
+                  ),
                 ),
-              ),
+                const SizedBox(height: AppSpacing.md),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () => authProvider.login(),
+                    child: const Text('Login / Sign Up'),
+                  ),
+                ),
+              ] else
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => authProvider.login(),
+                    child: const Text('Login / Sign Up'),
+                  ),
+                ),
               const SizedBox(height: AppSpacing.lg),
             ],
           ),

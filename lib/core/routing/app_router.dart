@@ -413,12 +413,13 @@ class AppRouter {
     if (location.startsWith('/network')) {
       return 3;
     }
+    // Profile and related screens are reached outside the floating tab bar.
     if (location.startsWith('/user') ||
         location.startsWith('/profile') ||
         location.startsWith('/voicenotes') ||
         location.startsWith('/quizzes') ||
         location.startsWith('/resources')) {
-      return 4;
+      return -1;
     }
     if (location.startsWith('/journal')) {
       return 0;
@@ -437,8 +438,6 @@ class AppRouter {
         context.go('/ai');
       case 3:
         context.go('/network');
-      case 4:
-        context.go('/user');
     }
   }
 

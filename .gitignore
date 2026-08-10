@@ -74,3 +74,5 @@ android/app/google-services.json
 # Unused files
 *.unused
 *.notused
+
+**/fastlane/report.xml

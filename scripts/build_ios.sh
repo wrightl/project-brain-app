@@ -16,6 +16,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 # shellcheck source=lib/asc_credentials.sh
 source "${ROOT}/scripts/lib/asc_credentials.sh"
+# shellcheck source=lib/env_dart_defines.sh
+source "${ROOT}/scripts/lib/env_dart_defines.sh"
 
 usage() {
   cat <<'EOF'
@@ -201,6 +203,8 @@ BUILD_ARGS=(
   build ipa
   "--dart-define=ENVIRONMENT=${NORMALIZED_ENV}"
 )
+append_dart_defines_from_env BUILD_ARGS "${ROOT}/${ENV_FILE}"
+echo "Injected dart-defines from ${ENV_FILE} (staging/production secrets are compile-time, not bundled as assets)."
 
 if [[ "$OBFUSCATE" == "true" ]]; then
   SYM_DIR="${ROOT}/build/symbols/ios-${NORMALIZED_ENV}-$(date +%Y%m%d-%H%M%S)"

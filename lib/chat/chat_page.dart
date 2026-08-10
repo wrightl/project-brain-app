@@ -12,6 +12,7 @@ import 'package:projectbrain/widgets/chat/chat_input_field.dart';
 import 'package:projectbrain/widgets/chat/conversation_list_item.dart';
 import 'package:projectbrain/widgets/chat/typing_indicator.dart';
 import 'package:projectbrain/widgets/chat/citations_popout.dart';
+import 'package:projectbrain/helpers/coach_agent_actions.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:provider/provider.dart';
@@ -233,8 +234,15 @@ class _ChatPageState extends State<ChatPage> {
                               child: UserChoiceChips(
                                 choices: extras.userChoices!,
                                 disabled: chatProvider.isSending,
-                                onSelect: (label) =>
-                                    chatProvider.selectUserChoice(index, label),
+                                onSelect: (option) {
+                                  if (CoachAgentActions.tryExecute(
+                                      context, option)) {
+                                    chatProvider.markUserChoiceAnswered(index);
+                                    return;
+                                  }
+                                  chatProvider.selectUserChoice(
+                                      index, option.label);
+                                },
                               ),
                             ),
                         ],

@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+10
+version: 1.0.0+19
 
 environment:
     sdk: ^3.6.1
@@ -74,6 +74,7 @@ dependencies:
     geolocator: ^14.0.2
     google_maps_flutter: ^2.14.0
     signalr_netcore: ^1.4.4
+    local_auth: ^3.0.2
 
 dev_dependencies:
     flutter_launcher_icons: ^0.14.4
@@ -117,7 +118,8 @@ flutter:
     # the material Icons class.
     uses-material-design: true
 
-    # Local dev only — staging/production: pass secrets via --dart-define (see .env.*.example).
+    # Dev uses bundled .env.dev. Staging/production secrets are injected at build
+    # time via --dart-define in scripts/build_ios.sh (not shipped as .env assets).
     assets:
         - .env.dev
         - assets/icon/appstore.png
