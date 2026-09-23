@@ -28,6 +28,7 @@ import 'package:projectbrain/services/subscription_service.dart';
 import 'package:projectbrain/services/egg_goals_service.dart';
 import 'package:projectbrain/services/goals_realtime_service.dart';
 import 'package:projectbrain/services/journal_service.dart';
+import 'package:projectbrain/services/community_service.dart';
 import 'package:projectbrain/services/strategy_service.dart';
 import 'package:projectbrain/services/user_memory_service.dart';
 import 'package:projectbrain/services/tag_service.dart';
@@ -212,6 +213,11 @@ Future<void> initializeDependencies() async {
   // Journal Service
   sl.registerLazySingleton<JournalService>(
     () => JournalService(authService: sl<AuthService>()),
+  );
+
+  // Community Service
+  sl.registerLazySingleton<CommunityService>(
+    () => CommunityService(httpService: sl<HttpService>()),
   );
 
   // Strategy Service

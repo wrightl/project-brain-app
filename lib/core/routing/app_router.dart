@@ -31,7 +31,10 @@ import 'package:projectbrain/goals/all_goals_celebration_page.dart';
 import 'package:projectbrain/journal/journal_list_page.dart';
 import 'package:projectbrain/journal/journal_view_page.dart';
 import 'package:projectbrain/journal/journal_entry_form_page.dart';
+import 'package:projectbrain/community/community_hub_page.dart';
+import 'package:projectbrain/community/community_channel_page.dart';
 import 'package:projectbrain/strategies/strategies_library_page.dart';
+import 'package:projectbrain/services/feature_flag_service.dart';
 import 'package:projectbrain/strategies/strategies_chat_page.dart';
 import 'package:projectbrain/user_memory/learned_memory_page.dart';
 import 'package:projectbrain/core/routing/page_transitions.dart';
@@ -356,6 +359,25 @@ class AppRouter {
             GoRoute(
               path: '/learned-memories',
               builder: (context, state) => const LearnedMemoryPage(),
+            ),
+            GoRoute(
+              path: '/community',
+              builder: (context, state) {
+                if (!sl<FeatureFlagService>().communityFeatureEnabled) {
+                  return const HomePage();
+                }
+                return const CommunityHubPage();
+              },
+            ),
+            GoRoute(
+              path: '/community/:slug',
+              builder: (context, state) {
+                if (!sl<FeatureFlagService>().communityFeatureEnabled) {
+                  return const HomePage();
+                }
+                final slug = state.pathParameters['slug']!;
+                return CommunityChannelPage(slug: slug);
+              },
             ),
           ],
         ),

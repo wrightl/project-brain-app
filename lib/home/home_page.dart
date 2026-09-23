@@ -11,6 +11,8 @@ import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 import 'package:projectbrain/widgets/ds/goal_row.dart';
 import 'package:projectbrain/widgets/today_goal_progress_block.dart';
 import 'package:provider/provider.dart';
+import 'package:projectbrain/services/feature_flag_service.dart';
+import 'package:projectbrain/core/di/injection_container.dart';
 
 /// Home page of the application.
 class HomePage extends StatefulWidget {
@@ -100,6 +102,10 @@ class _HomePageState extends State<HomePage> {
                     strategiesLabel: strategiesL10n.copingStrategies,
                     strategiesSubtitle: strategiesL10n.getNewStrategies,
                   ),
+                  if (sl<FeatureFlagService>().communityFeatureEnabled) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    _CommunityEntryCard(),
+                  ],
                   const SizedBox(height: AppSpacing.xl),
                   Consumer<EggGoalsProvider>(
                     builder: (context, goalsProvider, _) {
@@ -147,6 +153,50 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CommunityEntryCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final appTheme = context.appTheme;
+
+    return Material(
+      color: theme.colorScheme.surface,
+      borderRadius: AppRadius.circularLg,
+      child: InkWell(
+        onTap: () => context.push('/community'),
+        borderRadius: AppRadius.circularLg,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            borderRadius: AppRadius.circularLg,
+            border: Border.all(color: appTheme.borderColor),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.groups_outlined, color: appTheme.teal),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Community', style: theme.textTheme.titleMedium),
+                    Text(
+                      'Channels for wins, tips, and support — plus Skool.',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: appTheme.borderColor),
+            ],
           ),
         ),
       ),

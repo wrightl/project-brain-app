@@ -69,6 +69,7 @@ class FeatureFlagService {
   static const String _coachFeatureKey = 'CoachFeatureEnabled';
   static const String _emailFeatureKey = 'EmailFeatureEnabled';
   static const String _agentFeatureKey = 'AgentFeatureEnabled';
+  static const String _communityFeatureKey = 'CommunityFeatureEnabled';
 
   bool get agentFeatureEnabled =>
       _getBoolFlag(_agentFeatureKey, defaultValue: false);
@@ -82,6 +83,11 @@ class FeatureFlagService {
   /// Returns true if email features are enabled, false otherwise
   bool get emailFeatureEnabled =>
       _getBoolFlag(_emailFeatureKey, defaultValue: false);
+
+  /// Get the CommunityFeatureEnabled flag value
+  /// Returns true if the in-app Community hub is enabled, false otherwise
+  bool get communityFeatureEnabled =>
+      _getBoolFlag(_communityFeatureKey, defaultValue: false);
 
   /// Internal helper to get a boolean feature flag value
   bool _getBoolFlag(String flagKey, {bool defaultValue = false}) {
