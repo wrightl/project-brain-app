@@ -65,6 +65,8 @@ jobs:
                   cp .env.dev.example .env.dev
                   cp .env.staging.example .env.staging
                   cp .env.production.example .env.production
+                  # Placeholder Firebase config (gitignored); enough to compile, not to ship
+                  cp ios/GoogleService-Info.plist.example ios/GoogleService-Info.plist
 
             - name: Install dependencies
               run: flutter pub get
@@ -97,11 +99,16 @@ jobs:
                   cp .env.dev.example .env.dev
                   cp .env.staging.example .env.staging
                   cp .env.production.example .env.production
+                  # Placeholder Firebase config (gitignored); enough to compile, not to ship
+                  cp android/app/google-services.json.example android/app/google-services.json
 
             - name: Install dependencies
               run: flutter pub get
 
             - name: Build Android APK
+              # Release builds refuse to fall back to a dev Auth0 tenant; use the repo variable when set
+              env:
+                  AUTH0_DOMAIN: ${{ vars.AUTH0_DOMAIN || 'ci-placeholder.auth0.com' }}
               run: flutter build apk --release
 
             - name: Upload APK artifact
