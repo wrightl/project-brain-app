@@ -79,7 +79,7 @@ class ResourceService extends HttpService {
 
     try {
       final length = await file.length();
-      if (length > 0) {
+      if (length != null && length > 0) {
         return http.MultipartFile(
           'files',
           http.ByteStream(file.readAsByteStream()),

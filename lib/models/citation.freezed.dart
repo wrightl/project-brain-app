@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'citation.dart';
@@ -9,6 +9,7 @@ part of 'citation.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -30,22 +31,28 @@ mixin _$Citation {
 
   @override
   bool operator ==(Object other) {
+    final _this = this as Citation;
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is Citation &&
-            (identical(other.url, url) || other.url == url) &&
-            (identical(other.title, title) || other.title == title) &&
-            (identical(other.description, description) ||
-                other.description == description));
+            (identical(other.url, _this.url) || other.url == _this.url) &&
+            (identical(other.title, _this.title) ||
+                other.title == _this.title) &&
+            (identical(other.description, _this.description) ||
+                other.description == _this.description));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, url, title, description);
+  int get hashCode {
+    final _this = this as Citation;
+    return Object.hash(runtimeType, _this.url, _this.title, _this.description);
+  }
 
   @override
   String toString() {
-    return 'Citation(url: $url, title: $title, description: $description)';
+    final _this = this as Citation;
+    return 'Citation(url: ${_this.url}, title: ${_this.title}, description: ${_this.description})';
   }
 }
 
@@ -73,7 +80,7 @@ class _$CitationCopyWithImpl<$Res> implements $CitationCopyWith<$Res> {
     Object? title = freezed,
     Object? description = freezed,
   }) {
-    return _then(_self.copyWith(
+    return _then(Citation(
       url: null == url
           ? _self.url
           : url // ignore: cast_nullable_to_non_nullable
@@ -290,7 +297,9 @@ class _Citation implements Citation {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, url, title, description);
+  int get hashCode {
+    return Object.hash(runtimeType, url, title, description);
+  }
 
   @override
   String toString() {
