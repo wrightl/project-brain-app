@@ -172,7 +172,7 @@ class ResourceService extends HttpService {
   Future<void> deleteResource(String resourceId) async {
     logDebug('[ResourceService] Deleting resource: $resourceId');
 
-    final response = await delete('/resource/user/$resourceId');
+    final response = await delete('/resource/$resourceId/user');
 
     if (response.statusCode == 200 || response.statusCode == 204) {
       logDebug('[ResourceService] Successfully deleted resource: $resourceId');
