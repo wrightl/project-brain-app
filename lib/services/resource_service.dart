@@ -42,8 +42,10 @@ class ResourceService extends HttpService {
 
   /// Whether [file] can be read for upload via path or file_picker stream/bytes APIs.
   static Future<bool> platformFileHasReadableData(PlatformFile file) async {
-    if (file.path != null && file.path!.isNotEmpty) return true;
-    if (file.size <= 0) return false;
+    final path = file.path;
+    if (path != null && path.isNotEmpty) return true;
+    final knownLength = file.lengthSync();
+    if (knownLength != null && knownLength <= 0) return false;
     try {
       await file.length();
       return true;
@@ -101,7 +103,39 @@ class ResourceService extends HttpService {
     if (files.isEmpty) {
       throw ArgumentError('No files to upload');
     }
-    logDebug('[ResourceService] Uploading ${files.length} file(s)');
+    final parts = <http.MultipartFile>[];
+    for (final file in files) {
+      parts.add(await _multipartFromPlatformFile(file));
+    }
+    await _postMultipart(parts, files.length);
+  }
+
+  /// Upload one or more local [File]s (e.g. from recording or cache).
+  Future<void> uploadFiles(List<File> files) async {
+    if (files.isEmpty) {
+      throw ArgumentError('No files to upload');
+    }
+    final parts = <http.MultipartFile>[];
+    for (final file in files) {
+      final length = await file.length();
+      final segments = file.path.replaceAll('\\', '/').split('/');
+      final base = segments.isNotEmpty ? segments.last : '';
+      final name = base.isEmpty ? 'upload.bin' : base;
+      parts.add(
+        http.MultipartFile(
+          'files',
+          http.ByteStream(file.openRead()),
+          length,
+          filename: name,
+        ),
+      );
+    }
+    await _postMultipart(parts, files.length);
+  }
+
+  Future<void> _postMultipart(
+      List<http.MultipartFile> parts, int fileCount) async {
+    logDebug('[ResourceService] Uploading $fileCount file(s)');
 
     final token = await authService.getAccessToken();
     final uri = Uri.parse('$baseUrl/resource/upload/user');
@@ -111,18 +145,14 @@ class ResourceService extends HttpService {
       request.headers.addAll({
         'Authorization': 'Bearer $token',
       });
-
-      for (final file in files) {
-        request.files.add(await _multipartFromPlatformFile(file));
-      }
+      request.files.addAll(parts);
 
       final streamedResponse =
           await request.send().timeout(Duration(seconds: 120));
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        logDebug(
-            '[ResourceService] Successfully uploaded ${files.length} file(s)');
+        logDebug('[ResourceService] Successfully uploaded $fileCount file(s)');
         clearCacheForPath('/resource/user');
       } else {
         logError(
@@ -136,24 +166,6 @@ class ResourceService extends HttpService {
       logDebug('[ResourceService] Stack trace: $stackTrace');
       throw Exception('Failed to upload files: $error');
     }
-  }
-
-  /// Upload one or more local [File]s (e.g. from recording or cache).
-  Future<void> uploadFiles(List<File> files) async {
-    if (files.isEmpty) {
-      throw ArgumentError('No files to upload');
-    }
-    final platformFiles = <PlatformFile>[];
-    for (final file in files) {
-      final len = await file.length();
-      final segments = file.path.replaceAll('\\', '/').split('/');
-      final base = segments.isNotEmpty ? segments.last : '';
-      final name = base.isEmpty ? 'upload.bin' : base;
-      platformFiles.add(
-        PlatformFile(path: file.path, name: name, size: len),
-      );
-    }
-    await uploadPlatformFiles(platformFiles);
   }
 
   /// Delete a resource by ID
