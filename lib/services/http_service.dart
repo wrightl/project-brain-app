@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:math' as math;
 
 import 'package:projectbrain/core/logging/app_logger.dart';
+import 'package:projectbrain/core/network/rate_limited_exception.dart';
 import 'package:http/http.dart' as http;
 import 'package:projectbrain/services/auth/auth_service.dart';
 import 'package:projectbrain/core/config/app_config.dart';
@@ -125,6 +126,7 @@ class HttpService {
       },
       path: path,
       method: 'GET',
+      idempotent: true,
     );
 
     // Store pending request for deduplication
@@ -184,13 +186,20 @@ class HttpService {
       ..headers.addAll(headers)
       ..body = body;
 
+    final http.StreamedResponse response;
     try {
-      return await request.send().timeout(timeout ?? defaultTimeout);
+      response = await request.send().timeout(timeout ?? defaultTimeout);
     } catch (error, stackTrace) {
       logDebug('[HttpService] Error in streaming POST request: $error');
       logDebug('[HttpService] Stack trace: $stackTrace');
       throw Exception('Failed to send data to $path: $error');
     }
+
+    if (response.statusCode == 429) {
+      final body = await response.stream.bytesToString();
+      throw RateLimitedException.fromResponse(body, response.headers);
+    }
+    return response;
   }
 
   /// Make a POST request with timeout and retry logic
@@ -209,6 +218,7 @@ class HttpService {
       },
       path: path,
       method: 'POST',
+      idempotent: false,
     );
   }
 
@@ -228,6 +238,7 @@ class HttpService {
       },
       path: path,
       method: 'PUT',
+      idempotent: true,
     );
   }
 
@@ -245,14 +256,21 @@ class HttpService {
       },
       path: path,
       method: 'DELETE',
+      idempotent: true,
     );
   }
 
-  /// Retry logic for HTTP requests with circuit breaker
+  /// Retry logic for HTTP requests with circuit breaker.
+  ///
+  /// 429 and 503 are rejected by the API before any handler runs, so every
+  /// method may retry them. Other failures (5xx, timeouts, dropped connections)
+  /// may have been processed server-side, so only [idempotent] requests retry
+  /// them; retrying a POST could create a duplicate journal entry or message.
   Future<http.Response> _retryRequest(
     Future<http.Response> Function() request, {
     required String path,
     required String method,
+    required bool idempotent,
   }) async {
     // Get or create circuit breaker for this endpoint
     final circuitBreaker = _circuitBreakers.putIfAbsent(
@@ -276,8 +294,29 @@ class HttpService {
       try {
         final response = await request();
 
+        if (response.statusCode == 429) {
+          final retryAfter = RateLimitedException.parseRetryAfter(
+            response.headers,
+          );
+          if (retryAfter != null &&
+              retryAfter <= maxRetryDelay &&
+              attempt < maxRetries) {
+            logDebug(
+                '[HttpService] $method $path rate limited, retrying in ${retryAfter.inMilliseconds}ms');
+            await Future.delayed(retryAfter);
+            continue;
+          }
+          throw RateLimitedException.fromResponse(
+            response.body,
+            response.headers,
+          );
+        }
+
+        final retryableStatus = response.statusCode == 503 ||
+            (idempotent && response.statusCode >= 500);
+
         // Check for server errors that should be retried (incl. 503 starting gate)
-        if (response.statusCode >= 500 && attempt < maxRetries) {
+        if (retryableStatus && attempt < maxRetries) {
           // 503 during warmup should not trip the circuit mid-burst
           circuitBreaker.recordFailure(
             countTowardOpen: response.statusCode != 503,
@@ -298,12 +337,21 @@ class HttpService {
         }
 
         return response;
+      } on RateLimitedException {
+        rethrow;
       } on Exception catch (error, stackTrace) {
         lastException = error;
+        final willRetry = idempotent && attempt < maxRetries;
         // Transient network during scale-from-0: don't trip circuit until exhausted
-        circuitBreaker.recordFailure(countTowardOpen: attempt >= maxRetries);
+        circuitBreaker.recordFailure(countTowardOpen: !willRetry);
         logDebug(
             '[HttpService] $method $path failed (attempt $attempt/$maxRetries): $error');
+
+        if (!idempotent) {
+          logDebug(
+              '[HttpService] Not retrying $method $path: it may already have been processed');
+          break;
+        }
 
         if (attempt < maxRetries) {
           final delay = _backoffDelay(attempt);

@@ -1,8 +1,18 @@
+import 'dart:async';
+
+import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:projectbrain/services/auth/token_manager.dart';
 import 'package:projectbrain/services/auth/auth_exception.dart';
 import 'dart:convert';
 import '../../helpers/test_helpers.dart';
+
+class MockAuth0 extends Mock implements Auth0 {}
+
+class MockAuthenticationApi extends Mock implements AuthenticationApi {}
+
+class MockCredentialsManager extends Mock implements CredentialsManager {}
 
 void main() {
   late TokenManager tokenManager;
@@ -210,6 +220,96 @@ void main() {
     test('handles empty token string', () {
       tokenManager.setAccessToken('');
       expect(tokenManager.hasValidToken, isFalse);
+    });
+  });
+
+  group('TokenManager - Refresh', () {
+    late MockAuth0 auth0;
+    late MockAuthenticationApi api;
+    late MockCredentialsManager credentialsManager;
+
+    Credentials credentialsFor(String accessToken, String refreshToken) =>
+        Credentials(
+          idToken: '',
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+          scopes: const {},
+          user: const UserProfile(sub: 'auth0|user-1'),
+          tokenType: 'Bearer',
+        );
+
+    setUpAll(() {
+      registerFallbackValue(credentialsFor('', ''));
+    });
+
+    setUp(() {
+      auth0 = MockAuth0();
+      api = MockAuthenticationApi();
+      credentialsManager = MockCredentialsManager();
+      when(() => auth0.api).thenReturn(api);
+      when(() => auth0.credentialsManager).thenReturn(credentialsManager);
+      when(() => credentialsManager.storeCredentials(any()))
+          .thenAnswer((_) async => true);
+    });
+
+    test('concurrent callers share a single refresh', () async {
+      final manager = TokenManager(auth0: auth0);
+      final expired =
+          createTestToken(DateTime.now().subtract(const Duration(minutes: 1)));
+      final fresh =
+          createTestToken(DateTime.now().add(const Duration(hours: 1)));
+      manager.setCredentials(credentialsFor(expired, 'refresh-1'));
+
+      final renewal = Completer<Credentials>();
+      when(() => api.renewCredentials(refreshToken: 'refresh-1'))
+          .thenAnswer((_) => renewal.future);
+
+      final requests = List.generate(5, (_) => manager.getAccessToken());
+      renewal.complete(credentialsFor(fresh, 'refresh-2'));
+      final tokens = await Future.wait(requests);
+
+      expect(tokens, everyElement(fresh));
+      verify(() => api.renewCredentials(refreshToken: 'refresh-1')).called(1);
+    });
+
+    test('a later expiry starts a new refresh with the rotated token',
+        () async {
+      final manager = TokenManager(auth0: auth0);
+      final expired =
+          createTestToken(DateTime.now().subtract(const Duration(minutes: 1)));
+      manager.setCredentials(credentialsFor(expired, 'refresh-1'));
+
+      when(() => api.renewCredentials(refreshToken: 'refresh-1'))
+          .thenAnswer((_) async => credentialsFor(expired, 'refresh-2'));
+      when(() => api.renewCredentials(refreshToken: 'refresh-2'))
+          .thenAnswer((_) async => credentialsFor(expired, 'refresh-3'));
+
+      await manager.getAccessToken().catchError((_) => '');
+      await manager.getAccessToken().catchError((_) => '');
+
+      verify(() => api.renewCredentials(refreshToken: 'refresh-1')).called(1);
+      verify(() => api.renewCredentials(refreshToken: 'refresh-2')).called(1);
+    });
+
+    test('failed refresh clears the session for every waiting caller',
+        () async {
+      final manager = TokenManager(auth0: auth0);
+      final expired =
+          createTestToken(DateTime.now().subtract(const Duration(minutes: 1)));
+      manager.setCredentials(credentialsFor(expired, 'refresh-1'));
+      when(() => api.renewCredentials(refreshToken: 'refresh-1'))
+          .thenThrow(Exception('invalid_grant'));
+
+      final results = await Future.wait(List.generate(
+        3,
+        (_) =>
+            manager.getAccessToken().then((_) => true, onError: (_) => false),
+      ));
+
+      expect(results, everyElement(isFalse));
+      expect(manager.hasValidToken, isFalse);
+      verify(() => api.renewCredentials(refreshToken: 'refresh-1')).called(1);
     });
   });
 }

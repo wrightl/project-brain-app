@@ -1,4 +1,3 @@
-import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
@@ -37,19 +36,6 @@ class ErrorReportingService {
 
         _initialized = true;
         logDebug('[ErrorReporting] Crashlytics initialized');
-      }
-
-      // iOS: ATT before enabling analytics (IDFA-related collection).
-      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-        try {
-          final status =
-              await AppTrackingTransparency.trackingAuthorizationStatus;
-          if (status == TrackingStatus.notDetermined) {
-            await AppTrackingTransparency.requestTrackingAuthorization();
-          }
-        } catch (e) {
-          logDebug('[ErrorReporting] ATT request skipped: $e');
-        }
       }
 
       // Initialize Analytics

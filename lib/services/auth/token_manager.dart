@@ -15,6 +15,7 @@ class TokenManager {
   final Auth0 _auth0;
 
   Credentials? _credentials;
+  Future<bool>? _refreshInFlight;
 
   // Token expiry buffer - refresh tokens 5 minutes before they expire
   static const _expiryBuffer = Duration(minutes: 5);
@@ -118,10 +119,17 @@ class TokenManager {
       return true;
     }
 
+    // Refresh tokens rotate: redeeming the same one twice can revoke the whole
+    // session, so concurrent callers share a single in-flight refresh.
+    return _refreshInFlight ??=
+        _refreshCredentials().whenComplete(() => _refreshInFlight = null);
+  }
+
+  Future<bool> _refreshCredentials() async {
     logDebug(
         '[TokenManager] Access token expired or expiring soon, refreshing');
 
-    final refreshToken = _credentials!.refreshToken;
+    final refreshToken = _credentials?.refreshToken;
     if (refreshToken == null || refreshToken.isEmpty) {
       logDebug('[TokenManager] No refresh token available');
       return false;

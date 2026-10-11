@@ -12,6 +12,8 @@ import 'package:projectbrain/services/auth/token_manager.dart';
 import 'package:projectbrain/services/auth/oauth_service.dart';
 import 'package:projectbrain/services/auth/user_profile_service.dart';
 import 'package:projectbrain/services/auth/biometric_unlock_service.dart';
+import 'package:projectbrain/services/auth/auth_exception.dart';
+import 'package:projectbrain/core/security/app_lock_controller.dart';
 import 'package:projectbrain/chat/chat_provider.dart';
 import 'package:projectbrain/core/storage/preferences_service.dart';
 import 'package:projectbrain/helpers/theme_mode_provider.dart';
@@ -146,6 +148,23 @@ Future<void> initializeDependencies() async {
       featureFlagService: sl<FeatureFlagService>(),
       userService: sl<UserService>(),
       preferencesService: sl<PreferencesService>(),
+    ),
+  );
+
+  // App lock - hides content in the app switcher and re-requires biometrics
+  // after time in the background when biometric unlock is enabled.
+  sl.registerLazySingleton<AppLockController>(
+    () => AppLockController(
+      isLockEnabled: () =>
+          sl<AuthProvider>().isLoggedIn &&
+          sl<AuthProvider>().biometricUnlockEnabled,
+      authenticate: () async {
+        try {
+          return await sl<BiometricUnlockService>().authenticate();
+        } on AuthException {
+          return false;
+        }
+      },
     ),
   );
 

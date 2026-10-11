@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:projectbrain/core/logging/app_logger.dart';
+import 'package:projectbrain/core/network/rate_limited_exception.dart';
 import 'package:flutter/material.dart';
 import 'package:projectbrain/models/citation.dart';
 import 'package:projectbrain/models/agent/action_card.dart';
@@ -130,11 +131,16 @@ class ChatProvider extends ChangeNotifier {
       logDebug('[ChatProvider] Error streaming: $e');
       logDebug('[ChatProvider] Stack trace: $stackTrace');
 
-      _errorMessage = 'Failed to get response. Please try again.';
+      // A 429 carries a message meant for the user (slow down, or a usage
+      // quota reached), so show it as-is rather than as a generic failure.
+      final rateLimited = e is RateLimitedException;
+      final errorMessage =
+          rateLimited ? e.message : 'Failed to get response. Please try again.';
+      _errorMessage = errorMessage;
       // Update the message to show error
       final currentMessage = _messages[assistantMessageIndex];
       _messages[assistantMessageIndex] = currentMessage.copyWith(
-        content: 'Error: $_errorMessage',
+        content: rateLimited ? errorMessage : 'Error: $errorMessage',
       );
       notifyListeners();
     } finally {
