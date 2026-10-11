@@ -179,24 +179,18 @@ class ChatProvider extends ChangeNotifier {
           final current = _messages[assistantMessageIndex];
           _messages[assistantMessageIndex] =
               current.copyWith(content: current.content + chunk);
-          break;
         case 'citations':
           citations
             ..clear()
             ..addAll(AIService.parseAgentCitations(event.value));
-          break;
         case 'tools_executed':
           tools.addAll(AIService.parseToolExecutions(event.value));
-          break;
         case 'action_card':
           cards.addAll(AIService.parseActionCards(event.value));
-          break;
         case 'pending_action':
           cards.addAll(AIService.parseActionCards(event.value));
-          break;
         case 'user_choices':
           userChoices = AIService.parseUserChoices(event.value);
-          break;
       }
 
       final now = DateTime.now();

@@ -76,12 +76,10 @@ class ActionCardWidget extends StatelessWidget {
           if (card.cardType == 'coaches_found' && card.coaches.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.sm),
             ...card.coaches.take(3).map((coach) {
-              final coachProfileId =
-                  coach['coachProfileId']?.toString() ?? '';
+              final coachProfileId = coach['coachProfileId']?.toString() ?? '';
               final name = coach['name']?.toString() ?? 'Coach';
               final bio = coach['bio']?.toString();
-              final connectionStatus =
-                  coach['connectionStatus']?.toString();
+              final connectionStatus = coach['connectionStatus']?.toString();
               final connectionId = coach['connectionId']?.toString();
               final canMessage = connectionStatus == 'connected' &&
                   connectionId != null &&

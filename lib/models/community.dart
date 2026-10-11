@@ -57,10 +57,9 @@ class CommunityPost {
           (json['channelSlug'] ?? json['ChannelSlug'] ?? '').toString(),
       authorUserId:
           (json['authorUserId'] ?? json['AuthorUserId'] ?? '').toString(),
-      authorDisplayName: (json['authorDisplayName'] ??
-              json['AuthorDisplayName'] ??
-              'Member')
-          .toString(),
+      authorDisplayName:
+          (json['authorDisplayName'] ?? json['AuthorDisplayName'] ?? 'Member')
+              .toString(),
       body: (json['body'] ?? json['Body'] ?? '').toString(),
       createdAt: DateTime.tryParse(
             (json['createdAt'] ?? json['CreatedAt'] ?? '').toString(),
@@ -87,8 +86,7 @@ class CommunityPost {
       body: body,
       createdAt: createdAt,
       reactionCount: reactionCount ?? this.reactionCount,
-      reactedByCurrentUser:
-          reactedByCurrentUser ?? this.reactedByCurrentUser,
+      reactedByCurrentUser: reactedByCurrentUser ?? this.reactedByCurrentUser,
       isOwnPost: isOwnPost,
     );
   }
