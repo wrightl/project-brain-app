@@ -14,6 +14,8 @@ import 'package:projectbrain/services/feature_flag_service.dart';
 import 'package:projectbrain/services/goals_realtime_service.dart';
 import 'package:projectbrain/services/connectivity_service.dart';
 import 'package:projectbrain/widgets/offline_banner.dart';
+import 'package:projectbrain/widgets/app_lock_overlay.dart';
+import 'package:projectbrain/core/security/app_lock_controller.dart';
 import 'package:projectbrain/helpers/theme_mode_provider.dart';
 
 class MyApp extends StatefulWidget {
@@ -43,9 +45,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
+    sl<AppLockController>().handleLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
-      sl<EggGoalsProvider>().syncFromAPI();
       if (sl<AuthProvider>().isLoggedIn) {
+        sl<EggGoalsProvider>().syncFromAPI();
         sl<GoalsRealtimeService>()
             .start(() => sl<EggGoalsProvider>().syncFromAPI());
       }
@@ -94,6 +97,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         ChangeNotifierProvider<ConnectivityService>.value(
           value: sl<ConnectivityService>(),
         ),
+        ChangeNotifierProvider<AppLockController>.value(
+          value: sl<AppLockController>(),
+        ),
       ],
       child: Consumer<ThemeModeProvider>(
         builder: (context, themeModeProvider, _) {
@@ -104,8 +110,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             themeMode: themeModeProvider.themeMode,
             theme: themeModeProvider.theme,
             darkTheme: themeModeProvider.darkTheme,
-            // Overlay a persistent offline banner above every route.
-            builder: (context, child) => OfflineBanner(child: child),
+            // Overlay a persistent offline banner above every route, and hide
+            // everything behind the app lock when backgrounded or locked.
+            builder: (context, child) => AppLockOverlay(
+              child: OfflineBanner(child: child),
+            ),
           );
         },
       ),
