@@ -26,8 +26,9 @@ class _CircuitBreaker {
   int failureCount = 0;
   DateTime? openedAt;
 
-  /// High enough that a single cold-start retry burst (SQL resume) does not trip.
-  static const int failureThreshold = 12;
+  /// The API runs an always-on replica on a database that resumes in under a
+  /// second, so a handful of consecutive failures means a real outage.
+  static const int failureThreshold = 5;
   static const Duration openDuration = Duration(seconds: 30);
 
   bool get isOpen => state == _CircuitState.open;
@@ -66,11 +67,12 @@ class HttpService {
   final AuthService authService;
   final String baseUrl = AppConfig.apiBaseUrl;
 
-  // HTTP configuration — retry budget covers Azure SQL serverless resume (~60–90s)
+  // HTTP configuration — short retry budget for transient errors and the API's
+  // brief 503 startup gate (Retry-After is honoured, capped at maxRetryDelay).
   static const Duration defaultTimeout = Duration(seconds: 30);
-  static const int maxRetries = 8;
-  static const Duration retryDelay = Duration(seconds: 2);
-  static const Duration maxRetryDelay = Duration(seconds: 15);
+  static const int maxRetries = 3;
+  static const Duration retryDelay = Duration(milliseconds: 500);
+  static const Duration maxRetryDelay = Duration(seconds: 5);
   static const Duration defaultCacheDuration = Duration(minutes: 5);
 
   /// Max distinct GET paths kept in memory (LRU by last access).
@@ -305,8 +307,7 @@ class HttpService {
 
         if (attempt < maxRetries) {
           final delay = _backoffDelay(attempt);
-          logDebug(
-              '[HttpService] Retrying in ${delay.inMilliseconds}ms...');
+          logDebug('[HttpService] Retrying in ${delay.inMilliseconds}ms...');
           await Future.delayed(delay);
         } else {
           logDebug('[HttpService] Max retries reached for $method $path');
