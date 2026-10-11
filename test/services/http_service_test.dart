@@ -57,9 +57,9 @@ void main() {
 
   group('HttpService Retry Tests', () {
     test('retry configuration is correct', () {
-      expect(HttpService.maxRetries, equals(8));
-      expect(HttpService.retryDelay, equals(const Duration(seconds: 2)));
-      expect(HttpService.maxRetryDelay, equals(const Duration(seconds: 15)));
+      expect(HttpService.maxRetries, equals(3));
+      expect(HttpService.retryDelay, equals(const Duration(milliseconds: 500)));
+      expect(HttpService.maxRetryDelay, equals(const Duration(seconds: 5)));
       expect(HttpService.maxCacheEntries, equals(64));
     });
 

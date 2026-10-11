@@ -145,8 +145,7 @@ class _CommunityHubPageState extends State<CommunityHubPage> {
                   color: theme.colorScheme.surface,
                   borderRadius: AppRadius.circularLg,
                   child: InkWell(
-                    onTap: () =>
-                        context.push('/community/${post.channelSlug}'),
+                    onTap: () => context.push('/community/${post.channelSlug}'),
                     borderRadius: AppRadius.circularLg,
                     child: Container(
                       width: double.infinity,

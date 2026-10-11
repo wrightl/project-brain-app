@@ -214,8 +214,7 @@ class _CommunityChannelPageState extends State<CommunityChannelPage> {
                   ),
                   if (_nextCursor != null)
                     TextButton(
-                      onPressed: () =>
-                          _load(cursor: _nextCursor, append: true),
+                      onPressed: () => _load(cursor: _nextCursor, append: true),
                       child: const Text('Load more'),
                     ),
                 ],

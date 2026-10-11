@@ -87,9 +87,9 @@ class _ResourcesPageState extends State<ResourcesPage> {
     }
 
     try {
-      final result = await FilePicker.pickFiles(type: FileType.any);
+      final picked = await FilePicker.pickFiles(type: FileType.any);
 
-      if (result != null && result.files.isNotEmpty) {
+      if (picked.isNotEmpty) {
         setState(() {
           _isUploading = true;
           _errorMessage = null;
@@ -97,12 +97,12 @@ class _ResourcesPageState extends State<ResourcesPage> {
         });
 
         final readableChecks = await Future.wait(
-          result.files.map(ResourceService.platformFileHasReadableData),
+          picked.map(ResourceService.platformFileHasReadableData),
         );
         final platformFiles = <PlatformFile>[];
-        for (var i = 0; i < result.files.length; i++) {
+        for (var i = 0; i < picked.length; i++) {
           if (readableChecks[i]) {
-            platformFiles.add(result.files[i]);
+            platformFiles.add(picked[i]);
           }
         }
 
@@ -120,10 +120,11 @@ class _ResourcesPageState extends State<ResourcesPage> {
             await subscriptionProvider.refresh();
             final usage = subscriptionProvider.usage;
             if (usage != null) {
-              final totalSizeMB = platformFiles.fold<double>(
-                0,
-                (sum, file) => sum + (file.size / (1024 * 1024)),
-              );
+              var totalBytes = 0;
+              for (final file in platformFiles) {
+                totalBytes += await file.length();
+              }
+              final totalSizeMB = totalBytes / (1024 * 1024);
 
               if (usage.fileStorage.megabytes + totalSizeMB > storageLimitMB) {
                 setState(() {

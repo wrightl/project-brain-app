@@ -152,7 +152,8 @@ void main() {
       verify(() => mockOAuth.tryRestoreCredentialsFromCredentialsManager(
             minTtl: any(named: 'minTtl'),
           )).called(1);
-      verifyNever(() => mockBiometric.authenticate(reason: any(named: 'reason')));
+      verifyNever(
+          () => mockBiometric.authenticate(reason: any(named: 'reason')));
       verifyNever(() => mockStorage.getRefreshToken());
       verifyNever(() => mockOAuth.refreshCredentials(any()));
     });
@@ -346,10 +347,9 @@ void main() {
         contains('Biometric unlock'),
       );
       verifyNever(() => mockOAuth.clearLocalCredentials());
-      verifyNever(
-          () => mockOAuth.tryRestoreCredentialsFromCredentialsManager(
-                minTtl: any(named: 'minTtl'),
-              ));
+      verifyNever(() => mockOAuth.tryRestoreCredentialsFromCredentialsManager(
+            minTtl: any(named: 'minTtl'),
+          ));
     });
 
     test('falls back to legacy migration when no stored credentials', () async {
@@ -387,7 +387,8 @@ void main() {
       final ok = await authService.init();
 
       expect(ok, isTrue);
-      verifyNever(() => mockBiometric.authenticate(reason: any(named: 'reason')));
+      verifyNever(
+          () => mockBiometric.authenticate(reason: any(named: 'reason')));
     });
   });
 

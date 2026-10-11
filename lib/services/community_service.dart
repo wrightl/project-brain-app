@@ -86,8 +86,7 @@ class CommunityService {
   }
 
   Future<void> addReaction(String id) async {
-    final response =
-        await _httpService.post('/community/posts/$id/reactions');
+    final response = await _httpService.post('/community/posts/$id/reactions');
     if (response.statusCode != 200 && response.statusCode != 204) {
       throw Exception('Failed to react');
     }
