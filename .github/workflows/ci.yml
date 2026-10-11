@@ -50,6 +50,7 @@ jobs:
         name: Build iOS
         runs-on: macos-latest
         needs: analyze
+        environment: staging
 
         steps:
             - name: Checkout code
@@ -61,10 +62,23 @@ jobs:
                   cache: true
 
             - name: Prepare env files for build
+              env:
+                  AUTH_DOMAIN: ${{ secrets.AUTH_DOMAIN }}
+                  AUTH_CLIENT_ID: ${{ secrets.AUTH_CLIENT_ID }}
+                  AUTH_AUDIENCE: ${{ secrets.AUTH_AUDIENCE }}
+                  GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
               run: |
                   cp .env.dev.example .env.dev
-                  cp .env.staging.example .env.staging
                   cp .env.production.example .env.production
+                  # Staging config from the 'staging' environment secrets
+                  {
+                    echo "AUTH_DOMAIN=${AUTH_DOMAIN}"
+                    echo "AUTH_CLIENT_ID=${AUTH_CLIENT_ID}"
+                    echo "AUTH_AUDIENCE=${AUTH_AUDIENCE}"
+                    echo "GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}"
+                  } > .env.staging
+                  # Writes ios/Flutter/Secrets.xcconfig (Maps key) from .env.staging
+                  ./scripts/sync_ios_secrets.sh staging
                   # Placeholder Firebase config (gitignored); enough to compile, not to ship
                   cp ios/GoogleService-Info.plist.example ios/GoogleService-Info.plist
 
@@ -72,12 +86,13 @@ jobs:
               run: flutter pub get
 
             - name: Build iOS (no codesign)
-              run: flutter build ios --release --no-codesign
+              run: flutter build ios --release --no-codesign --dart-define=ENVIRONMENT=staging --dart-define-from-file=.env.staging
 
     build-android:
         name: Build Android
         runs-on: ubuntu-latest
         needs: analyze
+        environment: staging
 
         steps:
             - name: Checkout code
@@ -95,10 +110,21 @@ jobs:
                   java-version: '17'
 
             - name: Prepare env files for build
+              env:
+                  AUTH_DOMAIN: ${{ secrets.AUTH_DOMAIN }}
+                  AUTH_CLIENT_ID: ${{ secrets.AUTH_CLIENT_ID }}
+                  AUTH_AUDIENCE: ${{ secrets.AUTH_AUDIENCE }}
+                  GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
               run: |
                   cp .env.dev.example .env.dev
-                  cp .env.staging.example .env.staging
                   cp .env.production.example .env.production
+                  # Staging config from the 'staging' environment secrets
+                  {
+                    echo "AUTH_DOMAIN=${AUTH_DOMAIN}"
+                    echo "AUTH_CLIENT_ID=${AUTH_CLIENT_ID}"
+                    echo "AUTH_AUDIENCE=${AUTH_AUDIENCE}"
+                    echo "GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}"
+                  } > .env.staging
                   # Placeholder Firebase config (gitignored); enough to compile, not to ship
                   cp android/app/google-services.json.example android/app/google-services.json
 
@@ -106,10 +132,11 @@ jobs:
               run: flutter pub get
 
             - name: Build Android APK
-              # Release builds refuse to fall back to a dev Auth0 tenant; use the repo variable when set
               env:
-                  AUTH0_DOMAIN: ${{ vars.AUTH0_DOMAIN || 'ci-placeholder.auth0.com' }}
-              run: flutter build apk --release
+                  # Manifest placeholders; release builds refuse to fall back to a dev tenant
+                  AUTH0_DOMAIN: ${{ secrets.AUTH_DOMAIN }}
+                  GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+              run: flutter build apk --release --dart-define=ENVIRONMENT=staging --dart-define-from-file=.env.staging
 
             - name: Upload APK artifact
               uses: actions/upload-artifact@v7.0.1
