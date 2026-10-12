@@ -65,7 +65,9 @@ def resolvedAuth0Domain = {
 
 android {
     namespace = "com.dotdash.projectbrain"
-    compileSdk = flutter.compileSdkVersion
+    // flutter_secure_storage 11 and permission_handler_android 14 require compileSdk 37;
+    // Flutter's default is still 36. Return to flutter.compileSdkVersion once it reaches 37.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

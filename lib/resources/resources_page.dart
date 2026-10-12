@@ -122,7 +122,8 @@ class _ResourcesPageState extends State<ResourcesPage> {
             if (usage != null) {
               var totalBytes = 0;
               for (final file in platformFiles) {
-                totalBytes += await file.length();
+                // Unknown sizes are skipped; the server enforces the limit.
+                totalBytes += await file.length() ?? 0;
               }
               final totalSizeMB = totalBytes / (1024 * 1024);
 

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'chatmessage.dart';
@@ -9,12 +9,13 @@ part of 'chatmessage.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
 /// @nodoc
 mixin _$ChatMessage {
-  String get role; // "user" or "assistant"
+  String get role;
   String get content;
   List<Citation> get citations;
 
@@ -30,22 +31,29 @@ mixin _$ChatMessage {
 
   @override
   bool operator ==(Object other) {
+    final _this = this as ChatMessage;
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is ChatMessage &&
-            (identical(other.role, role) || other.role == role) &&
-            (identical(other.content, content) || other.content == content) &&
-            const DeepCollectionEquality().equals(other.citations, citations));
+            (identical(other.role, _this.role) || other.role == _this.role) &&
+            (identical(other.content, _this.content) ||
+                other.content == _this.content) &&
+            const DeepCollectionEquality()
+                .equals(other.citations, _this.citations));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, role, content,
-      const DeepCollectionEquality().hash(citations));
+  int get hashCode {
+    final _this = this as ChatMessage;
+    return Object.hash(runtimeType, _this.role, _this.content,
+        const DeepCollectionEquality().hash(_this.citations));
+  }
 
   @override
   String toString() {
-    return 'ChatMessage(role: $role, content: $content, citations: $citations)';
+    final _this = this as ChatMessage;
+    return 'ChatMessage(role: ${_this.role}, content: ${_this.content}, citations: ${_this.citations})';
   }
 }
 
@@ -74,7 +82,7 @@ class _$ChatMessageCopyWithImpl<$Res> implements $ChatMessageCopyWith<$Res> {
     Object? content = null,
     Object? citations = null,
   }) {
-    return _then(_self.copyWith(
+    return _then(ChatMessage(
       role: null == role
           ? _self.role
           : role // ignore: cast_nullable_to_non_nullable
@@ -257,14 +265,13 @@ class _ChatMessage implements ChatMessage {
   const _ChatMessage(
       {required this.role,
       required this.content,
-      final List<Citation> citations = const []})
+      List<Citation> citations = const []})
       : _citations = citations;
   factory _ChatMessage.fromJson(Map<String, dynamic> json) =>
       _$ChatMessageFromJson(json);
 
   @override
   final String role;
-// "user" or "assistant"
   @override
   final String content;
   final List<Citation> _citations;
@@ -298,14 +305,15 @@ class _ChatMessage implements ChatMessage {
             other is _ChatMessage &&
             (identical(other.role, role) || other.role == role) &&
             (identical(other.content, content) || other.content == content) &&
-            const DeepCollectionEquality()
-                .equals(other._citations, _citations));
+            const DeepCollectionEquality().equals(other.citations, _citations));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, role, content,
-      const DeepCollectionEquality().hash(_citations));
+  int get hashCode {
+    return Object.hash(runtimeType, role, content,
+        const DeepCollectionEquality().hash(_citations));
+  }
 
   @override
   String toString() {
