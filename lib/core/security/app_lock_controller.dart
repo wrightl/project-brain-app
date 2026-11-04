@@ -48,10 +48,13 @@ class AppLockController extends ChangeNotifier {
         _obscured = false;
         final backgroundedAt = _backgroundedAt;
         _backgroundedAt = null;
-        if (backgroundedAt != null &&
-            _isLockEnabled() &&
-            _now().difference(backgroundedAt) >= relockAfter) {
-          _locked = true;
+        if (backgroundedAt != null && _isLockEnabled()) {
+          final away = _now().difference(backgroundedAt);
+          // A negative gap means the clock was set back while away; lock
+          // rather than let that skip the timer.
+          if (away.isNegative || away >= relockAfter) {
+            _locked = true;
+          }
         }
       case AppLifecycleState.detached:
         return;

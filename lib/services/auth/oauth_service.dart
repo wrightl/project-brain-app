@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:auth0_flutter/auth0_flutter.dart';
+import 'package:http/http.dart' as http;
 import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -10,27 +13,37 @@ import 'package:projectbrain/services/auth/auth_exception.dart';
 class OAuthService {
   final Auth0 _auth0;
   final PreferencesService? _preferencesService;
+  final http.Client _httpClient;
+
+  static const _revokeTimeout = Duration(seconds: 5);
 
   OAuthService({
     Auth0? auth0,
     PreferencesService? preferencesService,
+    http.Client? httpClient,
   })  : _auth0 = auth0 ?? Auth0(AppConfig.authDomain, AppConfig.authClientId),
-        _preferencesService = preferencesService;
+        _preferencesService = preferencesService,
+        _httpClient = httpClient ?? http.Client();
 
   /// Initiate the login flow
   ///
+  /// Set [requireReauthentication] to make Universal Login ask for the
+  /// user's credentials even when an Auth0 SSO session cookie exists.
+  ///
   /// Returns [Credentials] on success
   /// Throws [AuthException] if login fails
-  Future<Credentials> login() async {
+  Future<Credentials> login({bool requireReauthentication = false}) async {
     try {
       logDebug('[OAuthService] Starting login flow');
 
       final prefs = _preferencesService;
       final forceFreshLogin = prefs?.forceFreshLogin ?? false;
-      final loginHint = forceFreshLogin ? null : prefs?.lastLoginEmail;
+      final loginHint = forceFreshLogin || requireReauthentication
+          ? null
+          : prefs?.lastLoginEmail;
 
       final parameters = <String, String>{};
-      if (forceFreshLogin) {
+      if (forceFreshLogin || requireReauthentication) {
         parameters['prompt'] = 'login';
       } else if (loginHint != null && loginHint.isNotEmpty) {
         parameters['login_hint'] = loginHint;
@@ -69,12 +82,16 @@ class OAuthService {
     }
   }
 
-  /// Log out: clears Auth0-stored credentials. On iOS, skips hosted logout so
-  /// ASWebAuthenticationSession does not run (avoids the system credential sheet).
+  /// Log out: revokes [refreshToken] (when given) and clears Auth0-stored
+  /// credentials. On iOS, skips hosted logout so ASWebAuthenticationSession
+  /// does not run (avoids the system credential sheet).
   /// On other platforms, performs federated web logout then clears credentials.
-  Future<void> logout() async {
+  Future<void> logout({String? refreshToken}) async {
     try {
       logDebug('[OAuthService] Logging out');
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        await revokeRefreshToken(refreshToken);
+      }
       if (defaultTargetPlatform == TargetPlatform.iOS) {
         await clearLocalCredentials();
       } else {
@@ -88,6 +105,32 @@ class OAuthService {
     } catch (e, stackTrace) {
       logDebug('[OAuthService] Error during logout: $e');
       throw AuthException('Error during logout', e, stackTrace);
+    }
+  }
+
+  /// Revoke [refreshToken] at Auth0 so a copy of it stops working after
+  /// logout. Best effort: never throws, and gives up after a short timeout so
+  /// an offline logout is not held up.
+  Future<void> revokeRefreshToken(String refreshToken) async {
+    try {
+      final response = await _httpClient
+          .post(
+            Uri.https(AppConfig.authDomain, '/oauth/revoke'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'client_id': AppConfig.authClientId,
+              'token': refreshToken,
+            }),
+          )
+          .timeout(_revokeTimeout);
+      if (response.statusCode == 200) {
+        logDebug('[OAuthService] Refresh token revoked');
+      } else {
+        logWarning(
+            '[OAuthService] Refresh token revoke failed: ${response.statusCode}');
+      }
+    } catch (e) {
+      logWarning('[OAuthService] Refresh token revoke failed', e);
     }
   }
 

@@ -13,6 +13,7 @@ import 'package:audio_session/audio_session.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/core/storage/temporary_files.dart';
 
 /// Voice notes page for managing recorded voice notes
 class VoiceNotesPage extends StatefulWidget {
@@ -79,6 +80,11 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
     _audioPlayer.dispose();
     _descriptionController.dispose();
     _cleanupDownloadedFile();
+    // An unsent recording is lost with the page; do not leave it on disk.
+    final recordingPath = _recordingPath;
+    if (recordingPath != null) {
+      deleteFileQuietly(File(recordingPath));
+    }
     super.dispose();
   }
 
@@ -446,6 +452,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
         file,
         description: description.isEmpty ? null : description,
       );
+      await deleteFileQuietly(file);
       if (!mounted) return;
 
       setState(() {

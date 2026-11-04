@@ -1,4 +1,9 @@
 import 'package:auth0_flutter/auth0_flutter.dart';
+import 'package:auth0_flutter_platform_interface/auth0_flutter_platform_interface.dart'
+    show
+        Accessibility,
+        CredentialsManagerConfiguration,
+        IOSCredentialsConfiguration;
 import 'package:get_it/get_it.dart';
 import 'package:projectbrain/core/config/app_config.dart';
 import 'package:logger/logger.dart';
@@ -80,8 +85,20 @@ Future<void> initializeDependencies() async {
   // ===== Authentication Services =====
   // Single Auth0 client (CredentialsManager + Authentication API share state).
   // Biometric unlock is opt-in via local_auth, not Auth0 LocalAuthentication.
+  // iOS keychain items are pinned to this device so the refresh token is not
+  // carried into backups or onto a new phone. The keychain only updates the
+  // data of an existing item, so current sessions switch over at their next
+  // logout and login.
   sl.registerLazySingleton<Auth0>(
-    () => Auth0(AppConfig.authDomain, AppConfig.authClientId),
+    () => Auth0(
+      AppConfig.authDomain,
+      AppConfig.authClientId,
+      credentialsManagerConfiguration: CredentialsManagerConfiguration(
+        iosConfiguration: IOSCredentialsConfiguration(
+          accessibility: Accessibility.afterFirstUnlockThisDeviceOnly,
+        ),
+      ),
+    ),
   );
 
   // Token Storage - handles secure storage of tokens

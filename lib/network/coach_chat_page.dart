@@ -13,6 +13,7 @@ import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/core/storage/temporary_files.dart';
 
 /// Chat page for communicating with connected coaches.
 class CoachChatPage extends StatefulWidget {
@@ -319,6 +320,8 @@ class _CoachChatPageState extends State<CoachChatPage> {
         _errorMessage = 'Failed to send audio: ${e.toString()}';
       });
     } finally {
+      // There is no resend for audio, so the file is not needed either way.
+      await deleteFileQuietly(audioFile);
       if (mounted) {
         setState(() {
           _isSending = false;

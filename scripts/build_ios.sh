@@ -190,6 +190,16 @@ if [[ "$NO_BUMP" == "false" ]]; then
   sed -i '' "s/^version: .*/version: ${NEW_VERSION}/" "$PUBSPEC"
   BUMPED=true
   echo "Version: ${OLD_VERSION} -> ${NEW_VERSION}"
+  # Put the old version back if the build fails, so a retry does not skip a
+  # build number. Cleared once the IPA exists (it may then be uploaded).
+  restore_version_on_failure() {
+    local status=$?
+    if [[ $status -ne 0 ]]; then
+      sed -i '' "s/^version: .*/version: ${OLD_VERSION}/" "$PUBSPEC"
+      echo "Build failed: restored version ${OLD_VERSION} in pubspec.yaml." >&2
+    fi
+  }
+  trap restore_version_on_failure EXIT
 else
   echo "Version: ${OLD_VERSION} (unchanged, --no-bump)"
 fi
@@ -214,7 +224,8 @@ if [[ "$OBFUSCATE" == "true" ]]; then
 fi
 
 echo "Building IPA for environment: ${NORMALIZED_ENV}"
-echo "cmd: flutter ${BUILD_ARGS[@]}"
+# Print dart-define names only: their values are secrets.
+echo "cmd: flutter $(printf '%s ' "${BUILD_ARGS[@]}" | sed -E 's/(--dart-define=[A-Za-z0-9_]+)=[^ ]*/\1=***/g')"
 flutter "${BUILD_ARGS[@]}"
 
 IPA_MATCH=(build/ios/ipa/*.ipa)
@@ -226,6 +237,7 @@ if [[ ${#IPA_MATCH[@]} -gt 1 ]]; then
 fi
 IPA_PATH="${IPA_MATCH[0]}"
 echo "IPA: ${IPA_PATH}"
+trap - EXIT
 
 # --- Upload ---
 if [[ "$SHOULD_UPLOAD" == "true" ]]; then

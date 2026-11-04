@@ -44,6 +44,11 @@ class PushNotificationService {
   static const String _tokenStorageKey = 'fcm_token';
   static const String _deviceIdStorageKey = 'device_id';
 
+  /// True between logout's unregister and the next login, so a token refresh
+  /// fired by [FirebaseMessaging.deleteToken] is not registered against the
+  /// account that is signing out.
+  bool _registrationSuspended = false;
+
   PushNotificationService({
     required this.httpService,
     required this.authService,
@@ -292,20 +297,22 @@ class PushNotificationService {
   void _navigateFromNotification(PushNotificationData data) {
     logInfo('[PushNotification] Navigate from notification: type=${data.type}');
 
-    // Store notification data for navigation handling
     if (data.data != null) {
-      sharedPreferences.setString(
-        'pending_notification',
-        jsonEncode(data.data),
-      );
-
       // Try to navigate immediately if router is available
       // This works when app is in foreground or background
+      var navigated = false;
       try {
-        final router = sl<AppRouter>();
-        router.navigateFromNotification(data.data!);
+        navigated = sl<AppRouter>().navigateFromNotification(data.data!);
       } catch (e) {
-        // Router might not be ready yet, data is stored for later
+        logDebug('[PushNotification] Router not available: $e');
+      }
+      if (!navigated) {
+        // Router not ready yet: store the data for the router to pick up.
+        // Only store on failure, or the next cold start replays it.
+        sharedPreferences.setString(
+          'pending_notification',
+          jsonEncode(data.data),
+        );
         logDebug(
             '[PushNotification] Router not ready, notification stored for later');
       }
@@ -325,6 +332,7 @@ class PushNotificationService {
 
   /// Register FCM token with backend
   Future<bool> registerToken() async {
+    _registrationSuspended = false;
     try {
       // Check if user is authenticated
       if (!authService.isLoggedIn) {
@@ -381,13 +389,32 @@ class PushNotificationService {
     await sharedPreferences.setString(_tokenStorageKey, newToken);
 
     // Re-register with backend if user is authenticated
-    if (authService.isLoggedIn) {
+    if (authService.isLoggedIn && !_registrationSuspended) {
       await registerToken();
     }
   }
 
-  /// Unregister token from backend
+  /// Unregister token from backend, then delete the FCM token on the device.
+  ///
+  /// Deleting the device token is what guarantees the signed-out account stops
+  /// receiving pushes here: if the backend call fails, the server still holds
+  /// a token that FCM no longer delivers to.
   Future<bool> unregisterToken() async {
+    _registrationSuspended = true;
+    try {
+      return await _unregisterFromBackend();
+    } finally {
+      await sharedPreferences.remove(_tokenStorageKey);
+      await sharedPreferences.remove('pending_notification');
+      try {
+        await _firebaseMessaging.deleteToken();
+      } catch (e, stackTrace) {
+        logError('[PushNotification] Error deleting FCM token', e, stackTrace);
+      }
+    }
+  }
+
+  Future<bool> _unregisterFromBackend() async {
     try {
       final token = sharedPreferences.getString(_tokenStorageKey);
       if (token == null || token.isEmpty) {
@@ -399,8 +426,6 @@ class PushNotificationService {
       if (!authService.isLoggedIn) {
         logWarning(
             '[PushNotification] Cannot unregister token: user not authenticated');
-        // Clear local token anyway
-        await sharedPreferences.remove(_tokenStorageKey);
         return true;
       }
 
@@ -411,22 +436,16 @@ class PushNotificationService {
       );
 
       if (response.statusCode == 200) {
-        // Clear local token
-        await sharedPreferences.remove(_tokenStorageKey);
         logInfo('[PushNotification] Token unregistered successfully');
         return true;
       } else {
         logError(
             '[PushNotification] Failed to unregister token: ${response.statusCode}',
             Exception(response.body));
-        // Clear local token anyway
-        await sharedPreferences.remove(_tokenStorageKey);
         return false;
       }
     } catch (e, stackTrace) {
       logError('[PushNotification] Error unregistering token', e, stackTrace);
-      // Clear local token on error
-      await sharedPreferences.remove(_tokenStorageKey);
       return false;
     }
   }

@@ -23,6 +23,9 @@ class TokenManager {
   /// Whether a valid access token is currently available
   bool get hasValidToken => _credentials?.accessToken.isNotEmpty ?? false;
 
+  /// Refresh token of the current session, if any (used to revoke on logout).
+  String? get refreshToken => _credentials?.refreshToken;
+
   TokenManager({
     Auth0? auth0,
   }) : _auth0 = auth0 ?? Auth0(AppConfig.authDomain, AppConfig.authClientId);

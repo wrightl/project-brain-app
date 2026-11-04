@@ -392,6 +392,59 @@ void main() {
     });
   });
 
+  group('AuthService.login', () {
+    Credentials loginCredentials() => testCredentials(
+          accessToken: makeTestJwt({
+            'aud': AppConfig.authAudience,
+            'exp': DateTime.now()
+                    .add(const Duration(hours: 1))
+                    .millisecondsSinceEpoch ~/
+                1000,
+          }),
+          idToken: makeTestJwt({'sub': 'auth0|login'}),
+          refreshToken: 'rt',
+        );
+
+    setUp(() {
+      when(() => mockProfile.getUserProfile(any())).thenAnswer(
+        (_) async => Auth0User(
+          nickname: 'login',
+          name: 'Login',
+          email: 'login@test.com',
+          picture: '',
+          updatedAt: '2024-01-01T00:00:00.000Z',
+          sub: 'auth0|login',
+        ),
+      );
+      when(() => mockOAuth.login(
+            requireReauthentication: any(named: 'requireReauthentication'),
+          )).thenAnswer((_) async => loginCredentials());
+    });
+
+    test('forces re-authentication from the biometric lock screen', () async {
+      await preferences.setBiometricUnlockEnabled(true);
+      when(() => mockOAuth.hasStoredCredentials(
+            minTtl: any(named: 'minTtl'),
+          )).thenAnswer((_) async => true);
+      when(() => mockBiometric.authenticate(reason: any(named: 'reason')))
+          .thenThrow(AuthException('Biometric authentication failed'));
+      await authService.init();
+      expect(authService.awaitingBiometricUnlock, isTrue);
+
+      await authService.login();
+
+      verify(() => mockOAuth.login(requireReauthentication: true)).called(1);
+    });
+
+    test('does not force re-authentication without a stored session', () async {
+      await authService.init();
+
+      await authService.login();
+
+      verify(() => mockOAuth.login(requireReauthentication: false)).called(1);
+    });
+  });
+
   group('AuthService.unlockWithBiometrics', () {
     test('restores session after successful unlock', () async {
       await preferences.setBiometricUnlockEnabled(true);
@@ -437,9 +490,32 @@ void main() {
           .called(1);
     });
 
+    test('disableBiometricUnlock requires a biometric prompt', () async {
+      await preferences.setBiometricUnlockEnabled(true);
+
+      await authService.disableBiometricUnlock();
+
+      expect(preferences.biometricUnlockEnabled, isFalse);
+      verify(() => mockBiometric.authenticate(reason: any(named: 'reason')))
+          .called(1);
+    });
+
+    test('disableBiometricUnlock keeps preference when prompt fails', () async {
+      await preferences.setBiometricUnlockEnabled(true);
+      when(() => mockBiometric.authenticate(reason: any(named: 'reason')))
+          .thenThrow(AuthException('Biometric authentication failed'));
+
+      await expectLater(
+        authService.disableBiometricUnlock(),
+        throwsA(isA<AuthException>()),
+      );
+      expect(preferences.biometricUnlockEnabled, isTrue);
+    });
+
     test('logout clears biometric preference and credentials', () async {
       await preferences.setBiometricUnlockEnabled(true);
-      when(() => mockOAuth.logout()).thenAnswer((_) async {});
+      when(() => mockOAuth.logout(refreshToken: any(named: 'refreshToken')))
+          .thenAnswer((_) async {});
 
       await authService.logout();
 

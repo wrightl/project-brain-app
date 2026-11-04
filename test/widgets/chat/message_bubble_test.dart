@@ -201,5 +201,24 @@ void main() {
       // (no loading indicator for user messages)
       expect(find.byType(CircularProgressIndicator), findsNothing);
     });
+
+    testWidgets('does not load markdown images from message content',
+        (WidgetTester tester) async {
+      const message = ChatMessage(
+        role: 'assistant',
+        content: 'See ![a chart](https://example.com/x.png?d=secret)',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: MessageBubble(message: message),
+          ),
+        ),
+      );
+
+      expect(find.byType(Image), findsNothing);
+      expect(find.text('a chart'), findsOneWidget);
+    });
   });
 }
