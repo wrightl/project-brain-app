@@ -125,6 +125,16 @@ class TokenManager {
         _refreshCredentials().whenComplete(() => _refreshInFlight = null);
   }
 
+  /// Refresh the access token now, even if it has not expired.
+  ///
+  /// Used when the user's roles change server-side (e.g. after onboarding),
+  /// since roles are baked into the token at issue time.
+  Future<bool> forceRefresh() {
+    if (_credentials == null) return Future.value(false);
+    return _refreshInFlight ??=
+        _refreshCredentials().whenComplete(() => _refreshInFlight = null);
+  }
+
   Future<bool> _refreshCredentials() async {
     logDebug(
         '[TokenManager] Access token expired or expiring soon, refreshing');

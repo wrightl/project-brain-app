@@ -17,6 +17,7 @@ class MockAuth0User extends Mock implements Auth0User {}
 
 int usersMeStatusCode = 200;
 bool usersMeIsOnboarded = true;
+int onboardingStatusCode = 200;
 
 void main() {
   late AuthProvider authProvider;
@@ -40,6 +41,9 @@ void main() {
             'isOnboarded': usersMeIsOnboarded,
           }),
         );
+      } else if (request.uri.path == '/users/me/onboarding' &&
+          request.method == 'POST') {
+        request.response.statusCode = onboardingStatusCode;
       } else {
         request.response.statusCode = 404;
       }
@@ -346,6 +350,30 @@ void main() {
       await authProvider.login();
 
       expect(authProvider.hasError, isTrue);
+    });
+  });
+
+  group('AuthProvider - Onboarding', () {
+    test('refreshes the access token so it carries the new role', () async {
+      when(() => mockAuthService.refreshAccessToken())
+          .thenAnswer((_) async => true);
+
+      await authProvider.completeOnboarding({'fullName': 'Test'});
+
+      verify(() => mockAuthService.refreshAccessToken()).called(1);
+      expect(authProvider.onboardingComplete, isTrue);
+    });
+
+    test('rethrows when the onboarding request fails', () async {
+      onboardingStatusCode = 500;
+
+      await expectLater(
+        authProvider.completeOnboarding({'fullName': 'Test'}),
+        throwsA(isA<Exception>()),
+      );
+
+      verifyNever(() => mockAuthService.refreshAccessToken());
+      expect(authProvider.onboardingComplete, isFalse);
     });
   });
 }

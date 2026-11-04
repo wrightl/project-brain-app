@@ -261,7 +261,15 @@ class AuthProvider extends ChangeNotifier {
     _errorMessage = null;
     try {
       await userService.completeOnboarding(formData);
+      // Onboarding grants the user role, but roles live in the access token,
+      // so the current token would be rejected by role-gated endpoints.
+      if (!await authService.refreshAccessToken()) {
+        logWarning('[AuthProvider] Token refresh after onboarding failed');
+      }
       await _fetchUserData();
+      // The server accepted the onboarding, so let the router leave the
+      // onboarding page even if the profile refetch came back stale.
+      _onboardingComplete = true;
       try {
         await sl<ErrorReportingService>().logEvent('onboarding_complete');
       } catch (_) {
@@ -270,6 +278,8 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       logError('[AuthProvider] Error during onboarding', e);
       _errorMessage = 'Failed to complete onboarding';
+      // Surface the failure so the page shows an error instead of success.
+      rethrow;
     } finally {
       notifyListeners();
     }

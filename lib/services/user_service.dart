@@ -40,11 +40,16 @@ class UserService extends HttpService {
   }
 
   Future<void> completeOnboarding(Map<String, dynamic> formData) async {
+    // The API does slow work here (Auth0 sync, geocoding, document indexing,
+    // memory bootstrap), so allow longer than the default timeout.
     final res = await post(
       '/users/me/onboarding',
       body: jsonEncode(formData),
+      timeout: const Duration(seconds: 120),
     );
-    if (res.statusCode != 200) {
+    // 409 means the user is already onboarded, e.g. a retry after an earlier
+    // request finished server-side but timed out on the client.
+    if (res.statusCode != 200 && res.statusCode != 409) {
       throw Exception('Failed to complete onboarding');
     }
   }
