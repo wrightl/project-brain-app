@@ -24,6 +24,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     mockChatProvider = MockChatProvider();
+    when(() => mockChatProvider.isSending).thenReturn(false);
     mockSubscriptionService = MockSubscriptionService();
     subscriptionProvider = SubscriptionProvider(
       subscriptionService: mockSubscriptionService,
@@ -139,6 +140,47 @@ void main() {
       final textField = tester.widget<TextField>(find.byType(TextField));
       expect(textField.decoration, isNotNull);
       expect(textField.onSubmitted, isNotNull);
+    });
+
+    testWidgets('keeps typed text when sending while a reply streams',
+        (WidgetTester tester) async {
+      when(() => mockChatProvider.isSending).thenReturn(true);
+      await tester.pumpWidget(
+        wrap(
+          ChatInputField(
+            controller: controller,
+            scrollController: scrollController,
+          ),
+        ),
+      );
+
+      await tester.enterText(find.byType(TextField), 'Follow-up');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.tap(find.byIcon(Icons.arrow_upward));
+      await tester.pump();
+
+      expect(controller.text, 'Follow-up');
+      verifyNever(() => mockChatProvider.sendMessage(any()));
+    });
+
+    testWidgets('sends and clears the field when idle',
+        (WidgetTester tester) async {
+      when(() => mockChatProvider.sendMessage(any())).thenAnswer((_) async {});
+      await tester.pumpWidget(
+        wrap(
+          ChatInputField(
+            controller: controller,
+            scrollController: scrollController,
+          ),
+        ),
+      );
+
+      await tester.enterText(find.byType(TextField), 'Hello');
+      await tester.tap(find.byIcon(Icons.arrow_upward));
+      await tester.pump();
+
+      expect(controller.text, isEmpty);
+      verify(() => mockChatProvider.sendMessage('Hello')).called(1);
     });
   });
 }

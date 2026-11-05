@@ -18,10 +18,12 @@ class OnboardingPage extends StatefulWidget {
 class _OnboardingPageState extends State<OnboardingPage> {
   final PageController _pageController = PageController();
   final Map<int, GlobalKey<FormState>> _formKeys = {};
+  final TextEditingController _dobController = TextEditingController();
 
   @override
   void dispose() {
     _pageController.dispose();
+    _dobController.dispose();
     super.dispose();
   }
 
@@ -135,34 +137,47 @@ class _OnboardingPageState extends State<OnboardingPage> {
           final currentStep = provider.currentStep;
           final isLastStep = currentStep == totalSteps - 1;
 
-          return Scaffold(
-            body: SafeArea(
-              child: Column(
-                children: [
-                  _buildHeader(provider, totalSteps),
-                  Expanded(
-                    child: PageView(
-                      controller: _pageController,
-                      physics: const NeverScrollableScrollPhysics(),
-                      onPageChanged: (index) {
-                        provider.setCurrentStep(index);
-                      },
-                      children:
-                          _buildPages(provider, authProvider, localizations),
-                    ),
+          return _stepBackOnPop(provider,
+              child: Scaffold(
+                body: SafeArea(
+                  child: Column(
+                    children: [
+                      _buildHeader(provider, totalSteps),
+                      Expanded(
+                        child: PageView(
+                          controller: _pageController,
+                          physics: const NeverScrollableScrollPhysics(),
+                          onPageChanged: (index) {
+                            provider.setCurrentStep(index);
+                          },
+                          children: _buildPages(
+                              provider, authProvider, localizations),
+                        ),
+                      ),
+                      _buildNavigationButtons(
+                        provider,
+                        authProvider,
+                        isLastStep,
+                        localizations,
+                      ),
+                    ],
                   ),
-                  _buildNavigationButtons(
-                    provider,
-                    authProvider,
-                    isLastStep,
-                    localizations,
-                  ),
-                ],
-              ),
-            ),
-          );
+                ),
+              ));
         },
       ),
+    );
+  }
+
+  /// System back steps back through onboarding instead of leaving it (which
+  /// would lose every answer so far).
+  Widget _stepBackOnPop(OnboardingProvider provider, {required Widget child}) {
+    return PopScope(
+      canPop: provider.currentStep == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _previousPage(provider);
+      },
+      child: child,
     );
   }
 
@@ -423,7 +438,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   ) {
     final appTheme = context.appTheme;
     final formKey = _formKeys.putIfAbsent(0, () => GlobalKey<FormState>());
-    final dobController = TextEditingController();
+    final dobController = _dobController;
 
     if (provider.dateOfBirth != null) {
       dobController.text =

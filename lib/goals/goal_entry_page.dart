@@ -26,6 +26,27 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
   bool _suggestingGoals = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Start from today's goals: saving replaces all of them, so an empty form
+    // would wipe the goals the user already has.
+    _fillFromTodaysGoals();
+  }
+
+  Future<void> _fillFromTodaysGoals() async {
+    final goals = await context.read<EggGoalsProvider>().getTodaysGoals();
+    if (!mounted) return;
+    for (int i = 0; i < 3 && i < goals.length; i++) {
+      // Keep anything the user typed while the goals loaded.
+      if (_controllers[i].text.isEmpty) {
+        _controllers[i].text =
+            goals[i].message == 'No Egg Goal Set' ? '' : goals[i].message;
+      }
+    }
+    setState(() {});
+  }
+
+  @override
   void dispose() {
     for (var controller in _controllers) {
       controller.dispose();
@@ -46,12 +67,10 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
             final provider = context.read<EggGoalsProvider>();
             await provider.syncFromAPI();
             if (!mounted) return;
-            final goals = await provider.getTodaysGoals();
-            for (int i = 0; i < 3 && i < goals.length; i++) {
-              _controllers[i].text =
-                  goals[i].message == 'No Egg Goal Set' ? '' : goals[i].message;
+            for (final controller in _controllers) {
+              controller.clear();
             }
-            setState(() {});
+            await _fillFromTodaysGoals();
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -193,9 +212,19 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
                               goals.add('');
                             }
 
-                            await goalsProvider.setGoals(goals);
-                            if (context.mounted) {
+                            final saved = await goalsProvider.setGoals(goals);
+                            if (!context.mounted) return;
+                            if (saved) {
                               context.go('/goals/list');
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    goalsProvider.errorMessage ??
+                                        "Couldn't save your goals. Please try again.",
+                                  ),
+                                ),
+                              );
                             }
                           },
                     style: ElevatedButton.styleFrom(

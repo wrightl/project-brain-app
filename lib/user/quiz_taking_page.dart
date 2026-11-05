@@ -6,6 +6,7 @@ import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/user/quiz_taking_provider.dart';
 import 'package:projectbrain/user/widgets/quiz_question_widget.dart';
+import 'package:projectbrain/widgets/unsaved_changes_scope.dart';
 
 /// Page for taking a quiz with swipe navigation
 class QuizTakingPage extends StatelessWidget {
@@ -116,6 +117,20 @@ class _QuizTakingViewState extends State<_QuizTakingView> {
     final theme = Theme.of(context);
     final provider = context.watch<QuizTakingProvider>();
 
+    return UnsavedChangesScope(
+      // Answers only exist on this page until the quiz is submitted.
+      hasUnsavedChanges:
+          provider.answers.isNotEmpty && provider.successMessage == null,
+      message: 'Your answers will be lost if you leave before submitting.',
+      child: _buildScaffold(context, theme, provider),
+    );
+  }
+
+  Widget _buildScaffold(
+    BuildContext context,
+    ThemeData theme,
+    QuizTakingProvider provider,
+  ) {
     return Scaffold(
       appBar: AppBar(
         title: Text(provider.quiz?.title ?? 'Quiz'),

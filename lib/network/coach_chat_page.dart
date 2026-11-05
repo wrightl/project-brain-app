@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -41,6 +42,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
   bool _isLoading = true;
   bool _isSending = false;
   bool _isRecording = false;
+  Timer? _recordingTimer;
   String? _errorMessage;
   Duration _recordingDuration = Duration.zero;
 
@@ -52,6 +54,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
 
   @override
   void dispose() {
+    _recordingTimer?.cancel();
     _signalRService.stop();
     _textController.dispose();
     _scrollController.dispose();
@@ -247,7 +250,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
         _errorMessage = null;
       });
 
-      _updateRecordingDuration();
+      _startRecordingTimer();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -263,15 +266,17 @@ class _CoachChatPageState extends State<CoachChatPage> {
     }
   }
 
-  Future<void> _updateRecordingDuration() async {
-    while (_isRecording) {
-      await Future.delayed(const Duration(seconds: 1));
-      if (mounted && _isRecording) {
-        setState(() {
-          _recordingDuration = _recordingDuration + const Duration(seconds: 1);
-        });
+  void _startRecordingTimer() {
+    _recordingTimer?.cancel();
+    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted || !_isRecording) {
+        timer.cancel();
+        return;
       }
-    }
+      setState(() {
+        _recordingDuration = _recordingDuration + const Duration(seconds: 1);
+      });
+    });
   }
 
   Future<void> _stopRecording() async {

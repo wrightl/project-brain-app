@@ -9,6 +9,7 @@ import 'package:projectbrain/models/journal/system_tag.dart';
 import 'package:intl/intl.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/widgets/unsaved_changes_scope.dart';
 
 /// Create or edit journal entry (same form).
 class JournalEntryFormPage extends StatefulWidget {
@@ -28,13 +29,34 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
   final Set<String> _selectedUserTagIds = {};
   bool _isSaving = false;
   bool _loaded = false;
+  // Set when an existing entry could not be loaded. The form stays hidden so
+  // saving cannot overwrite the entry with empty content.
+  bool _loadFailed = false;
+  bool _saved = false;
+  String? _initialSnapshot;
 
   bool get _isEdit => widget.entryId != null;
+
+  String _snapshot() => [
+        _contentController.text.trim(),
+        (_selectedUserTagIds.toList()..sort()).join(','),
+        (_selectedSystemTagIds.toList()..sort()).join(','),
+        _systemTagResponses.toString(),
+      ].join('|');
+
+  bool get _hasUnsavedChanges =>
+      !_saved && _initialSnapshot != null && _snapshot() != _initialSnapshot;
 
   @override
   void initState() {
     super.initState();
+    // Rebuild on typing so the unsaved-changes guard sees the new text.
+    _contentController.addListener(_onContentChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) => _init());
+  }
+
+  void _onContentChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -45,26 +67,40 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
   }
 
   Future<void> _init() async {
+    if (!mounted) return;
+    setState(() {
+      _loaded = false;
+      _loadFailed = false;
+    });
     final provider = context.read<JournalProvider>();
     await provider.loadSystemTags();
     await provider.loadUserTags();
     if (_isEdit && widget.entryId != null) {
       final entry = await provider.fetchEntry(widget.entryId!);
-      if (entry != null && mounted) {
-        _contentController.text = entry.content;
-        for (final t in entry.tags ?? []) {
-          _selectedUserTagIds.add(t.id);
-        }
-        for (final st in entry.systemTags ?? []) {
-          _selectedSystemTagIds.add(st.id);
-          if (st.responses != null && st.responses!.isNotEmpty) {
-            _systemTagResponses[st.id] = Map.from(st.responses!);
-          }
+      if (!mounted) return;
+      if (entry == null) {
+        setState(() {
+          _loaded = true;
+          _loadFailed = true;
+        });
+        return;
+      }
+      _contentController.text = entry.content;
+      for (final t in entry.tags ?? []) {
+        _selectedUserTagIds.add(t.id);
+      }
+      for (final st in entry.systemTags ?? []) {
+        _selectedSystemTagIds.add(st.id);
+        if (st.responses != null && st.responses!.isNotEmpty) {
+          _systemTagResponses[st.id] = Map.from(st.responses!);
         }
       }
     }
     if (mounted) {
-      setState(() => _loaded = true);
+      setState(() {
+        _loaded = true;
+        _initialSnapshot = _snapshot();
+      });
     }
   }
 
@@ -104,6 +140,7 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
         );
         await provider.updateEntry(widget.entryId!, request);
         if (!mounted) return;
+        _saved = true;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.entrySaved)),
         );
@@ -118,6 +155,7 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
         );
         final entry = await provider.createEntry(request);
         if (!mounted) return;
+        _saved = true;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.entrySaved)),
         );
@@ -164,18 +202,55 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = JournalLocalizations.of(context);
+    return UnsavedChangesScope(
+      hasUnsavedChanges: _hasUnsavedChanges,
+      message: 'Your journal entry has not been saved.',
+      child: _buildScaffold(context, theme, l10n),
+    );
+  }
+
+  /// Spinner while loading, or an error with Retry when the entry could not
+  /// be loaded.
+  Widget _buildNotReady(ThemeData theme, JournalLocalizations l10n) {
+    if (!_loaded) return const Center(child: CircularProgressIndicator());
+    return Center(
+      child: Padding(
+        padding: AppInsets.screen,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              l10n.couldNotLoadEntry,
+              style: theme.textTheme.bodyLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            FilledButton(onPressed: _init, child: const Text('Retry')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScaffold(
+    BuildContext context,
+    ThemeData theme,
+    JournalLocalizations l10n,
+  ) {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => context.pop(),
+          tooltip: 'Close',
+          // maybePop so the unsaved-changes check runs.
+          onPressed: () => Navigator.maybePop(context),
         ),
         title: Text(_isEdit ? l10n.editEntry : l10n.newEntry),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.sm),
             child: FilledButton(
-              onPressed: _isSaving ? null : _save,
+              onPressed: (_isSaving || _loadFailed) ? null : _save,
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.lg,
@@ -193,8 +268,8 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
           ),
         ],
       ),
-      body: !_loaded
-          ? const Center(child: CircularProgressIndicator())
+      body: !_loaded || _loadFailed
+          ? _buildNotReady(theme, l10n)
           : Consumer<JournalProvider>(
               builder: (context, provider, _) {
                 final appTheme = context.appTheme;

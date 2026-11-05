@@ -13,6 +13,7 @@ import 'package:audio_session/audio_session.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/widgets/unsaved_changes_scope.dart';
 
 /// Voice notes page for managing recorded voice notes
 class VoiceNotesPage extends StatefulWidget {
@@ -30,6 +31,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
   List<VoiceNote> _voiceNotes = [];
   bool _isLoading = true;
   bool _isRecording = false;
+  Timer? _recordingTimer;
   bool _isUploading = false;
   String? _errorMessage;
   String? _successMessage;
@@ -71,6 +73,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
 
   @override
   void dispose() {
+    _recordingTimer?.cancel();
     for (final subscription in _audioSubscriptions) {
       subscription.cancel();
     }
@@ -359,7 +362,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
       });
 
       // Update duration while recording
-      _updateRecordingDuration();
+      _startRecordingTimer();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -375,15 +378,17 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
     }
   }
 
-  Future<void> _updateRecordingDuration() async {
-    while (_isRecording) {
-      await Future.delayed(const Duration(seconds: 1));
-      if (mounted && _isRecording) {
-        setState(() {
-          _recordingDuration = _recordingDuration + const Duration(seconds: 1);
-        });
+  void _startRecordingTimer() {
+    _recordingTimer?.cancel();
+    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted || !_isRecording) {
+        timer.cancel();
+        return;
       }
-    }
+      setState(() {
+        _recordingDuration = _recordingDuration + const Duration(seconds: 1);
+      });
+    });
   }
 
   Future<void> _stopRecording() async {
@@ -531,6 +536,15 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
 
   @override
   Widget build(BuildContext context) {
+    return UnsavedChangesScope(
+      // A recording only exists on this device until it is uploaded.
+      hasUnsavedChanges: _isRecording || _recordingPath != null,
+      message: 'Your recording has not been uploaded and will be lost.',
+      child: _buildPage(context),
+    );
+  }
+
+  Widget _buildPage(BuildContext context) {
     final theme = Theme.of(context);
 
     return Scaffold(

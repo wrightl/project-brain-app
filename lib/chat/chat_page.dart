@@ -142,10 +142,23 @@ class _ChatPageState extends State<ChatPage> {
                                 return ConversationListItem(
                                   conversation: conversation,
                                   isActive: isActive,
-                                  onTap: () {
-                                    chatProvider
-                                        .loadConversation(conversation.id);
+                                  onTap: () async {
+                                    final messenger =
+                                        ScaffoldMessenger.of(context);
                                     Navigator.pop(context); // Close the drawer
+                                    try {
+                                      await chatProvider
+                                          .loadConversation(conversation.id);
+                                    } catch (_) {
+                                      messenger.showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            "Couldn't open that conversation. "
+                                            'Please try again.',
+                                          ),
+                                        ),
+                                      );
+                                    }
                                   },
                                 );
                               },

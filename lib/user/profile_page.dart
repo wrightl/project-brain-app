@@ -12,6 +12,7 @@ import 'package:projectbrain/services/auth/auth_exception.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/widgets/unsaved_changes_scope.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -32,6 +33,17 @@ class _ProfilePageState extends State<ProfilePage> {
   Set<String> _selectedTraits = {};
   bool _isEditing = false;
   bool _isSaving = false;
+  String? _snapshotAtEditStart;
+
+  String _snapshot() => [
+        _fullNameController.text.trim(),
+        _pronoun,
+        _customPronounController.text.trim(),
+        _dobController.text,
+        (_selectedTraits.toList()..sort()).join(','),
+      ].join('|');
+
+  bool _hasUnsavedEdits() => _isEditing && _snapshot() != _snapshotAtEditStart;
 
   // Common neurodiverse traits list (matching onboarding)
   final List<String> _neurodiverseTraits = [
@@ -208,6 +220,20 @@ class _ProfilePageState extends State<ProfilePage> {
     final colorScheme = theme.colorScheme;
     final appColors = theme.extension<AppThemeExtension>();
 
+    return UnsavedChangesScope(
+      hasUnsavedChanges: _isEditing,
+      isDirty: _hasUnsavedEdits,
+      message: 'Your profile changes have not been saved.',
+      child: _buildScaffold(authProvider, theme, colorScheme, appColors),
+    );
+  }
+
+  Widget _buildScaffold(
+    AuthProvider authProvider,
+    ThemeData theme,
+    ColorScheme colorScheme,
+    AppThemeExtension? appColors,
+  ) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
@@ -219,6 +245,7 @@ class _ProfilePageState extends State<ProfilePage> {
               onPressed: () {
                 setState(() {
                   _isEditing = true;
+                  _snapshotAtEditStart = _snapshot();
                 });
               },
               tooltip: 'Edit Profile',

@@ -81,19 +81,46 @@ class EggGoalsProvider extends ChangeNotifier {
     return {'completed': completed, 'total': _goals.length};
   }
 
-  /// Set goals for today
-  Future<void> setGoals(List<String> goalMessages) async {
+  /// Set goals for today.
+  ///
+  /// Returns false (and sets [errorMessage]) when the goals could not be
+  /// saved. Nothing is written locally then: the next sync would overwrite a
+  /// local-only save and the user would lose the goals without noticing.
+  ///
+  /// The API resets completion when goals are saved, so goals that keep the
+  /// same text and were already completed are marked complete again.
+  Future<bool> setGoals(List<String> goalMessages) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      // Save to API if service is available
+      // Read what is stored now, so completion is compared with today's goals.
+      await _loadGoalsFromStorage();
+      final completedMessages = _goals
+          .where((goal) => goal.completed)
+          .map((goal) => goal.message)
+          .toSet();
+      final keepCompleted = [
+        for (int i = 0; i < 3; i++)
+          i < goalMessages.length &&
+              goalMessages[i].isNotEmpty &&
+              completedMessages.contains(goalMessages[i]),
+      ];
+
       if (eggGoalsService != null) {
         final success = await eggGoalsService!.saveEggGoals(goalMessages);
         if (!success) {
-          logWarning(
-              '[EggGoalsProvider] Failed to save goals to API, saving locally only');
+          logWarning('[EggGoalsProvider] Failed to save goals to API');
+          _errorMessage =
+              "Couldn't save your goals. Check your connection and try again.";
+          return false;
+        }
+        for (int i = 0; i < 3; i++) {
+          if (keepCompleted[i] &&
+              !await eggGoalsService!.completeEggGoal(i, true)) {
+            keepCompleted[i] = false;
+          }
         }
       }
 
@@ -101,11 +128,11 @@ class EggGoalsProvider extends ChangeNotifier {
       for (int i = 0; i < 3; i++) {
         if (i < goalMessages.length && goalMessages[i].isNotEmpty) {
           await SharedPreferencesStorage.setValue('egg_$i', goalMessages[i]);
-          await SharedPreferencesStorage.setBool('egg_${i}_completed', false);
         } else {
           await SharedPreferencesStorage.setValue('egg_$i', 'No Egg Goal Set');
-          await SharedPreferencesStorage.setBool('egg_${i}_completed', false);
         }
+        await SharedPreferencesStorage.setBool(
+            'egg_${i}_completed', keepCompleted[i]);
       }
 
       // Mark that user has set goals (local cache for offline support)
@@ -113,9 +140,11 @@ class EggGoalsProvider extends ChangeNotifier {
       await preferencesService.setBool('has_ever_set_goals', true);
 
       await _loadGoalsFromStorage();
+      return true;
     } catch (e) {
       logError('[EggGoalsProvider] Error setting goals', e);
       _errorMessage = 'Failed to save goals';
+      return false;
     } finally {
       _isLoading = false;
       notifyListeners();

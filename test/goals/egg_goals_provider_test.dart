@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:projectbrain/goals/egg_goals_provider.dart';
@@ -51,6 +52,67 @@ void main() {
       await offlineProvider.loadGoalStreakSummary();
 
       expect(offlineProvider.goalStreakSummary, isNull);
+    });
+  });
+
+  group('EggGoalsProvider.setGoals', () {
+    const channel = MethodChannel('com.dotdash.projectbrain/storage');
+    late Map<String, Object?> stored;
+
+    setUp(() {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      stored = {};
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+        final args = Map<String, Object?>.from(call.arguments as Map);
+        final key = args['key'] as String;
+        if (call.method == 'savePreferences') {
+          stored[key] = args['value'];
+          return null;
+        }
+        return stored[key];
+      });
+      when(() => mockPreferencesService.setBool(any(), any()))
+          .thenAnswer((_) async => true);
+    });
+
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
+    });
+
+    test('keeps completion for goals whose text did not change', () async {
+      stored.addAll({
+        'egg_0': 'Walk',
+        'egg_0_completed': true,
+        'egg_1': 'Read',
+        'egg_1_completed': false,
+      });
+      when(() => mockEggGoalsService.saveEggGoals(any()))
+          .thenAnswer((_) async => true);
+      when(() => mockEggGoalsService.completeEggGoal(any(), any()))
+          .thenAnswer((_) async => true);
+
+      final ok = await provider.setGoals(['Walk', 'Read', 'Call mum']);
+
+      expect(ok, isTrue);
+      expect(provider.goals.map((g) => g.completed), [true, false, false]);
+      verify(() => mockEggGoalsService.completeEggGoal(0, true)).called(1);
+      verifyNever(() => mockEggGoalsService.completeEggGoal(1, any()));
+    });
+
+    test('reports failure and leaves stored goals alone when the API fails',
+        () async {
+      stored.addAll({'egg_0': 'Walk', 'egg_0_completed': true});
+      when(() => mockEggGoalsService.saveEggGoals(any()))
+          .thenAnswer((_) async => false);
+
+      final ok = await provider.setGoals(['Something else', '', '']);
+
+      expect(ok, isFalse);
+      expect(provider.hasError, isTrue);
+      expect(stored['egg_0'], 'Walk');
+      expect(stored['egg_0_completed'], true);
     });
   });
 }

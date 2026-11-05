@@ -26,6 +26,8 @@ class ChatInputField extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final appTheme = context.appTheme;
+    // While a reply streams the user can keep typing, but sending waits.
+    final isSending = context.select<ChatProvider, bool>((p) => p.isSending);
 
     return SafeArea(
       child: Container(
@@ -105,9 +107,13 @@ class ChatInputField extends StatelessWidget {
             const SizedBox(width: AppSpacing.sm),
             _RoundIconButton(
               icon: Icons.arrow_upward,
-              backgroundColor: theme.colorScheme.primary,
+              backgroundColor: isSending
+                  ? theme.colorScheme.primary.withValues(alpha: 0.4)
+                  : theme.colorScheme.primary,
               iconColor: theme.colorScheme.onPrimary,
-              onPressed: () => _sendMessage(context, controller.text),
+              onPressed: isSending
+                  ? null
+                  : () => _sendMessage(context, controller.text),
             ),
           ],
         ),
@@ -117,8 +123,12 @@ class ChatInputField extends StatelessWidget {
 
   void _sendMessage(BuildContext context, String text) {
     final trimmed = text.trim();
+    final chatProvider = context.read<ChatProvider>();
+    // The provider drops a send while a reply is streaming; keep the text so
+    // it is not lost.
+    if (chatProvider.isSending) return;
     if (trimmed.isNotEmpty) {
-      context.read<ChatProvider>().sendMessage(trimmed);
+      chatProvider.sendMessage(trimmed);
       controller.clear();
       onMessageSent?.call();
       if (scrollController != null) {
@@ -145,7 +155,7 @@ class _RoundIconButton extends StatelessWidget {
   });
 
   final IconData icon;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final Color? backgroundColor;
   final Color? iconColor;
 

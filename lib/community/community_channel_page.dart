@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
@@ -65,6 +66,7 @@ class _CommunityChannelPageState extends State<CommunityChannelPage> {
     setState(() => _submitting = true);
     try {
       await _service.createPost(widget.slug, body);
+      if (!mounted) return;
       _controller.clear();
       await _load();
     } catch (e) {
@@ -84,6 +86,7 @@ class _CommunityChannelPageState extends State<CommunityChannelPage> {
       } else {
         await _service.addReaction(post.id);
       }
+      if (!mounted) return;
       setState(() {
         _posts = _posts
             .map(
@@ -98,24 +101,40 @@ class _CommunityChannelPageState extends State<CommunityChannelPage> {
             )
             .toList();
       });
-    } catch (_) {}
+    } catch (e) {
+      logError('[CommunityChannelPage] Reaction failed', e);
+      _showError("Couldn't update your reaction. Please try again.");
+    }
   }
 
   Future<void> _delete(CommunityPost post) async {
     try {
       await _service.deletePost(post.id);
+      if (!mounted) return;
       setState(() => _posts = _posts.where((p) => p.id != post.id).toList());
-    } catch (_) {}
+    } catch (e) {
+      logError('[CommunityChannelPage] Delete failed', e);
+      _showError("Couldn't delete the post. Please try again.");
+    }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   Future<void> _report(CommunityPost post) async {
-    final reasonController = TextEditingController();
+    // A plain variable rather than a controller: a controller disposed right
+    // after the dialog closes would still be in use by its exit animation.
+    var reasonText = '';
     final reason = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Report post'),
         content: TextField(
-          controller: reasonController,
+          onChanged: (value) => reasonText = value,
           decoration: const InputDecoration(hintText: 'Reason'),
           maxLines: 3,
         ),
@@ -125,7 +144,7 @@ class _CommunityChannelPageState extends State<CommunityChannelPage> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, reasonController.text),
+            onPressed: () => Navigator.pop(context, reasonText),
             child: const Text('Report'),
           ),
         ],
@@ -138,7 +157,10 @@ class _CommunityChannelPageState extends State<CommunityChannelPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Report submitted')),
       );
-    } catch (_) {}
+    } catch (e) {
+      logError('[CommunityChannelPage] Report failed', e);
+      _showError("Couldn't send the report. Please try again.");
+    }
   }
 
   @override
