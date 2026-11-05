@@ -276,6 +276,11 @@ class AuthService {
     return await _tokenManager.getAccessToken();
   }
 
+  /// Fetch a new access token so it reflects the user's current roles.
+  Future<bool> refreshAccessToken() async {
+    return await _tokenManager.forceRefresh();
+  }
+
   /// Persist tokens, load access token into memory, then resolve profile.
   Future<void> _hydrateSessionFromCredentials(
     Credentials credentials, {
