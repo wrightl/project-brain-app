@@ -6,7 +6,7 @@ import 'package:projectbrain/journal/journal_localizations.dart';
 import 'package:projectbrain/journal/widgets/system_tag_field_builder.dart';
 import 'package:projectbrain/models/journal/journal_request_dtos.dart';
 import 'package:projectbrain/models/journal/system_tag.dart';
-import 'package:intl/intl.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/unsaved_changes_scope.dart';
@@ -33,6 +33,7 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
   // saving cannot overwrite the entry with empty content.
   bool _loadFailed = false;
   bool _saved = false;
+  DateTime _entryDate = DateTime.now();
   String? _initialSnapshot;
 
   bool get _isEdit => widget.entryId != null;
@@ -86,6 +87,7 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
         return;
       }
       _contentController.text = entry.content;
+      _entryDate = entry.createdAt;
       for (final t in entry.tags ?? []) {
         _selectedUserTagIds.add(t.id);
       }
@@ -283,8 +285,9 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        DateFormat('EEEE d MMMM · HH:mm')
-                            .format(DateTime.now())
+                        // The entry's own date when editing, not today's.
+                        '${AppDateFormat.weekdayDate(_entryDate)} · '
+                                '${AppDateFormat.time(_entryDate)}'
                             .toUpperCase(),
                         style: theme.textTheme.labelSmall?.copyWith(
                           letterSpacing: 1,

@@ -16,6 +16,8 @@ class MockAuthService extends Mock implements AuthService {}
 class MockAuth0User extends Mock implements Auth0User {}
 
 int usersMeStatusCode = 200;
+int deleteMeStatusCode = 204;
+int deleteMeCalls = 0;
 bool usersMeIsOnboarded = true;
 
 void main() {
@@ -40,6 +42,10 @@ void main() {
             'isOnboarded': usersMeIsOnboarded,
           }),
         );
+      } else if (request.uri.path == '/users/me' &&
+          request.method == 'DELETE') {
+        deleteMeCalls++;
+        request.response.statusCode = deleteMeStatusCode;
       } else {
         request.response.statusCode = 404;
       }
@@ -60,6 +66,8 @@ void main() {
   });
 
   setUp(() {
+    deleteMeStatusCode = 204;
+    deleteMeCalls = 0;
     usersMeStatusCode = 200;
     usersMeIsOnboarded = true;
     mockAuthService = MockAuthService();
@@ -254,6 +262,29 @@ void main() {
 
       expect(authProvider.hasError, isFalse);
       expect(authProvider.errorMessage, isNull);
+    });
+  });
+
+  group('AuthProvider - Delete account', () {
+    test('deletes on the server, then logs out', () async {
+      when(() => mockAuthService.getAccessToken())
+          .thenAnswer((_) async => 'token');
+      when(() => mockAuthService.logout()).thenAnswer((_) async {});
+
+      await authProvider.deleteAccount();
+
+      expect(deleteMeCalls, 1);
+      verify(() => mockAuthService.logout()).called(1);
+    });
+
+    test('stays signed in when the server refuses', () async {
+      deleteMeStatusCode = 502;
+      when(() => mockAuthService.getAccessToken())
+          .thenAnswer((_) async => 'token');
+
+      await expectLater(authProvider.deleteAccount(), throwsException);
+
+      verifyNever(() => mockAuthService.logout());
     });
   });
 

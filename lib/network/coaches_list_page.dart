@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/models/connection.dart';
 import 'package:projectbrain/services/connection_service.dart';
@@ -8,6 +7,7 @@ import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 import 'package:projectbrain/core/network/user_friendly_error.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
 
 /// Talk to a Coach — list connected coaches with message and manage actions.
 class CoachesListPage extends StatefulWidget {
@@ -22,6 +22,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
   List<Connection> _connections = [];
   final Set<String> _removingIds = {};
   bool _isLoading = true;
+  bool _loadFailed = false;
   String? _errorMessage;
 
   @override
@@ -33,19 +34,23 @@ class _CoachesListPageState extends State<CoachesListPage> {
   Future<void> _loadConnections() async {
     setState(() {
       _isLoading = true;
+      _loadFailed = false;
       _errorMessage = null;
     });
 
     try {
       final connections = await _connectionService.getActiveConnections();
+      if (!mounted) return;
       setState(() {
         _connections = connections;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage =
             userFriendlyError(e, fallback: "Couldn't load coaches.");
+        _loadFailed = true;
         _isLoading = false;
       });
     }
@@ -133,7 +138,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
 
   String _formatDate(DateTime? date) {
     if (date == null) return '';
-    return DateFormat('d MMM yyyy').format(date);
+    return AppDateFormat.date(date);
   }
 
   Color _statusColor(Connection connection, ThemeData theme) {
@@ -209,6 +214,13 @@ class _CoachesListPageState extends State<CoachesListPage> {
             if (_isLoading)
               const Expanded(
                 child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_connections.isEmpty && _loadFailed)
+              Expanded(
+                child: DsLoadFailed(
+                  message: "Couldn't load your coaches.",
+                  onRetry: _loadConnections,
+                ),
               )
             else if (_connections.isEmpty)
               Expanded(

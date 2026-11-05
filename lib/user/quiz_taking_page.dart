@@ -102,10 +102,9 @@ class _QuizTakingViewState extends State<_QuizTakingView> {
       ),
     );
 
-    await Future.delayed(const Duration(milliseconds: 1500));
-    if (mounted) {
-      context.pop(true);
-    }
+    // The snackbar lives on the app's messenger, so it stays visible after
+    // the page closes; no need to hold the user here.
+    context.pop(true);
   }
 
   bool _isQuizComplete(QuizTakingProvider provider) {
@@ -267,7 +266,9 @@ class _QuizTakingViewState extends State<_QuizTakingView> {
                           child: PageView.builder(
                             controller: _pageController,
                             onPageChanged: provider.setCurrentQuestionIndex,
-                            physics: const PageScrollPhysics(),
+                            // Next/Previous only: swiping skipped the check
+                            // that a mandatory question has been answered.
+                            physics: const NeverScrollableScrollPhysics(),
                             itemCount: provider.visibleQuestions.length,
                             itemBuilder: (context, index) {
                               final question = provider.visibleQuestions[index];
@@ -302,27 +303,6 @@ class _QuizTakingViewState extends State<_QuizTakingView> {
                                     : null,
                                 icon: const Icon(Icons.arrow_back),
                                 tooltip: 'Previous question',
-                              ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: List.generate(
-                                  provider.visibleQuestions.length,
-                                  (index) => Container(
-                                    width: 8,
-                                    height: 8,
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: AppSpacing.xs,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color:
-                                          index == provider.currentQuestionIndex
-                                              ? theme.colorScheme.primary
-                                              : theme.colorScheme.onSurface
-                                                  .withValues(alpha: 0.3),
-                                    ),
-                                  ),
-                                ),
                               ),
                               if (provider.currentQuestionIndex <
                                   provider.visibleQuestions.length - 1)

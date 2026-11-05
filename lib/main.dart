@@ -4,6 +4,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 import 'package:projectbrain/app_bootstrap.dart';
 import 'package:projectbrain/core/config/app_config.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
@@ -27,6 +29,7 @@ Future<void> main() async {
     WidgetsFlutterBinding.ensureInitialized();
 
     await AppConfig.init();
+    await _initializeDateLocale();
     await GoogleMapsNativeService.configureApiKey(AppConfig.googleMapsApiKey);
 
     logInfo('[App] Running in ${AppConfig.environmentName} environment');
@@ -40,6 +43,19 @@ Future<void> main() async {
     logError('[App] Uncaught zone error', error, stack);
     _recordToCrashlytics(error, stack, fatal: true);
   });
+}
+
+/// Format dates for the device's region (e.g. day-month in the UK). Without
+/// this, intl formats everything as en_US.
+Future<void> _initializeDateLocale() async {
+  try {
+    final locale = PlatformDispatcher.instance.locale;
+    final tag = Intl.canonicalizedLocale(locale.toLanguageTag());
+    await initializeDateFormatting(tag);
+    Intl.defaultLocale = tag;
+  } catch (e) {
+    logWarning('[App] Date locale not available, using en_US', e);
+  }
 }
 
 /// Initialize Firebase and wire framework/platform error handlers immediately.

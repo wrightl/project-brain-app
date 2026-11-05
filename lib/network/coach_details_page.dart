@@ -32,6 +32,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
   ConnectionStatus _connectionStatus = ConnectionStatus.none;
   String? _connectionId;
   bool _isLoading = true;
+  Future<List<Coach>>? _connectedCoachesFuture;
   bool _isUpdatingConnection = false;
   String? _errorMessage;
 
@@ -73,6 +74,13 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
   }
 
   Future<void> _sendConnectionRequest() async {
+    // Set busy before the first await so a double tap sends one request.
+    if (_isUpdatingConnection) return;
+    setState(() {
+      _isUpdatingConnection = true;
+      _errorMessage = null;
+    });
+
     // Check connection limit
     final subscriptionProvider =
         Provider.of<SubscriptionProvider>(context, listen: false);
@@ -85,6 +93,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
         final currentCount = connectedCoaches.length;
 
         if (currentCount >= connectionLimit) {
+          if (mounted) setState(() => _isUpdatingConnection = false);
           // Show upgrade prompt
           if (mounted) {
             showDialog(
@@ -103,17 +112,13 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
       }
     }
 
-    setState(() {
-      _isUpdatingConnection = true;
-      _errorMessage = null;
-    });
-
     try {
       final status = await _coachService.sendConnectionRequest(widget.coachId);
       if (!mounted) return;
       setState(() {
         _connectionStatus = status;
         _isUpdatingConnection = false;
+        _connectedCoachesFuture = null;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -128,6 +133,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage =
             userFriendlyError(e, fallback: "Couldn't send connection request.");
@@ -146,6 +152,28 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
   }
 
   Future<void> _cancelConnectionRequest() async {
+    if (_isUpdatingConnection) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancel request?'),
+        content: const Text(
+          'The coach will no longer see your connection request.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Keep request'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Cancel request'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
     setState(() {
       _isUpdatingConnection = true;
       _errorMessage = null;
@@ -153,6 +181,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
 
     try {
       await _coachService.cancelConnectionRequest(widget.coachId);
+      if (!mounted) return;
       setState(() {
         _connectionStatus = ConnectionStatus.none;
         _isUpdatingConnection = false;
@@ -166,6 +195,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = userFriendlyError(e,
             fallback: "Couldn't cancel connection request.");
@@ -204,7 +234,9 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
             if (connectionLimit != null) {
               // We'll need to fetch this, but for now show the limit
               connectionInfo = FutureBuilder<List<Coach>>(
-                future: _coachService.getConnectedCoaches(),
+                // Cached: a new future per build refetched on every rebuild.
+                future: _connectedCoachesFuture ??=
+                    _coachService.getConnectedCoaches(),
                 builder: (context, snapshot) {
                   if (snapshot.hasData) {
                     final currentCount = snapshot.data!.length;
@@ -257,8 +289,8 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
       case ConnectionStatus.pending:
         return OutlinedButton.icon(
           onPressed: _cancelConnectionRequest,
-          icon: const Icon(Icons.pending),
-          label: const Text('Pending'),
+          icon: const Icon(Icons.close),
+          label: const Text('Request pending · Cancel'),
           style: OutlinedButton.styleFrom(
             padding: AppInsets.button,
           ),

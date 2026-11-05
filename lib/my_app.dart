@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:projectbrain/authentication/auth_provider.dart';
 import 'package:projectbrain/chat/chat_provider.dart';
@@ -112,6 +113,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             themeMode: themeModeProvider.themeMode,
             theme: themeModeProvider.theme,
             darkTheme: themeModeProvider.darkTheme,
+            // Material widgets (date picker, etc.) and OnboardingLocalizations
+            // follow the device region; without delegates everything is en_US.
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('en', 'US'),
+              Locale('en', 'GB'),
+              Locale('en'),
+            ],
             // Overlay a persistent offline banner above every route, and hide
             // everything behind the app lock when backgrounded or locked.
             builder: (context, child) => AppLockOverlay(

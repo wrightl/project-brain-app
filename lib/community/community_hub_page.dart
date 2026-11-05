@@ -6,6 +6,7 @@ import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/models/community.dart';
 import 'package:projectbrain/services/community_service.dart';
 import 'package:projectbrain/core/network/user_friendly_error.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
 
 const _feedLimit = 20;
 
@@ -163,7 +164,7 @@ class _CommunityHubPageState extends State<CommunityHubPage> {
                             style: theme.textTheme.titleSmall,
                           ),
                           Text(
-                            '#${post.channelSlug} · ${post.createdAt.toLocal()}',
+                            '#${post.channelSlug} · ${AppDateFormat.dateTime(post.createdAt)}',
                             style: theme.textTheme.bodySmall,
                           ),
                           const SizedBox(height: AppSpacing.sm),

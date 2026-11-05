@@ -91,4 +91,29 @@ void main() {
 
     expect(provider.messages.map((m) => m.content), ['two', 'reply']);
   });
+
+  test('retryLastMessage replaces the failed exchange and resends', () async {
+    var calls = 0;
+    when(() => aiService.streamChatResponse(
+          any(),
+          conversationId: any(named: 'conversationId'),
+        )).thenAnswer((_) async {
+      calls++;
+      if (calls == 1) throw Exception('boom');
+      return ChatStreamResponse(
+        stream: Stream.value('ok'),
+        conversationId: 'conv-1',
+        citationsStream: const Stream<List<Citation>>.empty(),
+      );
+    });
+
+    await provider.sendMessage('hi');
+    expect(provider.canRetryLastMessage, isTrue);
+    expect(provider.messages.last.content, isNot(contains('boom')));
+
+    await provider.retryLastMessage();
+
+    expect(provider.messages.map((m) => m.content), ['hi', 'ok']);
+    expect(provider.canRetryLastMessage, isFalse);
+  });
 }

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:projectbrain/goals/egg_goals_provider.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 import 'package:projectbrain/widgets/ds/goal_row.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
 
 /// Page displaying the list of daily goals with checkboxes and progress.
 class GoalsListPage extends StatelessWidget {
@@ -49,7 +49,7 @@ class GoalsListPage extends StatelessWidget {
     final completed = progress['completed'] ?? 0;
     final total = progress['total'] ?? 3;
     final pct = total > 0 ? completed / total : 0.0;
-    final dateLabel = DateFormat('EEEE d MMMM').format(DateTime.now());
+    final dateLabel = AppDateFormat.weekdayDate(DateTime.now());
 
     if (provider.isLoading && visibleGoals.isEmpty) {
       return ListView(

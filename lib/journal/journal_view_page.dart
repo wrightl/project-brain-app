@@ -3,10 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:projectbrain/journal/journal_provider.dart';
 import 'package:projectbrain/journal/journal_localizations.dart';
-import 'package:intl/intl.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
 
 /// View a single journal entry (read-only) with Edit button.
 class JournalViewPage extends StatefulWidget {
@@ -150,7 +150,7 @@ class _JournalViewPageState extends State<JournalViewPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          DateFormat.yMMMd().add_Hm().format(entry.createdAt),
+                          AppDateFormat.dateTime(entry.createdAt),
                           style: theme.textTheme.labelSmall,
                         ),
                         if (entry.summary != null &&

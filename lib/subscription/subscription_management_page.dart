@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:projectbrain/subscription/subscription_provider.dart';
 import 'package:projectbrain/subscription/widgets/tier_badge.dart';
 import 'package:projectbrain/models/subscription.dart';
@@ -9,6 +8,7 @@ import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 import 'package:projectbrain/core/network/user_friendly_error.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
 
 /// Subscription management page showing current subscription details
 class SubscriptionManagementPage extends StatelessWidget {
@@ -190,7 +190,6 @@ class SubscriptionManagementPage extends StatelessWidget {
     Subscription subscription,
   ) {
     final theme = Theme.of(context);
-    final dateFormat = DateFormat('MMM d, yyyy');
 
     return DsSurfaceCard(
       child: Column(
@@ -211,26 +210,26 @@ class SubscriptionManagementPage extends StatelessWidget {
           if (subscription.isTrialing && subscription.trialEndsAt != null)
             _StatusRow(
               label: 'Trial Ends',
-              value: dateFormat.format(subscription.trialEndsAt!),
+              value: AppDateFormat.date(subscription.trialEndsAt!),
             ),
           _StatusRow(
             label: 'Current Period',
             value: (subscription.currentPeriodStart != null &&
                     subscription.currentPeriodEnd != null)
-                ? '${dateFormat.format(subscription.currentPeriodStart!)} - ${dateFormat.format(subscription.currentPeriodEnd!)}'
+                ? '${AppDateFormat.date(subscription.currentPeriodStart!)} - ${AppDateFormat.date(subscription.currentPeriodEnd!)}'
                 : 'N/A',
           ),
           if (subscription.canceledAt != null)
             _StatusRow(
               label: 'Canceled On',
-              value: dateFormat.format(subscription.canceledAt!),
+              value: AppDateFormat.date(subscription.canceledAt!),
               valueColor: theme.colorScheme.error,
             ),
           if (!subscription.isCanceled && !subscription.isExpired)
             _StatusRow(
               label: 'Next Billing Date',
               value: (subscription.currentPeriodEnd != null)
-                  ? dateFormat.format(subscription.currentPeriodEnd!)
+                  ? AppDateFormat.date(subscription.currentPeriodEnd!)
                   : 'N/A',
             ),
         ],

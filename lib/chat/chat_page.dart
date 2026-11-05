@@ -52,9 +52,21 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   /// Coalesce scroll-to-bottom requests into a single post-frame jump so rapid
-  /// streaming updates don't queue many callbacks.
+  /// streaming updates don't queue many callbacks. Only follows the reply when
+  /// the user is already at (or near) the bottom, so reading earlier messages
+  /// is not interrupted.
   void _handleChatChanged() {
+    final actionError = _chatProvider?.consumeActionError();
+    if (actionError != null && mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(actionError)));
+    }
+
     if (_scrollScheduled) return;
+    if (_scrollController.hasClients) {
+      final position = _scrollController.position;
+      if (position.maxScrollExtent - position.pixels > 120) return;
+    }
     _scrollScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollScheduled = false;
@@ -77,15 +89,24 @@ class _ChatPageState extends State<ChatPage> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final theme = Theme.of(context);
     final appTheme = context.appTheme;
-    final firstName = authProvider.profile?.name.split(' ').first ?? 'Buddy';
+    final rawFirstName = authProvider.profile?.name.split(' ').first.trim();
+    final firstName =
+        (rawFirstName == null || rawFirstName.isEmpty) ? null : rawFirstName;
 
     return Scaffold(
       key: _scaffoldKey,
+      // Refresh the list each time it opens so new conversations show up.
+      onDrawerChanged: (isOpen) {
+        if (isOpen) _loadConversations();
+      },
       appBar: AppBar(
-        title: Text("$firstName's AI Buddy"),
+        title: Text(
+          firstName == null ? 'Your AI Buddy' : "$firstName's AI Buddy",
+        ),
         titleTextStyle: theme.textTheme.titleMedium,
         leading: IconButton(
           icon: const Icon(Icons.menu),
+          tooltip: 'Conversations',
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
         actions: [
@@ -192,6 +213,12 @@ class _ChatPageState extends State<ChatPage> {
                 if (chatProvider.isLoading && chatProvider.messages.isEmpty) {
                   return const Center(child: CircularProgressIndicator());
                 }
+                if (chatProvider.messages.isEmpty) {
+                  return _ChatWelcome(
+                    firstName: firstName ?? 'there',
+                    onPromptSelected: chatProvider.sendMessage,
+                  );
+                }
                 return ListView.builder(
                   controller: _scrollController,
                   itemCount: chatProvider.messages.length,
@@ -218,6 +245,17 @@ class _ChatPageState extends State<ChatPage> {
                               message.role == 'assistant' &&
                               message.content.isEmpty,
                         ),
+                        if (isLastMessage && chatProvider.canRetryLastMessage)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg,
+                            ),
+                            child: TextButton.icon(
+                              onPressed: chatProvider.retryLastMessage,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Retry'),
+                            ),
+                          ),
                         if (message.role == 'assistant') ...[
                           for (final tool in extras.toolExecutions
                               .where((tool) => tool.toolName != 'ask_user'))
@@ -289,6 +327,54 @@ class _ChatPageState extends State<ChatPage> {
             controller: _controller,
             scrollController: _scrollController,
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Shown for a new conversation: a greeting and prompts to start from.
+class _ChatWelcome extends StatelessWidget {
+  const _ChatWelcome({
+    required this.firstName,
+    required this.onPromptSelected,
+  });
+
+  final String firstName;
+  final ValueChanged<String> onPromptSelected;
+
+  static const _prompts = [
+    'Help me plan my day',
+    "I'm feeling overwhelmed. Where do I start?",
+    'Give me a tip for staying focused',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final appTheme = context.appTheme;
+
+    return SingleChildScrollView(
+      padding: AppInsets.page,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Hi $firstName, what would you like to talk about?',
+            style: theme.textTheme.titleMedium,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text('Try one of these:', style: theme.textTheme.bodySmall),
+          const SizedBox(height: AppSpacing.sm),
+          for (final prompt in _prompts) ...[
+            ActionChip(
+              label: Text(prompt),
+              backgroundColor: appTheme.primarySoft,
+              side: BorderSide.none,
+              onPressed: () => onPromptSelected(prompt),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
         ],
       ),
     );

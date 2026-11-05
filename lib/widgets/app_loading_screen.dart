@@ -155,7 +155,7 @@ class _AppLoadingScreenState extends State<AppLoadingScreen>
                     ),
                     SizedBox(height: AppSpacing.sm),
                     Text(
-                      'Check your connection and try again. If staging was asleep, it may still be waking up.',
+                      'Check your connection and try again.',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: DesignPalette.textSecondary,

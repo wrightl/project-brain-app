@@ -6,6 +6,7 @@ import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/models/community.dart';
 import 'package:projectbrain/services/community_service.dart';
 import 'package:projectbrain/core/network/user_friendly_error.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
 
 class CommunityChannelPage extends StatefulWidget {
   final String slug;
@@ -110,6 +111,24 @@ class _CommunityChannelPageState extends State<CommunityChannelPage> {
   }
 
   Future<void> _delete(CommunityPost post) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete post?'),
+        content: const Text('This removes your post for everyone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
     try {
       await _service.deletePost(post.id);
       if (!mounted) return;
@@ -201,7 +220,7 @@ class _CommunityChannelPageState extends State<CommunityChannelPage> {
                           Text(post.authorDisplayName,
                               style: theme.textTheme.titleSmall),
                           Text(
-                            post.createdAt.toLocal().toString(),
+                            AppDateFormat.dateTime(post.createdAt),
                             style: theme.textTheme.bodySmall,
                           ),
                           const SizedBox(height: AppSpacing.sm),

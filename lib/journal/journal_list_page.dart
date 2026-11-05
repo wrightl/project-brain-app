@@ -4,10 +4,10 @@ import 'package:provider/provider.dart';
 import 'package:projectbrain/journal/journal_provider.dart';
 import 'package:projectbrain/journal/journal_localizations.dart';
 import 'package:projectbrain/models/journal/journal_entry.dart';
-import 'package:intl/intl.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
 
 /// Journal list screen with pagination, pull-to-refresh, and FAB.
 class JournalListPage extends StatefulWidget {
@@ -199,7 +199,7 @@ class _JournalListItem extends StatelessWidget {
     final displayText =
         preview.length > 120 ? '${preview.substring(0, 120)}...' : preview;
     final dateStr =
-        DateFormat('EEE d MMM').format(entry.createdAt).toUpperCase();
+        AppDateFormat.shortWeekdayDate(entry.createdAt).toUpperCase();
     final titleLine = preview.split('\n').first;
     final moodTag = entry.systemTags?.isNotEmpty == true
         ? entry.systemTags!.first.name

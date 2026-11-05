@@ -9,13 +9,15 @@ import 'package:projectbrain/services/coach_message_signalr_service.dart';
 import 'package:projectbrain/services/coach_service.dart';
 import 'package:projectbrain/services/connection_service.dart';
 import 'package:projectbrain/utils/coach_message_utils.dart';
-import 'package:intl/intl.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 import 'package:projectbrain/core/network/user_friendly_error.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
 
 /// Chat page for communicating with connected coaches.
 class CoachChatPage extends StatefulWidget {
@@ -49,6 +51,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
   String? _headerName;
   List<CoachMessage> _messages = [];
   bool _isLoading = true;
+  bool _messagesLoadFailed = false;
   bool _isSending = false;
   bool _isRecording = false;
   Timer? _recordingTimer;
@@ -241,6 +244,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
     final connectionId = _selectedConnectionId;
     if (connectionId == null) return;
 
+    setState(() => _messagesLoadFailed = false);
     try {
       final messages = await _coachService.getMessages(connectionId);
       if (!mounted) return;
@@ -259,13 +263,19 @@ class _CoachChatPageState extends State<CoachChatPage> {
       setState(() {
         _errorMessage =
             userFriendlyError(e, fallback: "Couldn't load messages.");
+        _messagesLoadFailed = true;
       });
     }
   }
 
   Future<void> _sendTextMessage() async {
     final connectionId = _selectedConnectionId;
-    if (connectionId == null || _textController.text.trim().isEmpty) return;
+    // The keyboard's send action bypasses the disabled button, so check here.
+    if (_isSending ||
+        connectionId == null ||
+        _textController.text.trim().isEmpty) {
+      return;
+    }
 
     setState(() {
       _isSending = true;
@@ -323,9 +333,22 @@ class _CoachChatPageState extends State<CoachChatPage> {
       _startRecordingTimer();
     } catch (e) {
       if (!mounted) return;
+      final errorMsg = e.toString().toLowerCase();
+      final permissionDenied =
+          errorMsg.contains('permission') || errorMsg.contains('denied');
+      if (permissionDenied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Allow microphone access in Settings to record.'),
+            action: SnackBarAction(
+              label: 'Open settings',
+              onPressed: openAppSettings,
+            ),
+          ),
+        );
+      }
       setState(() {
-        final errorMsg = e.toString().toLowerCase();
-        if (errorMsg.contains('permission') || errorMsg.contains('denied')) {
+        if (permissionDenied) {
           _errorMessage =
               'Microphone permission denied. Please enable microphone access in settings.';
         } else {
@@ -417,7 +440,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
   }
 
   String _formatTime(DateTime date) {
-    return DateFormat('h:mm a').format(date);
+    return AppDateFormat.time(date);
   }
 
   String _formatDuration(Duration duration) {
@@ -470,98 +493,106 @@ class _CoachChatPageState extends State<CoachChatPage> {
             )
           else
             Expanded(
-              child: _messages.isEmpty
-                  ? Center(
-                      child: Text(
-                        'Start a conversation with $coachName',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.6),
-                        ),
-                      ),
+              child: _messages.isEmpty && _messagesLoadFailed
+                  ? DsLoadFailed(
+                      message: "Couldn't load your messages.",
+                      onRetry: _loadMessages,
                     )
-                  : ListView.builder(
-                      controller: _scrollController,
-                      padding: AppInsets.screen,
-                      itemCount: _messages.length,
-                      itemBuilder: (context, index) {
-                        final message = _messages[index];
-                        return Align(
-                          alignment: message.isFromCoach
-                              ? Alignment.centerLeft
-                              : Alignment.centerRight,
-                          child: Container(
-                            margin:
-                                const EdgeInsets.only(bottom: AppSpacing.sm),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.lg,
-                              vertical: AppSpacing.md,
-                            ),
-                            constraints: BoxConstraints(
-                              maxWidth:
-                                  MediaQuery.of(context).size.width * 0.75,
-                            ),
-                            decoration: BoxDecoration(
-                              color: message.isFromCoach
-                                  ? theme.colorScheme.surface
-                                  : theme.colorScheme.primary,
-                              borderRadius: message.isFromCoach
-                                  ? const BorderRadius.only(
-                                      topLeft: Radius.circular(18),
-                                      topRight: Radius.circular(18),
-                                      bottomRight: Radius.circular(18),
-                                      bottomLeft: Radius.circular(4),
-                                    )
-                                  : const BorderRadius.only(
-                                      topLeft: Radius.circular(18),
-                                      topRight: Radius.circular(18),
-                                      bottomLeft: Radius.circular(18),
-                                      bottomRight: Radius.circular(4),
-                                    ),
-                              border: message.isFromCoach
-                                  ? Border.all(
-                                      color: context.appTheme.borderColor,
-                                    )
-                                  : null,
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (message.text != null)
-                                  Text(
-                                    message.text!,
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: message.isFromCoach
-                                          ? theme.colorScheme.onSurface
-                                          : theme.colorScheme.onPrimary,
-                                    ),
-                                  ),
-                                if (message.audioUrl != null)
-                                  _AudioMessageControl(
-                                    isPlaying: _playingMessageId == message.id,
-                                    isLoading:
-                                        _loadingAudioMessageId == message.id,
-                                    color: message.isFromCoach
-                                        ? theme.colorScheme.onSurface
-                                        : theme.colorScheme.onPrimary,
-                                    onPressed: () => _toggleAudio(message),
-                                  ),
-                                SizedBox(height: AppSpacing.xs),
-                                Text(
-                                  _formatTime(message.createdAt),
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: message.isFromCoach
-                                        ? context.appTheme.textMuted
-                                        : theme.colorScheme.onPrimary
-                                            .withValues(alpha: 0.7),
-                                  ),
-                                ),
-                              ],
+                  : _messages.isEmpty
+                      ? Center(
+                          child: Text(
+                            'Start a conversation with $coachName',
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.6),
                             ),
                           ),
-                        );
-                      },
-                    ),
+                        )
+                      : ListView.builder(
+                          controller: _scrollController,
+                          padding: AppInsets.screen,
+                          itemCount: _messages.length,
+                          itemBuilder: (context, index) {
+                            final message = _messages[index];
+                            return Align(
+                              alignment: message.isFromCoach
+                                  ? Alignment.centerLeft
+                                  : Alignment.centerRight,
+                              child: Container(
+                                margin: const EdgeInsets.only(
+                                    bottom: AppSpacing.sm),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.lg,
+                                  vertical: AppSpacing.md,
+                                ),
+                                constraints: BoxConstraints(
+                                  maxWidth:
+                                      MediaQuery.of(context).size.width * 0.75,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: message.isFromCoach
+                                      ? theme.colorScheme.surface
+                                      : theme.colorScheme.primary,
+                                  borderRadius: message.isFromCoach
+                                      ? const BorderRadius.only(
+                                          topLeft: Radius.circular(18),
+                                          topRight: Radius.circular(18),
+                                          bottomRight: Radius.circular(18),
+                                          bottomLeft: Radius.circular(4),
+                                        )
+                                      : const BorderRadius.only(
+                                          topLeft: Radius.circular(18),
+                                          topRight: Radius.circular(18),
+                                          bottomLeft: Radius.circular(18),
+                                          bottomRight: Radius.circular(4),
+                                        ),
+                                  border: message.isFromCoach
+                                      ? Border.all(
+                                          color: context.appTheme.borderColor,
+                                        )
+                                      : null,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (message.text != null)
+                                      Text(
+                                        message.text!,
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                          color: message.isFromCoach
+                                              ? theme.colorScheme.onSurface
+                                              : theme.colorScheme.onPrimary,
+                                        ),
+                                      ),
+                                    if (message.audioUrl != null)
+                                      _AudioMessageControl(
+                                        isPlaying:
+                                            _playingMessageId == message.id,
+                                        isLoading: _loadingAudioMessageId ==
+                                            message.id,
+                                        color: message.isFromCoach
+                                            ? theme.colorScheme.onSurface
+                                            : theme.colorScheme.onPrimary,
+                                        onPressed: () => _toggleAudio(message),
+                                      ),
+                                    SizedBox(height: AppSpacing.xs),
+                                    Text(
+                                      _formatTime(message.createdAt),
+                                      style:
+                                          theme.textTheme.bodySmall?.copyWith(
+                                        color: message.isFromCoach
+                                            ? context.appTheme.textMuted
+                                            : theme.colorScheme.onPrimary
+                                                .withValues(alpha: 0.7),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
             ),
           if (_isRecording)
             Container(

@@ -4,7 +4,7 @@ import 'package:projectbrain/onboarding/onboarding_localizations.dart';
 
 /// Provider for managing onboarding wizard state
 class OnboardingProvider extends ChangeNotifier {
-  // Basic Info (required)
+  // Basic Info (name required, the rest optional)
   String _fullName = '';
   DateTime? _dateOfBirth;
   String _preferredPronoun = '';
@@ -89,12 +89,9 @@ class OnboardingProvider extends ChangeNotifier {
   bool get isSubmitting => _isSubmitting;
   String? get errorMessage => _errorMessage;
 
-  /// Check if basic info step is valid
-  bool get isBasicInfoValid {
-    return _fullName.isNotEmpty &&
-        _dateOfBirth != null &&
-        _preferredPronoun.isNotEmpty;
-  }
+  /// Check if basic info step is valid. Only the name is required; date of
+  /// birth and pronoun are sensitive and optional.
+  bool get isBasicInfoValid => _fullName.isNotEmpty;
 
   /// Check if follow-on questions step should be shown
   bool get shouldShowFollowOnQuestions {

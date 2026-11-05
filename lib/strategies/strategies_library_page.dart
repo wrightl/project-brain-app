@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:projectbrain/models/strategies/coping_strategy_library_item.dart';
 import 'package:projectbrain/strategies/strategies_localizations.dart';
@@ -8,6 +7,7 @@ import 'package:projectbrain/strategies/strategies_provider.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
 
 /// Strategies library screen: list saved strategies, rate, delete.
 class StrategiesLibraryPage extends StatefulWidget {
@@ -169,7 +169,7 @@ class _StrategyLibraryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dateStr = DateFormat.yMMMd().format(item.savedAt);
+    final dateStr = AppDateFormat.date(item.savedAt);
     final icon = _iconFor(item.iconKey);
 
     return Padding(

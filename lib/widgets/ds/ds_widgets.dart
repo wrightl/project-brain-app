@@ -15,6 +15,45 @@ PreferredSizeWidget? dsBackAppBar(BuildContext context) {
   );
 }
 
+/// Shown in place of an empty state when loading failed, so "nothing here
+/// yet" is never shown next to an error.
+class DsLoadFailed extends StatelessWidget {
+  const DsLoadFailed({
+    super.key,
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              message,
+              style: theme.textTheme.bodyLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Rounded square icon container with soft accent background.
 class IconBubble extends StatelessWidget {
   const IconBubble({

@@ -287,43 +287,57 @@ class _OnboardingPageState extends State<OnboardingPage> {
         color: theme.colorScheme.surface,
         border: Border(top: BorderSide(color: appTheme.borderColor)),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          if (provider.currentStep > 0) ...[
-            Expanded(
-              child: OutlinedButton(
-                onPressed: provider.isSubmitting
-                    ? null
-                    : () => _previousPage(provider),
-                child: Text(localizations.previous),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-          ],
-          Expanded(
-            flex: 2,
-            child: ElevatedButton.icon(
+          // Everything after Basic Info is optional; let people start using
+          // the app now instead of facing every remaining step.
+          if (provider.currentStep > 0 && !isLastStep)
+            TextButton(
               onPressed: provider.isSubmitting
                   ? null
-                  : () {
-                      if (isLastStep) {
-                        _submitOnboarding(provider, authProvider);
-                      } else {
-                        _nextPage(provider);
-                      }
-                    },
-              icon: provider.isSubmitting
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Icon(isLastStep ? Icons.check : Icons.arrow_forward,
-                      size: 18),
-              label: Text(
-                isLastStep ? localizations.complete : localizations.next,
-              ),
+                  : () => _submitOnboarding(provider, authProvider),
+              child: const Text('Skip the rest and get started'),
             ),
+          Row(
+            children: [
+              if (provider.currentStep > 0) ...[
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: provider.isSubmitting
+                        ? null
+                        : () => _previousPage(provider),
+                    child: Text(localizations.previous),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+              ],
+              Expanded(
+                flex: 2,
+                child: ElevatedButton.icon(
+                  onPressed: provider.isSubmitting
+                      ? null
+                      : () {
+                          if (isLastStep) {
+                            _submitOnboarding(provider, authProvider);
+                          } else {
+                            _nextPage(provider);
+                          }
+                        },
+                  icon: provider.isSubmitting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(isLastStep ? Icons.check : Icons.arrow_forward,
+                          size: 18),
+                  label: Text(
+                    isLastStep ? localizations.complete : localizations.next,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -477,7 +491,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               controller: dobController,
               readOnly: true,
               decoration: InputDecoration(
-                labelText: localizations.dateOfBirth,
+                labelText: '${localizations.dateOfBirth} (optional)',
                 prefixIcon: const Icon(Icons.cake_outlined),
                 suffixIcon: const Icon(Icons.calendar_today, size: 18),
               ),
@@ -496,14 +510,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
                 }
               },
-              validator: (value) => value == null || value.isEmpty
-                  ? localizations.selectDateOfBirth
-                  : null,
             ),
             const SizedBox(height: AppSpacing.lg),
             DropdownButtonFormField<String>(
               decoration: InputDecoration(
-                labelText: localizations.preferredPronoun,
+                labelText: '${localizations.preferredPronoun} (optional)',
                 prefixIcon: const Icon(Icons.badge_outlined),
               ),
               initialValue: provider.preferredPronoun.isEmpty
@@ -520,9 +531,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   provider.setPreferredPronoun(value);
                 }
               },
-              validator: (value) => value == null || value.isEmpty
-                  ? localizations.required
-                  : null,
             ),
           ],
         ),

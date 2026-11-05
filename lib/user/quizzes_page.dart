@@ -4,11 +4,11 @@ import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:projectbrain/models/quiz.dart';
 import 'package:projectbrain/services/quiz_service.dart';
-import 'package:intl/intl.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 import 'package:projectbrain/core/network/user_friendly_error.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
 
 /// Quizzes page for managing neurodiversity quizzes
 class QuizzesPage extends StatefulWidget {
@@ -121,7 +121,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
 
   String _formatDate(DateTime? date) {
     if (date == null) return 'Unknown date';
-    return DateFormat('MMM d, y').format(date);
+    return AppDateFormat.date(date);
   }
 
   @override

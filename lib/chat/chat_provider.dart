@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:projectbrain/core/network/rate_limited_exception.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
 import 'package:flutter/material.dart';
 import 'package:projectbrain/models/citation.dart';
 import 'package:projectbrain/models/agent/action_card.dart';
@@ -33,10 +34,27 @@ class ChatProvider extends ChangeNotifier {
 
   bool _isStale(int generation) => generation != _generation;
 
+  /// Text of the last message whose reply failed, for [retryLastMessage].
+  String? _failedText;
+
+  /// A failed confirm/cancel of a pending action, shown once by the page.
+  String? _actionError;
+
+  /// Whether the last message failed and can be sent again.
+  bool get canRetryLastMessage => _failedText != null && !_isSending;
+
+  /// Returns the latest pending-action error once, then clears it.
+  String? consumeActionError() {
+    final error = _actionError;
+    _actionError = null;
+    return error;
+  }
+
   /// Invalidate any in-flight reply before the message list is replaced.
   void _startNewGeneration() {
     _generation++;
     _isSending = false;
+    _failedText = null;
   }
 
   List<ChatMessage> get messages => List.unmodifiable(_messages);
@@ -65,6 +83,7 @@ class ChatProvider extends ChangeNotifier {
     }
     _isSending = true;
     _errorMessage = null;
+    _failedText = null;
     final generation = _generation;
     _messages.add(
         const ChatMessage(role: 'user', content: '').copyWith(content: text));
@@ -155,13 +174,17 @@ class ChatProvider extends ChangeNotifier {
       // A 429 carries a message meant for the user (slow down, or a usage
       // quota reached), so show it as-is rather than as a generic failure.
       final rateLimited = e is RateLimitedException;
-      final errorMessage =
-          rateLimited ? e.message : 'Failed to get response. Please try again.';
+      final errorMessage = rateLimited
+          ? e.message
+          : userFriendlyError(e,
+              fallback: "Couldn't get a response. Please try again.");
       _errorMessage = errorMessage;
+      // Retrying straight after a rate limit would be rejected again.
+      if (!rateLimited) _failedText = text;
       // Update the message to show error
       final currentMessage = _messages[assistantMessageIndex];
       _messages[assistantMessageIndex] = currentMessage.copyWith(
-        content: rateLimited ? errorMessage : 'Error: $errorMessage',
+        content: errorMessage,
       );
       notifyListeners();
     } finally {
@@ -263,6 +286,22 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Send the last failed message again, replacing the failed exchange.
+  Future<void> retryLastMessage() async {
+    final text = _failedText;
+    if (text == null || _isSending) return;
+    _failedText = null;
+    final count = _messages.length;
+    if (count >= 2 &&
+        _messages[count - 2].role == 'user' &&
+        _messages[count - 2].content == text &&
+        _messages[count - 1].role == 'assistant') {
+      _messages.removeRange(count - 2, count);
+      _messageExtras.remove(count - 1);
+    }
+    await sendMessage(text);
+  }
+
   void markUserChoiceAnswered(int messageIndex) {
     _answeredChoiceMessageIndexes.add(messageIndex);
     notifyListeners();
@@ -313,7 +352,8 @@ class ChatProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e, stackTrace) {
       logError('[ChatProvider] Error confirming pending action', e, stackTrace);
-      _errorMessage = 'Failed to confirm action. Please try again.';
+      _errorMessage = "Couldn't confirm the action. Please try again.";
+      _actionError = _errorMessage;
       notifyListeners();
     }
   }
@@ -338,7 +378,8 @@ class ChatProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e, stackTrace) {
       logError('[ChatProvider] Error cancelling pending action', e, stackTrace);
-      _errorMessage = 'Failed to cancel action. Please try again.';
+      _errorMessage = "Couldn't cancel the action. Please try again.";
+      _actionError = _errorMessage;
       notifyListeners();
     }
   }
