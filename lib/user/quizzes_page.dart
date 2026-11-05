@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
 
 /// Quizzes page for managing neurodiversity quizzes
 class QuizzesPage extends StatefulWidget {
@@ -67,7 +68,8 @@ class _QuizzesPageState extends State<QuizzesPage> {
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Failed to load quizzes: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't load quizzes.");
         _isLoading = false;
       });
     }
@@ -87,7 +89,8 @@ class _QuizzesPageState extends State<QuizzesPage> {
       });
     } catch (e) {
       setState(() {
-        _insightsErrorMessage = 'Failed to load insights: ${e.toString()}';
+        _insightsErrorMessage =
+            userFriendlyError(e, fallback: "Couldn't load insights.");
         _isLoadingInsights = false;
       });
       logError('[QuizzesPage] Error loading insights: $e');
@@ -109,7 +112,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
     } catch (e) {
       setState(() {
         _completedErrorMessage =
-            'Failed to load completed quizzes: ${e.toString()}';
+            userFriendlyError(e, fallback: "Couldn't load completed quizzes.");
         _isLoadingCompleted = false;
       });
       logError('[QuizzesPage] Error loading completed quizzes: $e');
@@ -127,6 +130,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
     final appTheme = context.appTheme;
 
     return Scaffold(
+      appBar: dsBackAppBar(context),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _loadAllData,

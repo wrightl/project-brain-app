@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:projectbrain/chat/chat_provider.dart';
-import 'package:projectbrain/subscription/subscription_provider.dart';
-import 'package:projectbrain/subscription/widgets/upgrade_prompt.dart';
-import 'package:projectbrain/models/subscription.dart';
 import 'package:provider/provider.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
@@ -43,14 +40,13 @@ class ChatInputField extends StatelessWidget {
         ),
         child: Row(
           children: [
-            _RoundIconButton(
-              icon: Icons.add,
-              onPressed: () {},
-            ),
-            const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: TextField(
                 controller: controller,
+                minLines: 1,
+                maxLines: 5,
+                textCapitalization: TextCapitalization.sentences,
+                textInputAction: TextInputAction.send,
                 decoration: InputDecoration(
                   hintText: hintText,
                   filled: true,
@@ -79,34 +75,9 @@ class ChatInputField extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
-            Consumer<SubscriptionProvider>(
-              builder: (context, subscriptionProvider, _) {
-                final canUseSpeech = subscriptionProvider.canUseSpeechInput();
-                return _RoundIconButton(
-                  icon: Icons.mic,
-                  onPressed: canUseSpeech
-                      ? () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Speech input coming soon'),
-                            ),
-                          );
-                        }
-                      : () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => UpgradePromptDialog(
-                              requiredTier: SubscriptionTier.pro,
-                              featureName: 'Speech input',
-                            ),
-                          );
-                        },
-                );
-              },
-            ),
-            const SizedBox(width: AppSpacing.sm),
             _RoundIconButton(
               icon: Icons.arrow_upward,
+              tooltip: 'Send',
               backgroundColor: isSending
                   ? theme.colorScheme.primary.withValues(alpha: 0.4)
                   : theme.colorScheme.primary,
@@ -150,10 +121,12 @@ class _RoundIconButton extends StatelessWidget {
   const _RoundIconButton({
     required this.icon,
     required this.onPressed,
+    required this.tooltip,
     this.backgroundColor,
     this.iconColor,
   });
 
+  final String tooltip;
   final IconData icon;
   final VoidCallback? onPressed;
   final Color? backgroundColor;
@@ -164,23 +137,26 @@ class _RoundIconButton extends StatelessWidget {
     final theme = Theme.of(context);
     final appTheme = context.appTheme;
 
-    return Material(
-      color: backgroundColor ?? theme.colorScheme.surface,
-      shape: CircleBorder(
-        side: backgroundColor == null
-            ? BorderSide(color: appTheme.borderColor)
-            : BorderSide.none,
-      ),
-      child: InkWell(
-        onTap: onPressed,
-        customBorder: const CircleBorder(),
-        child: SizedBox(
-          width: 44,
-          height: 44,
-          child: Icon(
-            icon,
-            size: 20,
-            color: iconColor ?? theme.colorScheme.onSurface,
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: backgroundColor ?? theme.colorScheme.surface,
+        shape: CircleBorder(
+          side: backgroundColor == null
+              ? BorderSide(color: appTheme.borderColor)
+              : BorderSide.none,
+        ),
+        child: InkWell(
+          onTap: onPressed,
+          customBorder: const CircleBorder(),
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: Icon(
+              icon,
+              size: 20,
+              color: iconColor ?? theme.colorScheme.onSurface,
+            ),
           ),
         ),
       ),

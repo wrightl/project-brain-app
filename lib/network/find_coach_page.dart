@@ -14,6 +14,7 @@ import 'package:projectbrain/widgets/maps/coach_results_map.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
 
 enum ResultsView { list, map }
 
@@ -179,7 +180,8 @@ class _FindCoachPageState extends State<FindCoachPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to search coaches: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't search coaches.");
         _coaches = [];
         _isLoading = false;
       });

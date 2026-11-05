@@ -19,6 +19,41 @@ class JournalViewPage extends StatefulWidget {
 }
 
 class _JournalViewPageState extends State<JournalViewPage> {
+  Future<void> _confirmDelete(JournalLocalizations l10n) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.delete),
+        content: Text(l10n.deleteEntryConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+              foregroundColor: Theme.of(ctx).colorScheme.onError,
+            ),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await context.read<JournalProvider>().deleteEntry(widget.entryId);
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text(l10n.entryDeleted)));
+      context.pop();
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.couldNotDeleteEntry)));
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -79,6 +114,7 @@ class _JournalViewPageState extends State<JournalViewPage> {
                       IconButton(
                         onPressed: () => context.pop(),
                         icon: const Icon(Icons.arrow_back),
+                        tooltip: 'Back',
                       ),
                       Expanded(
                         child: Text(
@@ -94,6 +130,15 @@ class _JournalViewPageState extends State<JournalViewPage> {
                         ),
                         icon: Icon(Icons.edit_outlined, color: appTheme.coral),
                         tooltip: l10n.edit,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      IconButton(
+                        onPressed: () => _confirmDelete(l10n),
+                        icon: Icon(
+                          Icons.delete_outline,
+                          color: theme.colorScheme.error,
+                        ),
+                        tooltip: l10n.delete,
                       ),
                     ],
                   ),

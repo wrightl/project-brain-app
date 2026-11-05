@@ -2,6 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 
+/// A bare app bar with only the back button, for pages that show their title
+/// in the body. Returns null when there is nothing to go back to, so tab
+/// roots do not get an empty bar.
+PreferredSizeWidget? dsBackAppBar(BuildContext context) {
+  final canPop = ModalRoute.of(context)?.canPop ?? false;
+  if (!canPop) return null;
+  return AppBar(
+    backgroundColor: Colors.transparent,
+    surfaceTintColor: Colors.transparent,
+    elevation: 0,
+  );
+}
+
 /// Rounded square icon container with soft accent background.
 class IconBubble extends StatelessWidget {
   const IconBubble({

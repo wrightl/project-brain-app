@@ -64,7 +64,7 @@ class _UserPageState extends State<UserPage> {
         subtitle: 'Facts and experiences from your chats',
         iconColor: appTheme.sky,
         iconBackgroundColor: appTheme.skySoft,
-        onTap: () => context.go('/learned-memories'),
+        onTap: () => context.push('/learned-memories'),
       ),
       NavigationLink(
         icon: Icons.person,
@@ -72,7 +72,7 @@ class _UserPageState extends State<UserPage> {
         subtitle: 'View and manage your profile settings',
         iconColor: theme.colorScheme.primary,
         iconBackgroundColor: appTheme.primarySoft,
-        onTap: () => context.go('/profile'),
+        onTap: () => context.push('/profile'),
       ),
       NavigationLink(
         icon: Icons.folder,
@@ -80,7 +80,7 @@ class _UserPageState extends State<UserPage> {
         subtitle: 'Manage your files and resources',
         iconColor: appTheme.amber,
         iconBackgroundColor: appTheme.amberSoft,
-        onTap: () => context.go('/resources'),
+        onTap: () => context.push('/resources'),
       ),
       NavigationLink(
         icon: Icons.mic,
@@ -88,7 +88,7 @@ class _UserPageState extends State<UserPage> {
         subtitle: 'Record and manage your voice notes',
         iconColor: appTheme.teal,
         iconBackgroundColor: appTheme.tealSoft,
-        onTap: () => context.go('/voicenotes'),
+        onTap: () => context.push('/voicenotes'),
       ),
       NavigationLink(
         icon: Icons.quiz,
@@ -96,7 +96,7 @@ class _UserPageState extends State<UserPage> {
         subtitle: 'Take quizzes to identify neurodiverse traits',
         iconColor: appTheme.sky,
         iconBackgroundColor: appTheme.skySoft,
-        onTap: () => context.go('/quizzes'),
+        onTap: () => context.push('/quizzes'),
       ),
       NavigationLink(
         icon: Icons.people,
@@ -106,9 +106,18 @@ class _UserPageState extends State<UserPage> {
         iconBackgroundColor: appTheme.tealSoft,
         onTap: () => context.go('/network'),
       ),
+      NavigationLink(
+        icon: Icons.workspace_premium_outlined,
+        title: 'Subscription',
+        subtitle: 'Your plan, usage and billing',
+        iconColor: appTheme.amber,
+        iconBackgroundColor: appTheme.amberSoft,
+        onTap: () => context.push('/subscriptions'),
+      ),
     ];
 
     return Scaffold(
+      appBar: dsBackAppBar(context),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: AppInsets.page,
@@ -159,7 +168,8 @@ class _UserPageState extends State<UserPage> {
                       ),
                     ),
                     IconButton(
-                      onPressed: () => context.go('/profile'),
+                      tooltip: 'Edit profile',
+                      onPressed: () => context.push('/profile'),
                       style: IconButton.styleFrom(
                         backgroundColor: appTheme.primarySoft,
                       ),

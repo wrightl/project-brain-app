@@ -3,6 +3,7 @@ import 'package:projectbrain/models/user_memory/user_episode_memory.dart';
 import 'package:projectbrain/models/user_memory/user_fact_memory.dart';
 import 'package:projectbrain/services/user_memory_service.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
 
 /// Provider for learned memories (load and delete).
 class UserMemoryProvider extends ChangeNotifier {
@@ -31,7 +32,7 @@ class UserMemoryProvider extends ChangeNotifier {
       _episodes = list.episodes;
     } catch (e) {
       logError('[UserMemoryProvider] loadMemories failed', e);
-      _errorMessage = e is Exception ? e.toString() : 'Failed to load memories';
+      _errorMessage = userFriendlyError(e, fallback: "Couldn't load memories.");
       _facts = [];
       _episodes = [];
     } finally {
@@ -49,7 +50,7 @@ class UserMemoryProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       logError('[UserMemoryProvider] deleteFact failed', e);
-      _errorMessage = e is Exception ? e.toString() : 'Failed to delete memory';
+      _errorMessage = userFriendlyError(e, fallback: "Couldn't delete memory.");
       notifyListeners();
       return false;
     }
@@ -64,7 +65,7 @@ class UserMemoryProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       logError('[UserMemoryProvider] deleteEpisode failed', e);
-      _errorMessage = e is Exception ? e.toString() : 'Failed to delete memory';
+      _errorMessage = userFriendlyError(e, fallback: "Couldn't delete memory.");
       notifyListeners();
       return false;
     }
@@ -85,7 +86,7 @@ class UserMemoryProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       logError('[UserMemoryProvider] togglePinFact failed', e);
-      _errorMessage = e is Exception ? e.toString() : 'Failed to update memory';
+      _errorMessage = userFriendlyError(e, fallback: "Couldn't update memory.");
       notifyListeners();
       return false;
     }
@@ -106,7 +107,7 @@ class UserMemoryProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       logError('[UserMemoryProvider] togglePinEpisode failed', e);
-      _errorMessage = e is Exception ? e.toString() : 'Failed to update memory';
+      _errorMessage = userFriendlyError(e, fallback: "Couldn't update memory.");
       notifyListeners();
       return false;
     }

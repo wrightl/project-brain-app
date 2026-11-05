@@ -10,10 +10,12 @@ import 'package:projectbrain/services/coach_service.dart';
 import 'package:projectbrain/services/connection_service.dart';
 import 'package:projectbrain/utils/coach_message_utils.dart';
 import 'package:intl/intl.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
 
 /// Chat page for communicating with connected coaches.
 class CoachChatPage extends StatefulWidget {
@@ -34,6 +36,13 @@ class _CoachChatPageState extends State<CoachChatPage> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final AudioRecorder _audioRecorder = AudioRecorder();
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  StreamSubscription<PlayerState>? _playerStateSubscription;
+
+  /// Downloaded audio per message id, deleted when the page closes.
+  final Map<String, File> _downloadedAudio = {};
+  String? _playingMessageId;
+  String? _loadingAudioMessageId;
 
   List<Connection> _connections = [];
   String? _selectedConnectionId;
@@ -49,6 +58,12 @@ class _CoachChatPageState extends State<CoachChatPage> {
   @override
   void initState() {
     super.initState();
+    _playerStateSubscription = _audioPlayer.playerStateStream.listen((state) {
+      if (state.processingState == ProcessingState.completed && mounted) {
+        setState(() => _playingMessageId = null);
+        _audioPlayer.stop();
+      }
+    });
     _loadConnections();
   }
 
@@ -59,7 +74,59 @@ class _CoachChatPageState extends State<CoachChatPage> {
     _textController.dispose();
     _scrollController.dispose();
     _audioRecorder.dispose();
+    _playerStateSubscription?.cancel();
+    _audioPlayer.dispose();
+    for (final file in _downloadedAudio.values) {
+      file.delete().catchError((_) => file);
+    }
     super.dispose();
+  }
+
+  Future<void> _toggleAudio(CoachMessage message) async {
+    if (_playingMessageId == message.id) {
+      await _audioPlayer.pause();
+      if (mounted) setState(() => _playingMessageId = null);
+      return;
+    }
+    if (_loadingAudioMessageId != null) return;
+
+    setState(() => _loadingAudioMessageId = message.id);
+    try {
+      final file = _downloadedAudio[message.id] ??=
+          await _coachService.downloadMessageAudio(message.id);
+      await _audioPlayer.stop();
+      await _audioPlayer.setFilePath(file.path);
+      if (!mounted) return;
+      setState(() {
+        _playingMessageId = message.id;
+        _loadingAudioMessageId = null;
+      });
+      await _audioPlayer.play();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadingAudioMessageId = null;
+        _errorMessage = "Couldn't play that audio message. Please try again.";
+      });
+    }
+  }
+
+  Future<void> _cancelRecording() async {
+    _recordingTimer?.cancel();
+    try {
+      final path = await _audioRecorder.stop();
+      if (path != null) {
+        final file = File(path);
+        if (await file.exists()) await file.delete();
+      }
+    } catch (_) {
+      // Nothing to send either way.
+    }
+    if (!mounted) return;
+    setState(() {
+      _isRecording = false;
+      _recordingDuration = Duration.zero;
+    });
   }
 
   Future<void> _loadConnections() async {
@@ -87,7 +154,8 @@ class _CoachChatPageState extends State<CoachChatPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to load coaches: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't load coaches.");
         _isLoading = false;
       });
     }
@@ -189,7 +257,8 @@ class _CoachChatPageState extends State<CoachChatPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to load messages: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't load messages.");
       });
     }
   }
@@ -217,7 +286,8 @@ class _CoachChatPageState extends State<CoachChatPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to send message: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't send message.");
       });
     } finally {
       if (mounted) {
@@ -259,7 +329,8 @@ class _CoachChatPageState extends State<CoachChatPage> {
           _errorMessage =
               'Microphone permission denied. Please enable microphone access in settings.';
         } else {
-          _errorMessage = 'Failed to start recording: ${e.toString()}';
+          _errorMessage =
+              userFriendlyError(e, fallback: "Couldn't start recording.");
         }
         _isRecording = false;
       });
@@ -292,7 +363,8 @@ class _CoachChatPageState extends State<CoachChatPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to stop recording: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't stop recording.");
         _isRecording = false;
       });
     }
@@ -321,7 +393,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to send audio: ${e.toString()}';
+        _errorMessage = userFriendlyError(e, fallback: "Couldn't send audio.");
       });
     } finally {
       if (mounted) {
@@ -465,12 +537,14 @@ class _CoachChatPageState extends State<CoachChatPage> {
                                     ),
                                   ),
                                 if (message.audioUrl != null)
-                                  const Row(
-                                    children: [
-                                      Icon(Icons.mic, size: 20),
-                                      SizedBox(width: AppSpacing.sm),
-                                      Text('Audio message'),
-                                    ],
+                                  _AudioMessageControl(
+                                    isPlaying: _playingMessageId == message.id,
+                                    isLoading:
+                                        _loadingAudioMessageId == message.id,
+                                    color: message.isFromCoach
+                                        ? theme.colorScheme.onSurface
+                                        : theme.colorScheme.onPrimary,
+                                    onPressed: () => _toggleAudio(message),
                                   ),
                                 SizedBox(height: AppSpacing.xs),
                                 Text(
@@ -506,6 +580,14 @@ class _CoachChatPageState extends State<CoachChatPage> {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.lg),
+                  TextButton(
+                    onPressed: _cancelRecording,
+                    style: TextButton.styleFrom(
+                      foregroundColor: theme.colorScheme.onErrorContainer,
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
                   ElevatedButton(
                     onPressed: _stopRecording,
                     child: const Text('Stop & Send'),
@@ -583,6 +665,56 @@ class _CoachChatPageState extends State<CoachChatPage> {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Play/pause button and label for a voice message bubble.
+class _AudioMessageControl extends StatelessWidget {
+  const _AudioMessageControl({
+    required this.isPlaying,
+    required this.isLoading,
+    required this.color,
+    required this.onPressed,
+  });
+
+  final bool isPlaying;
+  final bool isLoading;
+  final Color color;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (isLoading)
+          SizedBox(
+            width: 48,
+            height: 48,
+            child: Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: color),
+              ),
+            ),
+          )
+        else
+          IconButton(
+            onPressed: onPressed,
+            tooltip: isPlaying ? 'Pause audio message' : 'Play audio message',
+            icon: Icon(
+              isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+              color: color,
+              size: 32,
+            ),
+          ),
+        Text(
+          'Audio message',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: color),
+        ),
+      ],
     );
   }
 }

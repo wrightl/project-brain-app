@@ -5,6 +5,7 @@ import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/models/community.dart';
 import 'package:projectbrain/services/community_service.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
 
 class CommunityChannelPage extends StatefulWidget {
   final String slug;
@@ -54,7 +55,7 @@ class _CommunityChannelPageState extends State<CommunityChannelPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = userFriendlyError(e, fallback: "Couldn't load posts.");
         _loading = false;
       });
     }
@@ -72,7 +73,8 @@ class _CommunityChannelPageState extends State<CommunityChannelPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to post: $e')),
+        SnackBar(
+            content: Text(userFriendlyError(e, fallback: "Couldn't post."))),
       );
     } finally {
       if (mounted) setState(() => _submitting = false);

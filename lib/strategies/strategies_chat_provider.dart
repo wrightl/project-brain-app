@@ -3,6 +3,7 @@ import 'package:projectbrain/models/strategies/suggested_strategy.dart';
 import 'package:projectbrain/services/ai_service.dart';
 import 'package:projectbrain/services/strategy_service.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
 
 /// One turn in the strategies chat: user message + assistant text + optional strategies.
 class StrategyChatTurn {
@@ -92,9 +93,8 @@ class StrategiesChatProvider extends ChangeNotifier {
       }
     } catch (e) {
       logError('[StrategiesChatProvider] sendMessage failed', e);
-      _errorMessage = e is Exception
-          ? e.toString()
-          : 'Failed to get response. Please try again.';
+      _errorMessage = userFriendlyError(e,
+          fallback: "Couldn't get response. Please try again.");
       notifyListeners();
     } finally {
       _isLoading = false;
@@ -142,7 +142,7 @@ class StrategiesChatProvider extends ChangeNotifier {
     } catch (e) {
       logError('[StrategiesChatProvider] saveSelectedStrategies failed', e);
       _errorMessage =
-          e is Exception ? e.toString() : 'Failed to save strategies';
+          userFriendlyError(e, fallback: "Couldn't save strategies.");
       notifyListeners();
       return 0;
     }

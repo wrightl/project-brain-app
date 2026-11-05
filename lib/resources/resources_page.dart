@@ -10,6 +10,7 @@ import 'package:projectbrain/models/subscription.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
 
 /// Resources page for managing user files
 class ResourcesPage extends StatefulWidget {
@@ -49,7 +50,8 @@ class _ResourcesPageState extends State<ResourcesPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to load resources: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't load resources.");
         _isLoading = false;
       });
     }
@@ -175,7 +177,8 @@ class _ResourcesPageState extends State<ResourcesPage> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Failed to upload files: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't upload files.");
         _isUploading = false;
       });
 
@@ -240,7 +243,8 @@ class _ResourcesPageState extends State<ResourcesPage> {
         }
       } catch (e) {
         setState(() {
-          _errorMessage = 'Failed to delete resource: ${e.toString()}';
+          _errorMessage =
+              userFriendlyError(e, fallback: "Couldn't delete resource.");
         });
 
         if (mounted) {

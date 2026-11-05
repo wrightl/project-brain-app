@@ -238,7 +238,7 @@ class _HomeHeader extends StatelessWidget {
           button: true,
           label: 'Profile',
           child: InkWell(
-            onTap: () => context.go('/user'),
+            onTap: () => context.push('/user'),
             customBorder: const CircleBorder(),
             child: CircleAvatar(
               radius: 22,

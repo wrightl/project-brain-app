@@ -8,6 +8,7 @@ import 'package:projectbrain/models/subscription.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
 
 /// Subscription management page showing current subscription details
 class SubscriptionManagementPage extends StatelessWidget {
@@ -384,7 +385,8 @@ class SubscriptionManagementPage extends StatelessWidget {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Error: ${e.toString()}'),
+                      content: Text(userFriendlyError(e,
+                          fallback: 'Something went wrong. Please try again.')),
                       backgroundColor: context.appTheme.errorColor,
                     ),
                   );

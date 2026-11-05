@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:projectbrain/models/coach.dart';
 import 'package:projectbrain/services/http_service.dart';
@@ -249,6 +250,34 @@ class CoachService extends HttpService {
   }
 
   /// Send a voice message on a coach connection.
+  /// Download the audio of a voice message to a temporary file for playback.
+  ///
+  /// Uses the API base URL and the message id rather than the message's
+  /// `audioUrl`, so the access token only ever goes to our API.
+  Future<File> downloadMessageAudio(String messageId) async {
+    final token = await authService.getAccessToken();
+    final uri = Uri.parse(
+      '$baseUrl/coach-messages/${Uri.encodeComponent(messageId)}/audio',
+    );
+    final request = http.Request('GET', uri)
+      ..headers['Authorization'] = 'Bearer $token';
+    final response = await request.send().timeout(const Duration(seconds: 60));
+    if (response.statusCode != 200) {
+      throw Exception('Failed to download audio: ${response.statusCode}');
+    }
+
+    final directory = await getTemporaryDirectory();
+    final file = File('${directory.path}/coach_audio_msg_$messageId.m4a');
+    final sink = file.openWrite();
+    try {
+      await response.stream.pipe(sink);
+    } catch (_) {
+      await sink.close();
+      rethrow;
+    }
+    return file;
+  }
+
   Future<CoachMessage> sendAudioMessage(
     String connectionId,
     File audioFile,

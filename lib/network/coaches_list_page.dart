@@ -7,6 +7,7 @@ import 'package:projectbrain/services/connection_service.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
 
 /// Talk to a Coach — list connected coaches with message and manage actions.
 class CoachesListPage extends StatefulWidget {
@@ -43,7 +44,8 @@ class _CoachesListPageState extends State<CoachesListPage> {
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Failed to load coaches: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't load coaches.");
         _isLoading = false;
       });
     }
@@ -121,7 +123,8 @@ class _CoachesListPageState extends State<CoachesListPage> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to update connection: ${e.toString()}'),
+          content: Text(
+              userFriendlyError(e, fallback: "Couldn't update connection.")),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );

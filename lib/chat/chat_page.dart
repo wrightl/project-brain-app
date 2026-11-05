@@ -127,7 +127,8 @@ class _ChatPageState extends State<ChatPage> {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: TypingIndicator());
                       } else if (snapshot.hasError) {
-                        return Center(child: Text('Error: ${snapshot.error}'));
+                        return Center(
+                            child: Text("Couldn't load your conversations."));
                       } else if (snapshot.hasData &&
                           snapshot.data!.isNotEmpty) {
                         return Consumer<ChatProvider>(

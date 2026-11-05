@@ -49,6 +49,14 @@ class UserService extends HttpService {
     }
   }
 
+  /// Permanently delete the signed-in user's account and data.
+  Future<void> deleteAccount() async {
+    final res = await delete('/users/me');
+    if (res.statusCode != 204 && res.statusCode != 200) {
+      throw Exception('Failed to delete account (${res.statusCode})');
+    }
+  }
+
   Future<Map<String, dynamic>> updateUser(
       String userId, Map<String, dynamic> userData) async {
     final res = await put(

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:projectbrain/models/quiz.dart';
 import 'package:projectbrain/services/quiz_service.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
 
 class QuizTakingProvider extends ChangeNotifier {
   QuizTakingProvider({required QuizService quizService})
@@ -32,7 +33,7 @@ class QuizTakingProvider extends ChangeNotifier {
       isLoading = false;
       notifyListeners();
     } catch (e) {
-      errorMessage = 'Failed to load quiz: ${e.toString()}';
+      errorMessage = userFriendlyError(e, fallback: "Couldn't load quiz.");
       isLoading = false;
       notifyListeners();
     }
@@ -116,7 +117,7 @@ class QuizTakingProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       isSubmitting = false;
-      errorMessage = 'Failed to submit quiz: ${e.toString()}';
+      errorMessage = userFriendlyError(e, fallback: "Couldn't submit quiz.");
       notifyListeners();
       return false;
     }

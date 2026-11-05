@@ -15,6 +15,8 @@ import 'package:projectbrain/core/session/session_cleanup_service.dart';
 import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:projectbrain/core/storage/preferences_service.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
+import 'package:projectbrain/services/auth/auth_exception.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService authService;
@@ -135,7 +137,13 @@ class AuthProvider extends ChangeNotifier {
       );
     } catch (e) {
       logError('[AuthProvider] Error during login', e);
-      _errorMessage = e.toString().replaceAll('AuthException: ', '');
+      // Cancelling Universal Login is the user's choice, not an error.
+      final cancelled =
+          e is AuthException && e.message.toLowerCase().contains('cancel');
+      _errorMessage = cancelled
+          ? null
+          : userFriendlyError(e,
+              fallback: "Couldn't sign you in. Please try again.");
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -202,6 +210,14 @@ class AuthProvider extends ChangeNotifier {
     } finally {
       notifyListeners();
     }
+  }
+
+  /// Delete the account on the server, then log out locally. Throws when the
+  /// server could not delete it, so the user stays signed in and can retry.
+  Future<void> deleteAccount() async {
+    _errorMessage = null;
+    await userService.deleteAccount();
+    await logout();
   }
 
   Future<void> logout() async {

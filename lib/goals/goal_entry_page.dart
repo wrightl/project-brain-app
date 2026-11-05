@@ -7,6 +7,7 @@ import 'package:projectbrain/services/egg_goals_service.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
 
 /// Page for entering/editing daily goals
 class GoalEntryPage extends StatefulWidget {
@@ -141,8 +142,8 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content:
-                                      Text('Could not load suggestions: $e'),
+                                  content: Text(userFriendlyError(e,
+                                      fallback: 'Could not load suggestions.')),
                                 ),
                               );
                             }

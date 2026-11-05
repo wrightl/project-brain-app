@@ -14,6 +14,7 @@ import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 import 'package:projectbrain/widgets/unsaved_changes_scope.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
 
 /// Voice notes page for managing recorded voice notes
 class VoiceNotesPage extends StatefulWidget {
@@ -187,7 +188,8 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
           if (!mounted) return;
           setState(() {
             _downloadingVoiceNoteId = null;
-            _errorMessage = 'Failed to download audio: ${e.toString()}';
+            _errorMessage =
+                userFriendlyError(e, fallback: "Couldn't download audio.");
           });
           logError('[VoiceNotesPage] Error downloading audio: $e');
           return;
@@ -227,7 +229,8 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
       });
     } catch (e) {
       if (mounted) {
-        String errorMsg = 'Failed to play voice note: ${e.toString()}';
+        String errorMsg =
+            userFriendlyError(e, fallback: "Couldn't play voice note.");
         // Provide helpful messages for specific errors
         if (e.toString().contains('MissingPluginException')) {
           errorMsg =
@@ -298,7 +301,8 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
       });
     } catch (e) {
       if (mounted) {
-        String errorMsg = 'Failed to play recording: ${e.toString()}';
+        String errorMsg =
+            userFriendlyError(e, fallback: "Couldn't play recording.");
         // Provide helpful message for MissingPluginException
         if (e.toString().contains('MissingPluginException')) {
           errorMsg =
@@ -328,7 +332,8 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to load voice notes: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't load voice notes.");
         _isLoading = false;
       });
     }
@@ -371,7 +376,8 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
           _errorMessage =
               'Microphone permission denied. Please enable microphone access in settings.';
         } else {
-          _errorMessage = 'Failed to start recording: ${e.toString()}';
+          _errorMessage =
+              userFriendlyError(e, fallback: "Couldn't start recording.");
         }
         _isRecording = false;
       });
@@ -404,7 +410,8 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to stop recording: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't stop recording.");
         _isRecording = false;
       });
     }
@@ -474,7 +481,8 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to upload voice note: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't upload voice note.");
       });
     } finally {
       if (mounted) {
@@ -516,7 +524,9 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to delete: ${e.toString()}')),
+            SnackBar(
+                content:
+                    Text(userFriendlyError(e, fallback: "Couldn't delete."))),
           );
         }
       }

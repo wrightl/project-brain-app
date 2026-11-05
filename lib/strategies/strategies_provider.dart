@@ -4,6 +4,7 @@ import 'package:projectbrain/models/strategies/create_coping_strategy_request.da
 import 'package:projectbrain/models/strategies/update_coping_strategy_rating_request.dart';
 import 'package:projectbrain/services/strategy_service.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
 
 /// Provider for the coping strategies library (list, load, save, delete, rating).
 class StrategiesProvider extends ChangeNotifier {
@@ -28,7 +29,7 @@ class StrategiesProvider extends ChangeNotifier {
       _items = res.items;
     } catch (e) {
       logError('[StrategiesProvider] loadLibrary failed', e);
-      _errorMessage = e is Exception ? e.toString() : 'Failed to load library';
+      _errorMessage = userFriendlyError(e, fallback: "Couldn't load library.");
       _items = [];
     } finally {
       _isLoading = false;
@@ -46,7 +47,7 @@ class StrategiesProvider extends ChangeNotifier {
       return item;
     } catch (e) {
       logError('[StrategiesProvider] saveStrategy failed', e);
-      _errorMessage = e is Exception ? e.toString() : 'Failed to save strategy';
+      _errorMessage = userFriendlyError(e, fallback: "Couldn't save strategy.");
       notifyListeners();
       return null;
     }
@@ -61,7 +62,7 @@ class StrategiesProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       logError('[StrategiesProvider] deleteStrategy failed', e);
-      _errorMessage = e is Exception ? e.toString() : 'Failed to delete';
+      _errorMessage = userFriendlyError(e, fallback: "Couldn't delete.");
       notifyListeners();
       return false;
     }
@@ -81,7 +82,7 @@ class StrategiesProvider extends ChangeNotifier {
       return item;
     } catch (e) {
       logError('[StrategiesProvider] updateRating failed', e);
-      _errorMessage = e is Exception ? e.toString() : 'Failed to update rating';
+      _errorMessage = userFriendlyError(e, fallback: "Couldn't update rating.");
       notifyListeners();
       return null;
     }

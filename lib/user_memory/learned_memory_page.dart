@@ -86,6 +86,7 @@ class _LearnedMemoryPageState extends State<LearnedMemoryPage> {
     final theme = Theme.of(context);
     final appTheme = context.appTheme;
     return Scaffold(
+      appBar: dsBackAppBar(context),
       body: SafeArea(
         child: Consumer<UserMemoryProvider>(
           builder: (context, provider, _) {

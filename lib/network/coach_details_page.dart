@@ -10,6 +10,7 @@ import 'package:projectbrain/models/subscription.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
 
 /// Page showing detailed information about a coach
 class CoachDetailsPage extends StatefulWidget {
@@ -64,7 +65,8 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to load coach details: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't load coach details.");
         _isLoading = false;
       });
     }
@@ -127,13 +129,15 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Failed to send connection request: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't send connection request.");
         _isUpdatingConnection = false;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text(userFriendlyError(e,
+                fallback: 'Something went wrong. Please try again.')),
             backgroundColor: context.appTheme.errorColor,
           ),
         );
@@ -163,13 +167,15 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Failed to cancel connection request: ${e.toString()}';
+        _errorMessage = userFriendlyError(e,
+            fallback: "Couldn't cancel connection request.");
         _isUpdatingConnection = false;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text(userFriendlyError(e,
+                fallback: 'Something went wrong. Please try again.')),
             backgroundColor: context.appTheme.errorColor,
           ),
         );

@@ -49,6 +49,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       if (sl<AuthProvider>().isLoggedIn) {
         sl<EggGoalsProvider>().syncFromAPI();
+        // Picks up a plan bought or cancelled in the browser while away.
+        sl<SubscriptionProvider>().refreshIfStale();
         sl<GoalsRealtimeService>()
             .start(() => sl<EggGoalsProvider>().syncFromAPI());
       }

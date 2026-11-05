@@ -234,7 +234,7 @@ void main() {
 
       expect(authProvider.isLoggedIn, isFalse);
       expect(authProvider.hasError, isTrue);
-      expect(authProvider.errorMessage, contains('Login failed'));
+      expect(authProvider.errorMessage, contains("Couldn't sign you in"));
     });
 
     test('login clears previous errors', () async {
@@ -304,12 +304,23 @@ void main() {
       expect(authProvider.errorMessage, isNull);
     });
 
-    test('error messages are cleaned up', () async {
+    test('shows a plain message instead of the raw error', () async {
       when(() => mockAuthService.login())
-          .thenThrow(AuthException('AuthException: Test error'));
+          .thenThrow(AuthException('Platform error: PlatformException(x)'));
       await authProvider.login();
 
-      expect(authProvider.errorMessage, equals('Test error'));
+      expect(
+        authProvider.errorMessage,
+        equals("Couldn't sign you in. Please try again."),
+      );
+    });
+
+    test('cancelling login is not shown as an error', () async {
+      when(() => mockAuthService.login())
+          .thenThrow(AuthException('Login cancelled by user'));
+      await authProvider.login();
+
+      expect(authProvider.errorMessage, isNull);
     });
 
     test('handles non-AuthException errors', () async {

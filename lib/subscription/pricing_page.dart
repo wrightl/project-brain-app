@@ -10,6 +10,7 @@ import 'package:projectbrain/subscription/widgets/tier_badge.dart';
 import 'package:projectbrain/subscription/widgets/stripe_checkout_webview.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
 
 /// Pricing/Upgrade page showing all subscription tiers
 class PricingPage extends StatefulWidget {
@@ -508,7 +509,8 @@ class _PricingPageState extends State<PricingPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: ${e.toString()}'),
+          content: Text(userFriendlyError(e,
+              fallback: 'Something went wrong. Please try again.')),
           backgroundColor: Colors.red,
         ),
       );
