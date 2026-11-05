@@ -82,7 +82,7 @@ packages:
     source: hosted
     version: "2.6.2"
   auth0_flutter_platform_interface:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: auth0_flutter_platform_interface
       sha256: "4bcac858ec60603c5e97b48d118f85051951a9bc0d72efc71d1190b267687427"
