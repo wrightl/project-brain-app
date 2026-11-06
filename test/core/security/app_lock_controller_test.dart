@@ -65,6 +65,12 @@ void main() {
       expect(controller.isLocked, isFalse);
     });
 
+    test('locks when the clock moved backwards while in the background', () {
+      background(const Duration(hours: -1));
+
+      expect(controller.isLocked, isTrue);
+    });
+
     test('does not lock when biometric unlock is disabled', () {
       lockEnabled = false;
       background(const Duration(minutes: 5));

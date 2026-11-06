@@ -19,6 +19,7 @@ import 'package:projectbrain/core/network/user_friendly_error.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:projectbrain/core/util/app_date_format.dart';
 import 'package:projectbrain/widgets/chat/chat_composer.dart';
+import 'package:projectbrain/core/storage/temporary_files.dart';
 
 /// Chat page for communicating with connected coaches.
 class CoachChatPage extends StatefulWidget {
@@ -420,6 +421,8 @@ class _CoachChatPageState extends State<CoachChatPage> {
         _errorMessage = userFriendlyError(e, fallback: "Couldn't send audio.");
       });
     } finally {
+      // There is no resend for audio, so the file is not needed either way.
+      await deleteFileQuietly(audioFile);
       if (mounted) {
         setState(() {
           _isSending = false;

@@ -16,6 +16,7 @@ import 'package:projectbrain/widgets/unsaved_changes_scope.dart';
 import 'package:projectbrain/core/network/user_friendly_error.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:projectbrain/core/util/app_date_format.dart';
+import 'package:projectbrain/core/storage/temporary_files.dart';
 
 /// Voice notes page for managing recorded voice notes
 class VoiceNotesPage extends StatefulWidget {
@@ -85,6 +86,11 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
     _audioPlayer.dispose();
     _descriptionController.dispose();
     _cleanupDownloadedFile();
+    // An unsent recording is lost with the page; do not leave it on disk.
+    final recordingPath = _recordingPath;
+    if (recordingPath != null) {
+      deleteFileQuietly(File(recordingPath));
+    }
     super.dispose();
   }
 
@@ -475,6 +481,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
         file,
         description: description.isEmpty ? null : description,
       );
+      await deleteFileQuietly(file);
       if (!mounted) return;
 
       setState(() {

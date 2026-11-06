@@ -8,14 +8,12 @@ class PreferencesService {
   PreferencesService(this._prefs);
 
   // Keys
+  // No longer written: older builds stored the last route (with ids) here.
   static const String _lastRouteKey = 'last_route_key';
   static const String _themeModeKey = 'theme_mode';
   static const String _lastLoginEmailKey = 'last_login_email';
   static const String _forceFreshLoginKey = 'force_fresh_login';
   static const String _biometricUnlockEnabledKey = 'biometric_unlock_enabled';
-
-  /// Get the last visited route
-  String? get lastRoute => _prefs.getString(_lastRouteKey);
 
   /// Get the selected theme mode id from [AppThemes].
   String get themeMode {
@@ -37,12 +35,7 @@ class PreferencesService {
     return await _prefs.setString(key, value);
   }
 
-  /// Set the last visited route
-  Future<bool> setLastRoute(String route) async {
-    return await _prefs.setString(_lastRouteKey, route);
-  }
-
-  /// Clear the last route
+  /// Remove the last route stored by older builds.
   Future<bool> clearLastRoute() async {
     return await _prefs.remove(_lastRouteKey);
   }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:projectbrain/authentication/auth_provider.dart';
@@ -45,6 +47,14 @@ import 'package:projectbrain/services/push_notification_service.dart';
 import 'package:projectbrain/services/error_reporting_service.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
 
+/// Whether [value] is safe to use as a route id and API path segment.
+@visibleForTesting
+bool isSafeRouteId(String value) => _safeRouteId.hasMatch(value);
+
+// Letters, digits, `_`, `-` and `|` (Auth0 user ids look like `auth0|abc`).
+// No `/`, `.` or `%`, so a value cannot change the API path it is put into.
+final RegExp _safeRouteId = RegExp(r'^[A-Za-z0-9_|-]+$');
+
 /// Application router configuration
 class AppRouter {
   final AuthProvider authProvider;
@@ -75,8 +85,9 @@ class AppRouter {
     );
     _router = router;
 
-    // Save route changes to preferences and track screen views.
+    // Track screen views.
     router.routerDelegate.addListener(_onRouteChanged);
+    unawaited(preferencesService.clearLastRoute());
 
     // Check for pending notification after router is ready
     _checkPendingNotification();
@@ -89,7 +100,6 @@ class AppRouter {
     if (router == null) return;
     final currentRoute =
         router.routerDelegate.currentConfiguration.uri.toString();
-    preferencesService.setLastRoute(currentRoute);
     _logScreenView(currentRoute);
   }
 
@@ -168,13 +178,23 @@ class AppRouter {
   }
 
   /// Public method to navigate from notification (called by push notification service)
-  void navigateFromNotification(Map<String, dynamic> data) {
+  ///
+  /// Returns false when the router is not built yet, so the caller can keep
+  /// the notification for [_checkPendingNotification].
+  bool navigateFromNotification(Map<String, dynamic> data) {
+    if (_router == null) return false;
     _navigateFromNotification(data);
+    return true;
   }
 
   /// Handle authentication-based redirects
   String? _handleRedirect(BuildContext context, GoRouterState state) {
     if (authProvider.isLoading) return null;
+
+    // Route ids end up in API paths (e.g. `/journal/:id`), and ids can come
+    // from notification payloads. Refuse anything that is not a plain id so a
+    // crafted value like `..%2F..%2Fadmin` cannot reach another endpoint.
+    if (!state.pathParameters.values.every(isSafeRouteId)) return '/';
 
     final loggedIn = authProvider.isLoggedIn;
     final onboarded = authProvider.onboardingComplete;

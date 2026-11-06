@@ -19,6 +19,8 @@
 			</array>
 		</dict>
 	</array>
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
 	<key>CFBundleDisplayName</key>
 	<string>Project Brain</string>
 	<key>CFBundleExecutable</key>

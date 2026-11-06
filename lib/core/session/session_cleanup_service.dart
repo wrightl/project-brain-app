@@ -1,5 +1,6 @@
 import 'package:projectbrain/chat/chat_provider.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
+import 'package:projectbrain/core/storage/temporary_files.dart';
 import 'package:projectbrain/goals/egg_goals_provider.dart';
 import 'package:projectbrain/journal/journal_provider.dart';
 import 'package:projectbrain/services/api_http_cache_coordinator.dart';
@@ -72,6 +73,7 @@ class SessionCleanupService {
     _userMemoryProvider.resetOnLogout();
     _chatProvider.resetOnLogout();
     _journalProvider.resetOnLogout();
+    await deleteUserTemporaryFiles();
     logDebug('[SessionCleanupService] Logout cleanup complete');
   }
 }

@@ -23,6 +23,9 @@ class TokenManager {
   /// Whether a valid access token is currently available
   bool get hasValidToken => _credentials?.accessToken.isNotEmpty ?? false;
 
+  /// Refresh token of the current session, if any (used to revoke on logout).
+  String? get refreshToken => _credentials?.refreshToken;
+
   TokenManager({
     Auth0? auth0,
   }) : _auth0 = auth0 ?? Auth0(AppConfig.authDomain, AppConfig.authClientId);
@@ -121,6 +124,16 @@ class TokenManager {
 
     // Refresh tokens rotate: redeeming the same one twice can revoke the whole
     // session, so concurrent callers share a single in-flight refresh.
+    return _refreshInFlight ??=
+        _refreshCredentials().whenComplete(() => _refreshInFlight = null);
+  }
+
+  /// Refresh the access token now, even if it has not expired.
+  ///
+  /// Used when the user's roles change server-side (e.g. after onboarding),
+  /// since roles are baked into the token at issue time.
+  Future<bool> forceRefresh() {
+    if (_credentials == null) return Future.value(false);
     return _refreshInFlight ??=
         _refreshCredentials().whenComplete(() => _refreshInFlight = null);
   }

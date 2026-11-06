@@ -188,8 +188,13 @@ class AuthService {
     logInfo('[AuthService] Biometric unlock enabled');
   }
 
-  /// Disable biometric unlock (does not clear Auth0 credentials).
+  /// Disable biometric unlock after a confirmation prompt (does not clear
+  /// Auth0 credentials). The prompt stops anyone holding the unlocked device
+  /// from quietly removing the gate.
   Future<void> disableBiometricUnlock() async {
+    await _biometricUnlockService.authenticate(
+      reason: 'Turn off biometric unlock for Project Brain',
+    );
     await _preferencesService?.setBiometricUnlockEnabled(false);
     logInfo('[AuthService] Biometric unlock disabled');
   }
@@ -245,7 +250,12 @@ class AuthService {
   /// Throws [AuthException] if login fails
   Future<void> login() async {
     logInfo('[AuthService] Starting login');
-    final credentials = await _oauthService.login();
+    // Logging in from the biometric lock screen must not reuse the Auth0 SSO
+    // cookie, otherwise anyone holding the device skips the biometric gate.
+    final credentials = await _oauthService.login(
+      requireReauthentication: _hasStoredSession &&
+          (_awaitingBiometricUnlock || isBiometricUnlockEnabled),
+    );
     await _hydrateSessionFromCredentials(
       credentials,
       allowIdTokenProfileFallback: true,
@@ -260,7 +270,7 @@ class AuthService {
     logInfo('[AuthService] Logging out');
 
     try {
-      await _oauthService.logout();
+      await _oauthService.logout(refreshToken: _tokenManager.refreshToken);
     } catch (e) {
       logWarning('[AuthService] Error during remote logout', e);
     }
@@ -274,6 +284,11 @@ class AuthService {
   /// Throws [AuthException] if no valid token is available
   Future<String> getAccessToken() async {
     return await _tokenManager.getAccessToken();
+  }
+
+  /// Fetch a new access token so it reflects the user's current roles.
+  Future<bool> refreshAccessToken() async {
+    return await _tokenManager.forceRefresh();
   }
 
   /// Persist tokens, load access token into memory, then resolve profile.
