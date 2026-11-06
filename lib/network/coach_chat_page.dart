@@ -18,6 +18,7 @@ import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 import 'package:projectbrain/core/network/user_friendly_error.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:projectbrain/core/util/app_date_format.dart';
+import 'package:projectbrain/widgets/chat/chat_composer.dart';
 
 /// Chat page for communicating with connected coaches.
 class CoachChatPage extends StatefulWidget {
@@ -381,7 +382,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
         _isRecording = false;
       });
       if (path != null) {
-        _sendAudioMessage(File(path));
+        await _sendAudioMessage(File(path));
       }
     } catch (e) {
       if (!mounted) return;
@@ -629,75 +630,17 @@ class _CoachChatPageState extends State<CoachChatPage> {
               ),
             ),
           if (_selectedConnectionId != null)
-            SafeArea(
-              top: false,
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md,
-                  AppSpacing.sm,
-                  AppSpacing.md,
-                  AppSpacing.md,
-                ),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  border: Border(
-                    top: BorderSide(color: context.appTheme.borderColor),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.mic),
-                      onPressed:
-                          _isSending || _isRecording ? null : _startRecording,
-                      tooltip: 'Record audio',
-                    ),
-                    Expanded(
-                      child: Semantics(
-// The hint disappears once typing starts; keep a label.
-                          label: 'Message to your coach',
-                          child: TextField(
-                            controller: _textController,
-                            decoration: InputDecoration(
-                              hintText: 'Message coach…',
-                              filled: true,
-                              fillColor: theme.scaffoldBackgroundColor,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.lg,
-                                vertical: AppSpacing.s14,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: AppRadius.circularPill,
-                                borderSide: BorderSide.none,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: AppRadius.circularPill,
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                            maxLines: null,
-                            textInputAction: TextInputAction.send,
-                            onSubmitted: (_) => _sendTextMessage(),
-                          )),
-                    ),
-                    FilledButton(
-                      onPressed: _isSending ? null : _sendTextMessage,
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size(44, 44),
-                        padding: EdgeInsets.zero,
-                        shape: const CircleBorder(),
-                      ),
-                      child: _isSending
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                  semanticsLabel: 'Loading', strokeWidth: 2),
-                            )
-                          : const Icon(Icons.arrow_upward, size: 20),
-                    ),
-                  ],
-                ),
+            ChatComposer(
+              controller: _textController,
+              hintText: 'Message coach…',
+              semanticsLabel: 'Message to your coach',
+              isBusy: _isSending,
+              showBusySpinner: true,
+              onSend: (_) => _sendTextMessage(),
+              leading: IconButton(
+                icon: const Icon(Icons.mic),
+                onPressed: _isSending || _isRecording ? null : _startRecording,
+                tooltip: 'Record audio',
               ),
             ),
         ],

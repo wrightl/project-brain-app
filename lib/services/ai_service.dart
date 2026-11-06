@@ -82,8 +82,12 @@ class AIService extends HttpService {
     if (response.statusCode == 200) {
       final convId = response.headers['x-conversation-id'];
 
-      // Create a broadcast stream controller for citations
-      final citationsController = StreamController<List<Citation>>.broadcast();
+      // Broadcast controller for citations. Closed when the reply stream ends
+      // or when its listener cancels (ChatProvider does so after each reply).
+      late final StreamController<List<Citation>> citationsController;
+      citationsController = StreamController<List<Citation>>.broadcast(
+        onCancel: () => citationsController.close(),
+      );
       final List<Citation> collectedCitations = [];
 
       final stream = response.stream
@@ -141,7 +145,13 @@ class AIService extends HttpService {
             return '';
           })
           .where((value) => value.isNotEmpty)
-          .cast<String>();
+          .cast<String>()
+          .transform(StreamTransformer<String, String>.fromHandlers(
+            handleDone: (sink) {
+              unawaited(citationsController.close());
+              sink.close();
+            },
+          ));
 
       return ChatStreamResponse(
         stream: stream,

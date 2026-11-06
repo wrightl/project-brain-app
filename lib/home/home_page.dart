@@ -57,10 +57,13 @@ class _HomePageState extends State<HomePage> {
             if (authProvider.isLoggedIn) {
               await goalsProvider.syncFromAPI();
             }
-            journalProvider.loadStreakSummary();
-            journalProvider.loadEntryCount();
-            journalProvider.loadRecentEntries(count: 3);
-            strategiesProvider.loadLibrary();
+            // Wait for all of them so the refresh spinner stays until done.
+            await Future.wait([
+              journalProvider.loadStreakSummary(),
+              journalProvider.loadEntryCount(),
+              journalProvider.loadRecentEntries(count: 3),
+              strategiesProvider.loadLibrary(),
+            ]);
           },
           child: AnimatedOpacity(
             opacity: _showContent ? 1 : 0,

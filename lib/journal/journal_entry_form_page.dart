@@ -161,8 +161,8 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.entrySaved)),
         );
-        context.pop();
-        context.push('/journal/${entry.id}');
+        // Swap the form for the new entry.
+        context.pushReplacement('/journal/${entry.id}');
       }
     } catch (e) {
       if (!mounted) return;

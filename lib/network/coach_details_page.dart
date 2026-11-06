@@ -97,7 +97,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
           if (mounted) setState(() => _isUpdatingConnection = false);
           // Show upgrade prompt
           if (mounted) {
-            showDialog(
+            await showDialog<void>(
               context: context,
               builder: (context) => UpgradePromptDialog(
                 requiredTier: SubscriptionTier.pro,

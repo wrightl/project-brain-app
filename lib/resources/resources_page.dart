@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
@@ -72,13 +74,13 @@ class _ResourcesPageState extends State<ResourcesPage> {
         final currentStorageMB = usage.fileStorage.megabytes;
         if (currentStorageMB >= storageLimitMB) {
           if (mounted) {
-            showDialog(
+            unawaited(showDialog<void>(
               context: context,
               builder: (context) => UpgradePromptDialog(
                 requiredTier: SubscriptionTier.pro,
                 featureName: 'File storage',
               ),
-            );
+            ));
           }
           return;
         }
@@ -136,13 +138,13 @@ class _ResourcesPageState extends State<ResourcesPage> {
                   _isUploading = false;
                 });
                 if (mounted) {
-                  showDialog(
+                  unawaited(showDialog<void>(
                     context: context,
                     builder: (context) => UpgradePromptDialog(
                       requiredTier: SubscriptionTier.pro,
                       featureName: 'File storage',
                     ),
-                  );
+                  ));
                 }
                 return;
               }

@@ -301,7 +301,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
                       child: DsSurfaceCard(
                         onTap: () async {
                           await context.push('/quizzes/${quiz.id}');
-                          if (mounted) _refreshAfterSubmission();
+                          if (mounted) await _refreshAfterSubmission();
                         },
                         child: Row(
                           children: [
@@ -410,7 +410,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
                       child: DsSurfaceCard(
                         onTap: () async {
                           await context.push('/quizzes/${response.quizId}');
-                          if (mounted) _refreshAfterSubmission();
+                          if (mounted) await _refreshAfterSubmission();
                         },
                         child: Row(
                           children: [

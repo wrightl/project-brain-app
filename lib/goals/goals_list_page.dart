@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -220,11 +222,11 @@ class GoalsListPage extends StatelessWidget {
     final nowCompleted = !wasCompleted;
 
     if (nowCompleted && !wasCompleted) {
-      HapticFeedback.mediumImpact();
+      unawaited(HapticFeedback.mediumImpact());
       if (progress['completed'] == 3) {
-        context.push('/goals/celebration/all');
+        unawaited(context.push('/goals/celebration/all'));
       } else {
-        context.push('/goals/celebration/single');
+        unawaited(context.push('/goals/celebration/single'));
       }
     }
   }

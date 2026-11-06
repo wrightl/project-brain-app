@@ -217,7 +217,7 @@ class PushNotificationService {
     try {
       // Data-only goals sync: no notification, just refresh goals
       if (message.data['type'] == 'goals_updated') {
-        sl<EggGoalsProvider>().syncFromAPI();
+        await sl<EggGoalsProvider>().syncFromAPI();
         return;
       }
 

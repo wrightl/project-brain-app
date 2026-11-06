@@ -27,6 +27,9 @@ void main() {
     body = StreamController<List<int>>();
   });
 
+  // Not awaited: close() on a controller nobody listened to never completes.
+  tearDown(() => unawaited(body.close()));
+
   GoalsRealtimeService service() => GoalsRealtimeService(
         authService: authService,
         createClient: () => MockClient.streaming((request, _) async {

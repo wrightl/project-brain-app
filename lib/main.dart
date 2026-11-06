@@ -25,7 +25,7 @@ import 'package:projectbrain/services/google_maps_native_service.dart';
 Future<void> main() async {
   // Wrap the whole app in a guarded zone so bootstrap and early-frame errors
   // (before the widget tree is up) are still captured by Crashlytics.
-  runZonedGuarded<Future<void>>(() async {
+  await runZonedGuarded<Future<void>>(() async {
     WidgetsFlutterBinding.ensureInitialized();
 
     await AppConfig.init();

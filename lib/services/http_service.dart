@@ -152,7 +152,9 @@ class HttpService {
 
       return response;
     } finally {
-      // Remove from pending requests
+      // Remove from pending requests. The removed value is the request this
+      // call already awaited, not new work.
+      // ignore: unawaited_futures
       _pendingRequests.remove(path);
     }
   }
