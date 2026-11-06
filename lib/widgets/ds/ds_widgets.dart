@@ -1,6 +1,59 @@
 import 'package:flutter/material.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/helpers/themes/contrast.dart';
+
+/// A bare app bar with only the back button, for pages that show their title
+/// in the body. Returns null when there is nothing to go back to, so tab
+/// roots do not get an empty bar.
+PreferredSizeWidget? dsBackAppBar(BuildContext context) {
+  final canPop = ModalRoute.of(context)?.canPop ?? false;
+  if (!canPop) return null;
+  return AppBar(
+    backgroundColor: Colors.transparent,
+    surfaceTintColor: Colors.transparent,
+    elevation: 0,
+  );
+}
+
+/// Shown in place of an empty state when loading failed, so "nothing here
+/// yet" is never shown next to an error.
+class DsLoadFailed extends StatelessWidget {
+  const DsLoadFailed({
+    super.key,
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              message,
+              style: theme.textTheme.bodyLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 /// Rounded square icon container with soft accent background.
 class IconBubble extends StatelessWidget {
@@ -52,6 +105,7 @@ class AccentTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = readableOn(color, backgroundColor);
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
@@ -65,13 +119,13 @@ class AccentTag extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 14, color: color),
+            Icon(icon, size: 14, color: textColor),
             const SizedBox(width: AppSpacing.xs),
           ],
           Text(
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: color,
+                  color: textColor,
                   fontWeight: FontWeight.w600,
                 ),
           ),
@@ -101,10 +155,14 @@ class SectionHeader extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+          // Lets screen reader users jump between sections.
+          child: Semantics(
+            header: true,
+            child: Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),

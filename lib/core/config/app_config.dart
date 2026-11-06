@@ -107,6 +107,10 @@ class AppConfig {
         return const String.fromEnvironment('SUBSCRIPTION_BILLING_WEB_URL');
       case 'GOOGLE_MAPS_API_KEY':
         return const String.fromEnvironment('GOOGLE_MAPS_API_KEY');
+      case 'PRIVACY_POLICY_URL':
+        return const String.fromEnvironment('PRIVACY_POLICY_URL');
+      case 'SUPPORT_URL':
+        return const String.fromEnvironment('SUPPORT_URL');
       default:
         return '';
     }
@@ -178,6 +182,13 @@ class AppConfig {
   /// HTTPS page where users manage or purchase subscriptions (Safari on iOS; required for App Store).
   static String get subscriptionBillingWebUrl =>
       getEnvOrDefault('SUBSCRIPTION_BILLING_WEB_URL', '');
+
+  /// Privacy policy page (https). The Profile link is hidden when empty.
+  static String get privacyPolicyUrl =>
+      getEnvOrDefault('PRIVACY_POLICY_URL', '').trim();
+
+  /// Help & support page or `mailto:` address. Hidden when empty.
+  static String get supportUrl => getEnvOrDefault('SUPPORT_URL', '').trim();
 
   /// Google Maps API key for coach results map view.
   static String get googleMapsApiKey {

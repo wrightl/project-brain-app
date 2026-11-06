@@ -6,6 +6,7 @@ import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/user/quiz_taking_provider.dart';
 import 'package:projectbrain/user/widgets/quiz_question_widget.dart';
+import 'package:projectbrain/widgets/unsaved_changes_scope.dart';
 
 /// Page for taking a quiz with swipe navigation
 class QuizTakingPage extends StatelessWidget {
@@ -79,7 +80,6 @@ class _QuizTakingViewState extends State<_QuizTakingView> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(provider.errorMessage!),
-            backgroundColor: Colors.red,
             duration: const Duration(seconds: 4),
           ),
         );
@@ -88,23 +88,24 @@ class _QuizTakingViewState extends State<_QuizTakingView> {
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Row(
           children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            SizedBox(width: AppSpacing.sm),
-            Text('Quiz submitted successfully!'),
+            Icon(
+              Icons.check_circle,
+              color: Theme.of(context).colorScheme.onInverseSurface,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            const Text('Quiz submitted successfully!'),
           ],
         ),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 3),
+        duration: const Duration(seconds: 3),
       ),
     );
 
-    await Future.delayed(const Duration(milliseconds: 1500));
-    if (mounted) {
-      context.pop(true);
-    }
+    // The snackbar lives on the app's messenger, so it stays visible after
+    // the page closes; no need to hold the user here.
+    context.pop(true);
   }
 
   bool _isQuizComplete(QuizTakingProvider provider) {
@@ -116,6 +117,20 @@ class _QuizTakingViewState extends State<_QuizTakingView> {
     final theme = Theme.of(context);
     final provider = context.watch<QuizTakingProvider>();
 
+    return UnsavedChangesScope(
+      // Answers only exist on this page until the quiz is submitted.
+      hasUnsavedChanges:
+          provider.answers.isNotEmpty && provider.successMessage == null,
+      message: 'Your answers will be lost if you leave before submitting.',
+      child: _buildScaffold(context, theme, provider),
+    );
+  }
+
+  Widget _buildScaffold(
+    BuildContext context,
+    ThemeData theme,
+    QuizTakingProvider provider,
+  ) {
     return Scaffold(
       appBar: AppBar(
         title: Text(provider.quiz?.title ?? 'Quiz'),
@@ -135,7 +150,8 @@ class _QuizTakingViewState extends State<_QuizTakingView> {
         ],
       ),
       body: provider.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(semanticsLabel: 'Loading'))
           : provider.quiz == null ||
                   (provider.errorMessage != null &&
                       provider.visibleQuestions.isEmpty)
@@ -252,7 +268,9 @@ class _QuizTakingViewState extends State<_QuizTakingView> {
                           child: PageView.builder(
                             controller: _pageController,
                             onPageChanged: provider.setCurrentQuestionIndex,
-                            physics: const PageScrollPhysics(),
+                            // Next/Previous only: swiping skipped the check
+                            // that a mandatory question has been answered.
+                            physics: const NeverScrollableScrollPhysics(),
                             itemCount: provider.visibleQuestions.length,
                             itemBuilder: (context, index) {
                               final question = provider.visibleQuestions[index];
@@ -288,27 +306,6 @@ class _QuizTakingViewState extends State<_QuizTakingView> {
                                 icon: const Icon(Icons.arrow_back),
                                 tooltip: 'Previous question',
                               ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: List.generate(
-                                  provider.visibleQuestions.length,
-                                  (index) => Container(
-                                    width: 8,
-                                    height: 8,
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: AppSpacing.xs,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color:
-                                          index == provider.currentQuestionIndex
-                                              ? theme.colorScheme.primary
-                                              : theme.colorScheme.onSurface
-                                                  .withValues(alpha: 0.3),
-                                    ),
-                                  ),
-                                ),
-                              ),
                               if (provider.currentQuestionIndex <
                                   provider.visibleQuestions.length - 1)
                                 ElevatedButton.icon(
@@ -325,12 +322,13 @@ class _QuizTakingViewState extends State<_QuizTakingView> {
                                       ? () => _submitQuiz(provider)
                                       : null,
                                   icon: provider.isSubmitting
-                                      ? const SizedBox(
+                                      ? SizedBox(
                                           width: 16,
                                           height: 16,
                                           child: CircularProgressIndicator(
+                                            semanticsLabel: 'Loading',
                                             strokeWidth: 2,
-                                            color: Colors.white,
+                                            color: theme.colorScheme.onPrimary,
                                           ),
                                         )
                                       : const Icon(Icons.check),

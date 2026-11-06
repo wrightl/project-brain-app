@@ -7,6 +7,7 @@ import 'package:projectbrain/services/egg_goals_service.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
 
 /// Page for entering/editing daily goals
 class GoalEntryPage extends StatefulWidget {
@@ -24,6 +25,27 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
   ];
 
   bool _suggestingGoals = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Start from today's goals: saving replaces all of them, so an empty form
+    // would wipe the goals the user already has.
+    _fillFromTodaysGoals();
+  }
+
+  Future<void> _fillFromTodaysGoals() async {
+    final goals = await context.read<EggGoalsProvider>().getTodaysGoals();
+    if (!mounted) return;
+    for (int i = 0; i < 3 && i < goals.length; i++) {
+      // Keep anything the user typed while the goals loaded.
+      if (_controllers[i].text.isEmpty) {
+        _controllers[i].text =
+            goals[i].message == 'No Egg Goal Set' ? '' : goals[i].message;
+      }
+    }
+    setState(() {});
+  }
 
   @override
   void dispose() {
@@ -46,12 +68,10 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
             final provider = context.read<EggGoalsProvider>();
             await provider.syncFromAPI();
             if (!mounted) return;
-            final goals = await provider.getTodaysGoals();
-            for (int i = 0; i < 3 && i < goals.length; i++) {
-              _controllers[i].text =
-                  goals[i].message == 'No Egg Goal Set' ? '' : goals[i].message;
+            for (final controller in _controllers) {
+              controller.clear();
             }
-            setState(() {});
+            await _fillFromTodaysGoals();
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -59,7 +79,10 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Set your goals', style: theme.textTheme.headlineSmall),
+                Semantics(
+                    header: true,
+                    child: Text('Set your goals',
+                        style: theme.textTheme.headlineSmall)),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Set up to 3 goals for today. Mark them complete as you go.',
@@ -122,8 +145,8 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content:
-                                      Text('Could not load suggestions: $e'),
+                                  content: Text(userFriendlyError(e,
+                                      fallback: 'Could not load suggestions.')),
                                 ),
                               );
                             }
@@ -137,7 +160,8 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
                       ? const SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                              semanticsLabel: 'Loading', strokeWidth: 2),
                         )
                       : const Icon(Icons.auto_awesome_outlined),
                   label: Text(_suggestingGoals
@@ -193,9 +217,19 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
                               goals.add('');
                             }
 
-                            await goalsProvider.setGoals(goals);
-                            if (context.mounted) {
+                            final saved = await goalsProvider.setGoals(goals);
+                            if (!context.mounted) return;
+                            if (saved) {
                               context.go('/goals/list');
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    goalsProvider.errorMessage ??
+                                        "Couldn't save your goals. Please try again.",
+                                  ),
+                                ),
+                              );
                             }
                           },
                     style: ElevatedButton.styleFrom(
@@ -205,7 +239,8 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                                semanticsLabel: 'Loading', strokeWidth: 2),
                           )
                         : const Text('Save Goals'),
                   ),

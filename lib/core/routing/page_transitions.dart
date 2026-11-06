@@ -21,6 +21,10 @@ class PageTransitions {
       key: key,
       child: child,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        // Respect the system Reduce Motion / Remove animations setting.
+        if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) {
+          return child;
+        }
         return SlideTransition(
           position: Tween<Offset>(
             begin: const Offset(1.0, 0.0), // Start from right
@@ -54,6 +58,10 @@ class PageTransitions {
       key: key,
       child: child,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        // Respect the system Reduce Motion / Remove animations setting.
+        if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) {
+          return child;
+        }
         return SlideTransition(
           position: Tween<Offset>(
             begin: const Offset(-1.0, 0.0), // Start from left
@@ -84,6 +92,10 @@ class PageTransitions {
       key: key,
       child: child,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        // Respect the system Reduce Motion / Remove animations setting.
+        if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) {
+          return child;
+        }
         return FadeTransition(
           opacity: CurvedAnimation(
             parent: animation,
@@ -111,6 +123,10 @@ class PageTransitions {
       key: key,
       child: child,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        // Respect the system Reduce Motion / Remove animations setting.
+        if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) {
+          return child;
+        }
         return ScaleTransition(
           scale: CurvedAnimation(
             parent: animation,

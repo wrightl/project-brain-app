@@ -4,10 +4,10 @@ import 'package:provider/provider.dart';
 import 'package:projectbrain/journal/journal_provider.dart';
 import 'package:projectbrain/journal/journal_localizations.dart';
 import 'package:projectbrain/models/journal/journal_entry.dart';
-import 'package:intl/intl.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
 
 /// Journal list screen with pagination, pull-to-refresh, and FAB.
 class JournalListPage extends StatefulWidget {
@@ -65,7 +65,10 @@ class _JournalListPageState extends State<JournalListPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(l10n.journal, style: theme.textTheme.headlineSmall),
+                  Semantics(
+                      header: true,
+                      child: Text(l10n.journal,
+                          style: theme.textTheme.headlineSmall)),
                   FilledButton(
                     onPressed: () => context.push('/journal/new'),
                     style: FilledButton.styleFrom(
@@ -82,7 +85,9 @@ class _JournalListPageState extends State<JournalListPage> {
               child: Consumer<JournalProvider>(
                 builder: (context, provider, _) {
                   if (provider.isLoading && provider.items.isEmpty) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(
+                        child: CircularProgressIndicator(
+                            semanticsLabel: 'Loading'));
                   }
                   if (provider.errorMessage != null && provider.items.isEmpty) {
                     return Center(
@@ -166,7 +171,9 @@ class _JournalListPageState extends State<JournalListPage> {
                         if (index >= provider.items.length) {
                           return const Padding(
                             padding: AppInsets.screen,
-                            child: Center(child: CircularProgressIndicator()),
+                            child: Center(
+                                child: CircularProgressIndicator(
+                                    semanticsLabel: 'Loading')),
                           );
                         }
                         return Padding(
@@ -199,7 +206,7 @@ class _JournalListItem extends StatelessWidget {
     final displayText =
         preview.length > 120 ? '${preview.substring(0, 120)}...' : preview;
     final dateStr =
-        DateFormat('EEE d MMM').format(entry.createdAt).toUpperCase();
+        AppDateFormat.shortWeekdayDate(entry.createdAt).toUpperCase();
     final titleLine = preview.split('\n').first;
     final moodTag = entry.systemTags?.isNotEmpty == true
         ? entry.systemTags!.first.name

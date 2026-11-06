@@ -9,6 +9,7 @@ import 'package:projectbrain/models/journal/journal_streak_summary.dart';
 import 'package:projectbrain/models/journal/journal_tag.dart';
 import 'package:projectbrain/models/journal/system_tag.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
 
 /// Provider for journal list, CRUD, system tags, user tags, and streak.
 class JournalProvider extends ChangeNotifier {
@@ -70,7 +71,7 @@ class JournalProvider extends ChangeNotifier {
       _hasNextPage = paged.hasNextPage;
     } catch (e) {
       logError('[JournalProvider] refresh failed', e);
-      _errorMessage = e is Exception ? e.toString() : 'Failed to load entries';
+      _errorMessage = userFriendlyError(e, fallback: "Couldn't load entries.");
       _items = [];
     } finally {
       _isLoading = false;
@@ -95,7 +96,7 @@ class JournalProvider extends ChangeNotifier {
       _hasNextPage = paged.hasNextPage;
     } catch (e) {
       logError('[JournalProvider] loadMore failed', e);
-      _errorMessage = e is Exception ? e.toString() : 'Failed to load more';
+      _errorMessage = userFriendlyError(e, fallback: "Couldn't load more.");
     } finally {
       _isLoadingMore = false;
       notifyListeners();
@@ -114,7 +115,7 @@ class JournalProvider extends ChangeNotifier {
       return entry;
     } catch (e) {
       logError('[JournalProvider] fetchEntry failed', e);
-      _errorMessage = e is Exception ? e.toString() : 'Failed to load entry';
+      _errorMessage = userFriendlyError(e, fallback: "Couldn't load entry.");
       notifyListeners();
       return null;
     }

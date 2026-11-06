@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:projectbrain/core/config/app_config.dart';
+import 'package:projectbrain/core/security/url_security.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:projectbrain/helpers/app_themes.dart';
 import 'package:projectbrain/helpers/theme.dart';
 import 'package:projectbrain/helpers/theme_mode_provider.dart';
@@ -12,6 +14,8 @@ import 'package:projectbrain/services/auth/auth_exception.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/widgets/unsaved_changes_scope.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -32,6 +36,18 @@ class _ProfilePageState extends State<ProfilePage> {
   Set<String> _selectedTraits = {};
   bool _isEditing = false;
   bool _isSaving = false;
+  bool _isDeletingAccount = false;
+  String? _snapshotAtEditStart;
+
+  String _snapshot() => [
+        _fullNameController.text.trim(),
+        _pronoun,
+        _customPronounController.text.trim(),
+        _dobController.text,
+        (_selectedTraits.toList()..sort()).join(','),
+      ].join('|');
+
+  bool _hasUnsavedEdits() => _isEditing && _snapshot() != _snapshotAtEditStart;
 
   // Common neurodiverse traits list (matching onboarding)
   final List<String> _neurodiverseTraits = [
@@ -180,7 +196,8 @@ class _ProfilePageState extends State<ProfilePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error updating profile: $e'),
+            content: Text(userFriendlyError(e,
+                fallback: "Couldn't update your profile.")),
             backgroundColor: context.appTheme.errorColor,
           ),
         );
@@ -208,6 +225,20 @@ class _ProfilePageState extends State<ProfilePage> {
     final colorScheme = theme.colorScheme;
     final appColors = theme.extension<AppThemeExtension>();
 
+    return UnsavedChangesScope(
+      hasUnsavedChanges: _isEditing,
+      isDirty: _hasUnsavedEdits,
+      message: 'Your profile changes have not been saved.',
+      child: _buildScaffold(authProvider, theme, colorScheme, appColors),
+    );
+  }
+
+  Widget _buildScaffold(
+    AuthProvider authProvider,
+    ThemeData theme,
+    ColorScheme colorScheme,
+    AppThemeExtension? appColors,
+  ) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
@@ -219,6 +250,7 @@ class _ProfilePageState extends State<ProfilePage> {
               onPressed: () {
                 setState(() {
                   _isEditing = true;
+                  _snapshotAtEditStart = _snapshot();
                 });
               },
               tooltip: 'Edit Profile',
@@ -268,8 +300,9 @@ class _ProfilePageState extends State<ProfilePage> {
                               ? const SizedBox(
                                   height: 20,
                                   width: 20,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                      semanticsLabel: 'Loading',
+                                      strokeWidth: 2),
                                 )
                               : const Text('Save'),
                         ),
@@ -284,6 +317,10 @@ class _ProfilePageState extends State<ProfilePage> {
                     authProvider, theme, colorScheme, appColors, context),
                 SizedBox(height: AppSpacing.lg),
                 _buildLogoutButton(authProvider, colorScheme),
+                SizedBox(height: AppSpacing.xl),
+                _buildAboutSection(theme),
+                SizedBox(height: AppSpacing.lg),
+                _buildDeleteAccountButton(authProvider, colorScheme),
               ],
             ),
           ),
@@ -469,62 +506,66 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   return Material(
                     color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => themeModeProvider.setMode(option.id),
-                      borderRadius: isLast
-                          ? const BorderRadius.vertical(
-                              bottom: Radius.circular(16),
-                            )
-                          : null,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg,
-                          vertical: AppSpacing.md,
-                        ),
-                        decoration: BoxDecoration(
-                          border: isLast
-                              ? null
-                              : Border(
-                                  bottom:
-                                      BorderSide(color: appTheme.borderColor),
-                                ),
-                        ),
-                        child: Row(
-                          children: [
-                            IconBubble(
-                              icon: option.icon,
-                              color: isSelected
-                                  ? theme.colorScheme.primary
-                                  : appTheme.textMuted,
-                              backgroundColor: isSelected
-                                  ? appTheme.primarySoft
-                                  : appTheme.borderColor
-                                      .withValues(alpha: 0.35),
-                              size: 40,
-                              iconSize: 20,
-                              borderRadius: 12,
+                    child: Semantics(
+                        selected: isSelected,
+                        inMutuallyExclusiveGroup: true,
+                        button: true,
+                        child: InkWell(
+                          onTap: () => themeModeProvider.setMode(option.id),
+                          borderRadius: isLast
+                              ? const BorderRadius.vertical(
+                                  bottom: Radius.circular(16),
+                                )
+                              : null,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg,
+                              vertical: AppSpacing.md,
                             ),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              child: Text(
-                                option.label,
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: isSelected
-                                      ? FontWeight.w700
-                                      : FontWeight.w500,
-                                ),
-                              ),
+                            decoration: BoxDecoration(
+                              border: isLast
+                                  ? null
+                                  : Border(
+                                      bottom: BorderSide(
+                                          color: appTheme.borderColor),
+                                    ),
                             ),
-                            if (isSelected)
-                              Icon(
-                                Icons.check_circle,
-                                color: theme.colorScheme.primary,
-                                size: 22,
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
+                            child: Row(
+                              children: [
+                                IconBubble(
+                                  icon: option.icon,
+                                  color: isSelected
+                                      ? theme.colorScheme.primary
+                                      : appTheme.textMuted,
+                                  backgroundColor: isSelected
+                                      ? appTheme.primarySoft
+                                      : appTheme.borderColor
+                                          .withValues(alpha: 0.35),
+                                  size: 40,
+                                  iconSize: 20,
+                                  borderRadius: 12,
+                                ),
+                                const SizedBox(width: AppSpacing.md),
+                                Expanded(
+                                  child: Text(
+                                    option.label,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: isSelected
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                if (isSelected)
+                                  Icon(
+                                    Icons.check_circle,
+                                    color: theme.colorScheme.primary,
+                                    size: 22,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        )),
                   );
                 }).toList(),
               ),
@@ -732,14 +773,134 @@ class _ProfilePageState extends State<ProfilePage> {
   ) {
     return ElevatedButton.icon(
       icon: const Icon(Icons.logout),
-      label: const Text('Logout'),
+      label: const Text('Log out'),
       style: ElevatedButton.styleFrom(
         backgroundColor: colorScheme.error,
         foregroundColor: colorScheme.onError,
       ),
-      onPressed: () {
-        authProvider.logout();
-      },
+      onPressed: () => _confirmLogout(authProvider),
     );
+  }
+
+  Future<void> _confirmLogout(AuthProvider authProvider) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Log out?'),
+        content: const Text('You will need to sign in again to use the app.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Log out'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await authProvider.logout();
+  }
+
+  /// Privacy policy and help links, when configured for this build.
+  Widget _buildAboutSection(ThemeData theme) {
+    final privacyUrl = AppConfig.privacyPolicyUrl;
+    final supportUrl = AppConfig.supportUrl;
+    if (privacyUrl.isEmpty && supportUrl.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return DsSurfaceCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          if (privacyUrl.isNotEmpty)
+            ListTile(
+              leading: const Icon(Icons.privacy_tip_outlined),
+              title: const Text('Privacy policy'),
+              trailing: const Icon(Icons.open_in_new, size: 18),
+              onTap: () => _openLink(privacyUrl),
+            ),
+          if (supportUrl.isNotEmpty)
+            ListTile(
+              leading: const Icon(Icons.help_outline),
+              title: const Text('Help & support'),
+              trailing: const Icon(Icons.open_in_new, size: 18),
+              onTap: () => _openLink(supportUrl),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openLink(String url) async {
+    final uri = Uri.tryParse(url);
+    final allowed = uri != null &&
+        (UrlSecurity.isSafeExternalUrl(url) || uri.scheme == 'mailto');
+    if (allowed && await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      return;
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Couldn't open the link.")),
+    );
+  }
+
+  Widget _buildDeleteAccountButton(
+    AuthProvider authProvider,
+    ColorScheme colorScheme,
+  ) {
+    return TextButton.icon(
+      icon: const Icon(Icons.delete_forever_outlined),
+      label: const Text('Delete account'),
+      style: TextButton.styleFrom(foregroundColor: colorScheme.error),
+      onPressed:
+          _isDeletingAccount ? null : () => _confirmDeleteAccount(authProvider),
+    );
+  }
+
+  Future<void> _confirmDeleteAccount(AuthProvider authProvider) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete your account?'),
+        content: const Text(
+          'This permanently deletes your profile, goals, journal, chats, '
+          'voice notes and resources, and cancels any subscription. '
+          'It cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+              foregroundColor: Theme.of(ctx).colorScheme.onError,
+            ),
+            child: const Text('Delete account'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _isDeletingAccount = true);
+    try {
+      await authProvider.deleteAccount();
+    } catch (e) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Your account couldn't be deleted. Please try again.",
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isDeletingAccount = false);
+    }
   }
 }

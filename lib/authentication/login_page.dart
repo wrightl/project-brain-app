@@ -16,7 +16,8 @@ class LoginPage extends StatelessWidget {
 
     if (authProvider.isLoading) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body:
+            Center(child: CircularProgressIndicator(semanticsLabel: 'Loading')),
       );
     }
 

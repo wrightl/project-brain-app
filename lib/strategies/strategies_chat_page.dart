@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -13,6 +15,7 @@ import 'package:projectbrain/widgets/chat/typing_indicator.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/widgets/chat/chat_composer.dart';
 
 /// Strategies chat screen: greeting, example prompts, send message, show suggested strategies, select & save.
 class StrategiesChatPage extends StatefulWidget {
@@ -163,60 +166,11 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
                         ),
                       ),
                     ),
-                  SafeArea(
-                    child: Container(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.md,
-                        AppSpacing.sm,
-                        AppSpacing.md,
-                        AppSpacing.md,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surface,
-                        border: Border(
-                            top: BorderSide(color: appTheme.borderColor)),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _controller,
-                              decoration: InputDecoration(
-                                hintText: "Tell me what you're dealing with...",
-                                filled: true,
-                                fillColor: theme.scaffoldBackgroundColor,
-                                border: OutlineInputBorder(
-                                  borderRadius: AppRadius.circularPill,
-                                  borderSide: BorderSide.none,
-                                ),
-                              ),
-                              enabled: !chatProvider.isLoading,
-                              onSubmitted: (text) => _send(context, text),
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Material(
-                            color: theme.colorScheme.primary,
-                            shape: const CircleBorder(),
-                            child: InkWell(
-                              onTap: chatProvider.isLoading
-                                  ? null
-                                  : () => _send(context, _controller.text),
-                              customBorder: const CircleBorder(),
-                              child: SizedBox(
-                                width: 44,
-                                height: 44,
-                                child: Icon(
-                                  Icons.arrow_upward,
-                                  color: theme.colorScheme.onPrimary,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  ChatComposer(
+                    controller: _controller,
+                    hintText: "Tell me what you're dealing with...",
+                    isBusy: chatProvider.isLoading,
+                    onSend: (text) => _send(context, text),
                   ),
                 ],
               );
@@ -228,10 +182,8 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
   }
 
   void _send(BuildContext context, String text) {
-    final t = text.trim();
-    if (t.isEmpty) return;
     _controller.clear();
-    context.read<StrategiesChatProvider>().sendMessage(t);
+    unawaited(context.read<StrategiesChatProvider>().sendMessage(text));
   }
 
   Future<void> _saveSelected(
@@ -244,7 +196,7 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
           content: Text(StrategiesLocalizations.of(context).strategiesSaved),
         ),
       );
-      context.read<StrategiesProvider>().loadLibrary();
+      unawaited(context.read<StrategiesProvider>().loadLibrary());
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

@@ -1,13 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:projectbrain/goals/egg_goals_provider.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 import 'package:projectbrain/widgets/ds/goal_row.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
 
 /// Page displaying the list of daily goals with checkboxes and progress.
 class GoalsListPage extends StatelessWidget {
@@ -49,14 +51,14 @@ class GoalsListPage extends StatelessWidget {
     final completed = progress['completed'] ?? 0;
     final total = progress['total'] ?? 3;
     final pct = total > 0 ? completed / total : 0.0;
-    final dateLabel = DateFormat('EEEE d MMMM').format(DateTime.now());
+    final dateLabel = AppDateFormat.weekdayDate(DateTime.now());
 
     if (provider.isLoading && visibleGoals.isEmpty) {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         children: const [
           SizedBox(height: AppSpacing.emptyStateTop),
-          Center(child: CircularProgressIndicator()),
+          Center(child: CircularProgressIndicator(semanticsLabel: 'Loading')),
         ],
       );
     }
@@ -101,7 +103,10 @@ class GoalsListPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Daily goals', style: theme.textTheme.headlineSmall),
+                  Semantics(
+                      header: true,
+                      child: Text('Daily goals',
+                          style: theme.textTheme.headlineSmall)),
                   Text(dateLabel, style: theme.textTheme.bodySmall),
                 ],
               ),
@@ -217,11 +222,11 @@ class GoalsListPage extends StatelessWidget {
     final nowCompleted = !wasCompleted;
 
     if (nowCompleted && !wasCompleted) {
-      HapticFeedback.mediumImpact();
+      unawaited(HapticFeedback.mediumImpact());
       if (progress['completed'] == 3) {
-        context.push('/goals/celebration/all');
+        unawaited(context.push('/goals/celebration/all'));
       } else {
-        context.push('/goals/celebration/single');
+        unawaited(context.push('/goals/celebration/single'));
       }
     }
   }

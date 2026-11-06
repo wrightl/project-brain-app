@@ -246,7 +246,8 @@ class _CoachResultsMapState extends State<CoachResultsMap> {
   Widget _buildLoadingState() {
     return SizedBox(
       height: widget.height,
-      child: const Center(child: CircularProgressIndicator()),
+      child: const Center(
+          child: CircularProgressIndicator(semanticsLabel: 'Loading')),
     );
   }
 

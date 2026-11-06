@@ -57,10 +57,13 @@ class _HomePageState extends State<HomePage> {
             if (authProvider.isLoggedIn) {
               await goalsProvider.syncFromAPI();
             }
-            journalProvider.loadStreakSummary();
-            journalProvider.loadEntryCount();
-            journalProvider.loadRecentEntries(count: 3);
-            strategiesProvider.loadLibrary();
+            // Wait for all of them so the refresh spinner stays until done.
+            await Future.wait([
+              journalProvider.loadStreakSummary(),
+              journalProvider.loadEntryCount(),
+              journalProvider.loadRecentEntries(count: 3),
+              strategiesProvider.loadLibrary(),
+            ]);
           },
           child: AnimatedOpacity(
             opacity: _showContent ? 1 : 0,
@@ -238,7 +241,7 @@ class _HomeHeader extends StatelessWidget {
           button: true,
           label: 'Profile',
           child: InkWell(
-            onTap: () => context.go('/user'),
+            onTap: () => context.push('/user'),
             customBorder: const CircleBorder(),
             child: CircleAvatar(
               radius: 22,
@@ -311,35 +314,48 @@ class _HeroCard extends StatelessWidget {
                       ? "You're on a roll, $firstName"
                       : "Ready when you are, $firstName",
                   style: theme.textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
+                    color: theme.colorScheme.onPrimary,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   '$completed of $total goals done today',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.8),
+                    color: theme.colorScheme.onPrimary.withValues(alpha: 0.85),
                   ),
                 ),
               ],
             ),
           ),
           SizedBox(
-            width: 72,
-            height: 72,
+            // Grows with the system text size so the percentage still fits.
+            width: MediaQuery.textScalerOf(context).scale(72).clamp(72, 120),
+            height: MediaQuery.textScalerOf(context).scale(72).clamp(72, 120),
             child: Stack(
               alignment: Alignment.center,
               children: [
                 CircularProgressIndicator(
+                  semanticsLabel: "Today's goals done",
+                  semanticsValue: pctLabel,
                   value: progress,
                   strokeWidth: 6,
-                  backgroundColor: Colors.white.withValues(alpha: 0.2),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                  backgroundColor:
+                      theme.colorScheme.onPrimary.withValues(alpha: 0.2),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                      theme.colorScheme.onPrimary),
                 ),
-                Text(
-                  pctLabel,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: Colors.white,
+                // The indicator already reads the value.
+                ExcludeSemantics(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: FittedBox(
+                      child: Text(
+                        pctLabel,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: theme.colorScheme.onPrimary,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],

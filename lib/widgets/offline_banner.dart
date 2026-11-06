@@ -25,7 +25,10 @@ class OfflineBanner extends StatelessWidget {
           Expanded(child: content),
           AnimatedSize(
             duration: const Duration(milliseconds: 200),
-            child: isOnline ? const SizedBox.shrink() : _OfflineBar(),
+            // A live region so screen readers announce going offline.
+            child: isOnline
+                ? const SizedBox.shrink()
+                : Semantics(liveRegion: true, child: _OfflineBar()),
           ),
         ],
       ),

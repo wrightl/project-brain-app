@@ -54,7 +54,7 @@ class UpgradePrompt extends StatelessWidget {
               ),
               SizedBox(width: AppSpacing.sm),
               Text(
-                'Upgrade to $_getTierName()',
+                'Upgrade to ${_getTierName()}',
                 style: theme.textTheme.titleSmall?.copyWith(
                   color: theme.colorScheme.primary,
                   fontWeight: FontWeight.bold,
@@ -86,7 +86,7 @@ class UpgradePrompt extends StatelessWidget {
           ),
           SizedBox(height: AppSpacing.md),
           Text(
-            '$featureName requires $_getTierName() tier',
+            '$featureName requires ${_getTierName()} tier',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -150,7 +150,7 @@ class UpgradePromptDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            '$featureName requires $_getTierName() tier',
+            '$featureName requires ${_getTierName()} tier',
             style: theme.textTheme.bodyLarge,
             textAlign: TextAlign.center,
           ),

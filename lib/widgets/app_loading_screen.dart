@@ -91,6 +91,18 @@ class _AppLoadingScreenState extends State<AppLoadingScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reduce Motion: show the finished entrance, keep the ambient effects
+    // still, and leave without the exit scale.
+    if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) {
+      _ambientController.stop();
+      _entranceController.value = 1;
+      _exitController.duration = Duration.zero;
+    }
+  }
+
+  @override
   void didUpdateWidget(AppLoadingScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.error != null && oldWidget.error == null) {
@@ -155,7 +167,7 @@ class _AppLoadingScreenState extends State<AppLoadingScreen>
                     ),
                     SizedBox(height: AppSpacing.sm),
                     Text(
-                      'Check your connection and try again. If staging was asleep, it may still be waking up.',
+                      'Check your connection and try again.',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: DesignPalette.textSecondary,

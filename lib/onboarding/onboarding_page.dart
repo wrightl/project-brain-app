@@ -18,10 +18,12 @@ class OnboardingPage extends StatefulWidget {
 class _OnboardingPageState extends State<OnboardingPage> {
   final PageController _pageController = PageController();
   final Map<int, GlobalKey<FormState>> _formKeys = {};
+  final TextEditingController _dobController = TextEditingController();
 
   @override
   void dispose() {
     _pageController.dispose();
+    _dobController.dispose();
     super.dispose();
   }
 
@@ -135,34 +137,47 @@ class _OnboardingPageState extends State<OnboardingPage> {
           final currentStep = provider.currentStep;
           final isLastStep = currentStep == totalSteps - 1;
 
-          return Scaffold(
-            body: SafeArea(
-              child: Column(
-                children: [
-                  _buildHeader(provider, totalSteps),
-                  Expanded(
-                    child: PageView(
-                      controller: _pageController,
-                      physics: const NeverScrollableScrollPhysics(),
-                      onPageChanged: (index) {
-                        provider.setCurrentStep(index);
-                      },
-                      children:
-                          _buildPages(provider, authProvider, localizations),
-                    ),
+          return _stepBackOnPop(provider,
+              child: Scaffold(
+                body: SafeArea(
+                  child: Column(
+                    children: [
+                      _buildHeader(provider, totalSteps),
+                      Expanded(
+                        child: PageView(
+                          controller: _pageController,
+                          physics: const NeverScrollableScrollPhysics(),
+                          onPageChanged: (index) {
+                            provider.setCurrentStep(index);
+                          },
+                          children: _buildPages(
+                              provider, authProvider, localizations),
+                        ),
+                      ),
+                      _buildNavigationButtons(
+                        provider,
+                        authProvider,
+                        isLastStep,
+                        localizations,
+                      ),
+                    ],
                   ),
-                  _buildNavigationButtons(
-                    provider,
-                    authProvider,
-                    isLastStep,
-                    localizations,
-                  ),
-                ],
-              ),
-            ),
-          );
+                ),
+              ));
         },
       ),
+    );
+  }
+
+  /// System back steps back through onboarding instead of leaving it (which
+  /// would lose every answer so far).
+  Widget _stepBackOnPop(OnboardingProvider provider, {required Widget child}) {
+    return PopScope(
+      canPop: provider.currentStep == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _previousPage(provider);
+      },
+      child: child,
     );
   }
 
@@ -185,6 +200,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             children: [
               if (currentStep > 0)
                 IconButton(
+                  tooltip: 'Previous step',
                   icon: const Icon(Icons.arrow_back),
                   onPressed: () => _previousPage(provider),
                   style: IconButton.styleFrom(
@@ -218,28 +234,38 @@ class _OnboardingPageState extends State<OnboardingPage> {
               const SizedBox(width: 48),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: List.generate(
-              totalSteps,
-              (index) => Expanded(
-                child: GestureDetector(
-                  onTap: () => _onStepTapped(provider, index),
-                  child: MouseRegion(
-                    cursor: (index == 0 || index <= currentStep)
-                        ? SystemMouseCursors.click
-                        : SystemMouseCursors.basic,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.micro,
-                      ),
-                      height: 6.0,
-                      decoration: BoxDecoration(
-                        color: index <= currentStep
-                            ? theme.colorScheme.primary
-                            : appTheme.primarySoft,
-                        borderRadius: AppRadius.circularPill,
+          // Read as one "Step n of m" instead of a row of unlabelled bars.
+          // The 6dp bars get a taller transparent hit area.
+          Semantics(
+            label: 'Step ${currentStep + 1} of $totalSteps',
+            child: ExcludeSemantics(
+              child: Row(
+                children: List.generate(
+                  totalSteps,
+                  (index) => Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => _onStepTapped(provider, index),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        child: MouseRegion(
+                          cursor: (index == 0 || index <= currentStep)
+                              ? SystemMouseCursors.click
+                              : SystemMouseCursors.basic,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.micro,
+                            ),
+                            height: 6.0,
+                            decoration: BoxDecoration(
+                              color: index <= currentStep
+                                  ? theme.colorScheme.primary
+                                  : appTheme.primarySoft,
+                              borderRadius: AppRadius.circularPill,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -272,43 +298,58 @@ class _OnboardingPageState extends State<OnboardingPage> {
         color: theme.colorScheme.surface,
         border: Border(top: BorderSide(color: appTheme.borderColor)),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          if (provider.currentStep > 0) ...[
-            Expanded(
-              child: OutlinedButton(
-                onPressed: provider.isSubmitting
-                    ? null
-                    : () => _previousPage(provider),
-                child: Text(localizations.previous),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-          ],
-          Expanded(
-            flex: 2,
-            child: ElevatedButton.icon(
+          // Everything after Basic Info is optional; let people start using
+          // the app now instead of facing every remaining step.
+          if (provider.currentStep > 0 && !isLastStep)
+            TextButton(
               onPressed: provider.isSubmitting
                   ? null
-                  : () {
-                      if (isLastStep) {
-                        _submitOnboarding(provider, authProvider);
-                      } else {
-                        _nextPage(provider);
-                      }
-                    },
-              icon: provider.isSubmitting
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Icon(isLastStep ? Icons.check : Icons.arrow_forward,
-                      size: 18),
-              label: Text(
-                isLastStep ? localizations.complete : localizations.next,
-              ),
+                  : () => _submitOnboarding(provider, authProvider),
+              child: const Text('Skip the rest and get started'),
             ),
+          Row(
+            children: [
+              if (provider.currentStep > 0) ...[
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: provider.isSubmitting
+                        ? null
+                        : () => _previousPage(provider),
+                    child: Text(localizations.previous),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+              ],
+              Expanded(
+                flex: 2,
+                child: ElevatedButton.icon(
+                  onPressed: provider.isSubmitting
+                      ? null
+                      : () {
+                          if (isLastStep) {
+                            _submitOnboarding(provider, authProvider);
+                          } else {
+                            _nextPage(provider);
+                          }
+                        },
+                  icon: provider.isSubmitting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                              semanticsLabel: 'Loading', strokeWidth: 2),
+                        )
+                      : Icon(isLastStep ? Icons.check : Icons.arrow_forward,
+                          size: 18),
+                  label: Text(
+                    isLastStep ? localizations.complete : localizations.next,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -361,7 +402,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
           borderRadius: 16,
         ),
         const SizedBox(height: AppSpacing.lg),
-        Text(title, style: theme.textTheme.headlineSmall),
+        Semantics(
+            header: true,
+            child: Text(title, style: theme.textTheme.headlineSmall)),
         if (subtitle != null) ...[
           const SizedBox(height: AppSpacing.sm),
           Text(subtitle, style: theme.textTheme.bodySmall),
@@ -423,7 +466,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   ) {
     final appTheme = context.appTheme;
     final formKey = _formKeys.putIfAbsent(0, () => GlobalKey<FormState>());
-    final dobController = TextEditingController();
+    final dobController = _dobController;
 
     if (provider.dateOfBirth != null) {
       dobController.text =
@@ -462,7 +505,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               controller: dobController,
               readOnly: true,
               decoration: InputDecoration(
-                labelText: localizations.dateOfBirth,
+                labelText: '${localizations.dateOfBirth} (optional)',
                 prefixIcon: const Icon(Icons.cake_outlined),
                 suffixIcon: const Icon(Icons.calendar_today, size: 18),
               ),
@@ -481,14 +524,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
                 }
               },
-              validator: (value) => value == null || value.isEmpty
-                  ? localizations.selectDateOfBirth
-                  : null,
             ),
             const SizedBox(height: AppSpacing.lg),
             DropdownButtonFormField<String>(
               decoration: InputDecoration(
-                labelText: localizations.preferredPronoun,
+                labelText: '${localizations.preferredPronoun} (optional)',
                 prefixIcon: const Icon(Icons.badge_outlined),
               ),
               initialValue: provider.preferredPronoun.isEmpty
@@ -505,9 +545,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   provider.setPreferredPronoun(value);
                 }
               },
-              validator: (value) => value == null || value.isEmpty
-                  ? localizations.required
-                  : null,
             ),
           ],
         ),
@@ -949,11 +986,142 @@ class _OnboardingPageState extends State<OnboardingPage> {
     );
   }
 
+  /// Follow-on questions, in display order. Each section shows when its
+  /// provider flag is set; answers are stored under its category and key.
+  List<_FollowOnSection> _followOnSections(
+    OnboardingProvider provider,
+    OnboardingLocalizations l,
+  ) =>
+      [
+        _FollowOnSection(
+          visible: provider.shouldShowStrengthsQuestions,
+          title: l.strengthsQuestions,
+          category: 'strengths',
+          questions: [
+            _FollowOnQuestion('howDoYouUseStrengths', l.howDoYouUseStrengths),
+            _FollowOnQuestion('whatHelpsTapStrengths', l.whatHelpsTapStrengths),
+            _FollowOnQuestion('howBuildOnStrengths', l.howBuildOnStrengths),
+          ],
+        ),
+        _FollowOnSection(
+          visible: provider.shouldShowChallengesQuestions,
+          title: l.challengesQuestions,
+          category: 'challenges',
+          questions: [
+            _FollowOnQuestion('whatsHardestToManage', l.whatsHardestToManage),
+            _FollowOnQuestion('whatToolsHaveHelped', l.whatToolsHaveHelped),
+            _FollowOnQuestion.yesNo(
+                'wouldLikeToolSuggestions', l.wouldLikeToolSuggestions),
+            _FollowOnQuestion('whatHelpsRecharge', l.whatHelpsRecharge),
+          ],
+        ),
+        _FollowOnSection(
+          visible: provider.shouldShowLearningQuestions,
+          title: l.learningQuestions,
+          category: 'learning',
+          questions: [
+            _FollowOnQuestion('shareLearningExample', l.shareLearningExample),
+            _FollowOnQuestion.yesNo(
+                'preferSpecificFormat', l.preferSpecificFormat),
+            _FollowOnQuestion('howBreakDownTasks', l.howBreakDownTasks),
+          ],
+        ),
+        _FollowOnSection(
+          visible: provider.shouldShowMotivationQuestions,
+          title: l.motivationQuestions,
+          category: 'motivation',
+          questions: [
+            _FollowOnQuestion('whatMotivatesYou', l.whatMotivatesYou),
+            _FollowOnQuestion('howSetGoals', l.howSetGoals),
+            _FollowOnQuestion('whatRemindersWork', l.whatRemindersWork),
+            _FollowOnQuestion('howCelebrateProgress', l.howCelebrateProgress),
+          ],
+        ),
+        _FollowOnSection(
+          visible: provider.shouldShowCopingQuestions,
+          title: l.copingQuestions,
+          category: 'coping',
+          questions: [
+            _FollowOnQuestion(
+                'sensoryFriendlyEnvironment', l.sensoryFriendlyEnvironment),
+            _FollowOnQuestion('howManageTime', l.howManageTime),
+            _FollowOnQuestion('whatHelpsOverwhelmed', l.whatHelpsOverwhelmed),
+            _FollowOnQuestion.yesNo(
+                'exploreCopingStrategies', l.exploreCopingStrategies),
+          ],
+        ),
+        _FollowOnSection(
+          visible: provider.shouldShowSupportQuestions,
+          title: l.supportQuestions,
+          category: 'support',
+          questions: [
+            _FollowOnQuestion(
+                'whatWouldMakeDifference', l.whatWouldMakeDifference),
+            _FollowOnQuestion(
+                'whatDoesSupportLookLike', l.whatDoesSupportLookLike),
+            _FollowOnQuestion(
+                'specificSkillsToDevelop', l.specificSkillsToDevelop),
+            _FollowOnQuestion(
+                'howBalanceWorkSelfCare', l.howBalanceWorkSelfCare),
+          ],
+        ),
+        _FollowOnSection(
+          visible: provider.shouldShowCoachingBuddyQuestions,
+          title: l.coachingBuddyQuestions,
+          category: 'coachingBuddy',
+          questions: [
+            _FollowOnQuestion('whatTaskTakeOffPlate', l.whatTaskTakeOffPlate),
+            _FollowOnQuestion('whatWouldLikeHelpWith', l.whatWouldLikeHelpWith),
+            _FollowOnQuestion('howAdaptCommunication', l.howAdaptCommunication),
+            _FollowOnQuestion(
+                'specificRemindersPrompts', l.specificRemindersPrompts),
+          ],
+        ),
+        _FollowOnSection(
+          visible: provider.shouldShowEmotionalQuestions,
+          title: l.emotionalQuestions,
+          category: 'emotional',
+          questions: [
+            _FollowOnQuestion('whatHelpsGrounded', l.whatHelpsGrounded),
+            _FollowOnQuestion('howProcessChallenges', l.howProcessChallenges),
+            _FollowOnQuestion('whatHelpsBuildCalm', l.whatHelpsBuildCalm),
+            _FollowOnQuestion(
+                'whatWouldHelpSupported', l.whatWouldHelpSupported),
+          ],
+        ),
+        _FollowOnSection(
+          visible: provider.shouldShowCelebratingQuestions,
+          title: l.celebratingQuestions,
+          category: 'celebrating',
+          questions: [
+            _FollowOnQuestion('recentWinToCelebrate', l.recentWinToCelebrate),
+            _FollowOnQuestion(
+                'howAcknowledgeProgress', l.howAcknowledgeProgress),
+            _FollowOnQuestion.yesNo(
+                'wouldLikeCelebrationIdeas', l.wouldLikeCelebrationIdeas),
+            _FollowOnQuestion('howRecognizeProgress', l.howRecognizeProgress),
+          ],
+        ),
+        _FollowOnSection(
+          visible: provider.shouldShowCustomizationQuestions,
+          title: l.customizationQuestions,
+          category: 'customization',
+          questions: [
+            _FollowOnQuestion(
+                'specificToolsToIntegrate', l.specificToolsToIntegrate),
+            _FollowOnQuestion(
+                'howCustomizeCommunication', l.howCustomizeCommunication),
+            _FollowOnQuestion('tailoredNeeds', l.tailoredNeeds),
+          ],
+        ),
+      ];
+
   Widget _buildFollowOnQuestionsPage(
     OnboardingProvider provider,
     OnboardingLocalizations localizations,
   ) {
     final appTheme = context.appTheme;
+    final answers = provider.followOnQuestions;
 
     return SingleChildScrollView(
       padding: AppInsets.page,
@@ -967,474 +1135,34 @@ class _OnboardingPageState extends State<OnboardingPage> {
             title: localizations.stepFollowOnQuestions,
           ),
           const SizedBox(height: AppSpacing.xl),
-          // Strengths Questions
-          if (provider.shouldShowStrengthsQuestions) ...[
-            _buildSectionTitle(localizations.strengthsQuestions),
-            _buildTextArea(
-              localizations.howDoYouUseStrengths,
-              (value) => provider.setFollowOnQuestion(
-                'strengths',
-                'howDoYouUseStrengths',
-                value,
-              ),
-              provider.followOnQuestions['strengths']
-                      ?['howDoYouUseStrengths'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.whatHelpsTapStrengths,
-              (value) => provider.setFollowOnQuestion(
-                'strengths',
-                'whatHelpsTapStrengths',
-                value,
-              ),
-              provider.followOnQuestions['strengths']
-                      ?['whatHelpsTapStrengths'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.howBuildOnStrengths,
-              (value) => provider.setFollowOnQuestion(
-                'strengths',
-                'howBuildOnStrengths',
-                value,
-              ),
-              provider.followOnQuestions['strengths']?['howBuildOnStrengths'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-          // Challenges Questions
-          if (provider.shouldShowChallengesQuestions) ...[
-            _buildSectionTitle(localizations.challengesQuestions),
-            _buildTextArea(
-              localizations.whatsHardestToManage,
-              (value) => provider.setFollowOnQuestion(
-                'challenges',
-                'whatsHardestToManage',
-                value,
-              ),
-              provider.followOnQuestions['challenges']
-                      ?['whatsHardestToManage'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.whatToolsHaveHelped,
-              (value) => provider.setFollowOnQuestion(
-                'challenges',
-                'whatToolsHaveHelped',
-                value,
-              ),
-              provider.followOnQuestions['challenges']
-                      ?['whatToolsHaveHelped'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildCheckbox(
-              localizations.wouldLikeToolSuggestions,
-              (value) => provider.setFollowOnQuestion(
-                'challenges',
-                'wouldLikeToolSuggestions',
-                value ?? false,
-              ),
-              provider.followOnQuestions['challenges']
-                      ?['wouldLikeToolSuggestions'] ??
-                  false,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.whatHelpsRecharge,
-              (value) => provider.setFollowOnQuestion(
-                'challenges',
-                'whatHelpsRecharge',
-                value,
-              ),
-              provider.followOnQuestions['challenges']?['whatHelpsRecharge'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-          // Learning Questions
-          if (provider.shouldShowLearningQuestions) ...[
-            _buildSectionTitle(localizations.learningQuestions),
-            _buildTextArea(
-              localizations.shareLearningExample,
-              (value) => provider.setFollowOnQuestion(
-                'learning',
-                'shareLearningExample',
-                value,
-              ),
-              provider.followOnQuestions['learning']?['shareLearningExample'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildCheckbox(
-              localizations.preferSpecificFormat,
-              (value) => provider.setFollowOnQuestion(
-                'learning',
-                'preferSpecificFormat',
-                value ?? false,
-              ),
-              provider.followOnQuestions['learning']?['preferSpecificFormat'] ??
-                  false,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.howBreakDownTasks,
-              (value) => provider.setFollowOnQuestion(
-                'learning',
-                'howBreakDownTasks',
-                value,
-              ),
-              provider.followOnQuestions['learning']?['howBreakDownTasks'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-          // Motivation Questions
-          if (provider.shouldShowMotivationQuestions) ...[
-            _buildSectionTitle(localizations.motivationQuestions),
-            _buildTextArea(
-              localizations.whatMotivatesYou,
-              (value) => provider.setFollowOnQuestion(
-                'motivation',
-                'whatMotivatesYou',
-                value,
-              ),
-              provider.followOnQuestions['motivation']?['whatMotivatesYou'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.howSetGoals,
-              (value) => provider.setFollowOnQuestion(
-                'motivation',
-                'howSetGoals',
-                value,
-              ),
-              provider.followOnQuestions['motivation']?['howSetGoals'] ?? '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.whatRemindersWork,
-              (value) => provider.setFollowOnQuestion(
-                'motivation',
-                'whatRemindersWork',
-                value,
-              ),
-              provider.followOnQuestions['motivation']?['whatRemindersWork'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.howCelebrateProgress,
-              (value) => provider.setFollowOnQuestion(
-                'motivation',
-                'howCelebrateProgress',
-                value,
-              ),
-              provider.followOnQuestions['motivation']
-                      ?['howCelebrateProgress'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-          // Coping Questions
-          if (provider.shouldShowCopingQuestions) ...[
-            _buildSectionTitle(localizations.copingQuestions),
-            _buildTextArea(
-              localizations.sensoryFriendlyEnvironment,
-              (value) => provider.setFollowOnQuestion(
-                'coping',
-                'sensoryFriendlyEnvironment',
-                value,
-              ),
-              provider.followOnQuestions['coping']
-                      ?['sensoryFriendlyEnvironment'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.howManageTime,
-              (value) => provider.setFollowOnQuestion(
-                'coping',
-                'howManageTime',
-                value,
-              ),
-              provider.followOnQuestions['coping']?['howManageTime'] ?? '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.whatHelpsOverwhelmed,
-              (value) => provider.setFollowOnQuestion(
-                'coping',
-                'whatHelpsOverwhelmed',
-                value,
-              ),
-              provider.followOnQuestions['coping']?['whatHelpsOverwhelmed'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildCheckbox(
-              localizations.exploreCopingStrategies,
-              (value) => provider.setFollowOnQuestion(
-                'coping',
-                'exploreCopingStrategies',
-                value ?? false,
-              ),
-              provider.followOnQuestions['coping']
-                      ?['exploreCopingStrategies'] ??
-                  false,
-            ),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-          // Support Questions
-          if (provider.shouldShowSupportQuestions) ...[
-            _buildSectionTitle(localizations.supportQuestions),
-            _buildTextArea(
-              localizations.whatWouldMakeDifference,
-              (value) => provider.setFollowOnQuestion(
-                'support',
-                'whatWouldMakeDifference',
-                value,
-              ),
-              provider.followOnQuestions['support']
-                      ?['whatWouldMakeDifference'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.whatDoesSupportLookLike,
-              (value) => provider.setFollowOnQuestion(
-                'support',
-                'whatDoesSupportLookLike',
-                value,
-              ),
-              provider.followOnQuestions['support']
-                      ?['whatDoesSupportLookLike'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.specificSkillsToDevelop,
-              (value) => provider.setFollowOnQuestion(
-                'support',
-                'specificSkillsToDevelop',
-                value,
-              ),
-              provider.followOnQuestions['support']
-                      ?['specificSkillsToDevelop'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.howBalanceWorkSelfCare,
-              (value) => provider.setFollowOnQuestion(
-                'support',
-                'howBalanceWorkSelfCare',
-                value,
-              ),
-              provider.followOnQuestions['support']
-                      ?['howBalanceWorkSelfCare'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-          // Coaching Buddy Questions
-          if (provider.shouldShowCoachingBuddyQuestions) ...[
-            _buildSectionTitle(localizations.coachingBuddyQuestions),
-            _buildTextArea(
-              localizations.whatTaskTakeOffPlate,
-              (value) => provider.setFollowOnQuestion(
-                'coachingBuddy',
-                'whatTaskTakeOffPlate',
-                value,
-              ),
-              provider.followOnQuestions['coachingBuddy']
-                      ?['whatTaskTakeOffPlate'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.whatWouldLikeHelpWith,
-              (value) => provider.setFollowOnQuestion(
-                'coachingBuddy',
-                'whatWouldLikeHelpWith',
-                value,
-              ),
-              provider.followOnQuestions['coachingBuddy']
-                      ?['whatWouldLikeHelpWith'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.howAdaptCommunication,
-              (value) => provider.setFollowOnQuestion(
-                'coachingBuddy',
-                'howAdaptCommunication',
-                value,
-              ),
-              provider.followOnQuestions['coachingBuddy']
-                      ?['howAdaptCommunication'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.specificRemindersPrompts,
-              (value) => provider.setFollowOnQuestion(
-                'coachingBuddy',
-                'specificRemindersPrompts',
-                value,
-              ),
-              provider.followOnQuestions['coachingBuddy']
-                      ?['specificRemindersPrompts'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-          // Emotional Questions
-          if (provider.shouldShowEmotionalQuestions) ...[
-            _buildSectionTitle(localizations.emotionalQuestions),
-            _buildTextArea(
-              localizations.whatHelpsGrounded,
-              (value) => provider.setFollowOnQuestion(
-                'emotional',
-                'whatHelpsGrounded',
-                value,
-              ),
-              provider.followOnQuestions['emotional']?['whatHelpsGrounded'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.howProcessChallenges,
-              (value) => provider.setFollowOnQuestion(
-                'emotional',
-                'howProcessChallenges',
-                value,
-              ),
-              provider.followOnQuestions['emotional']
-                      ?['howProcessChallenges'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.whatHelpsBuildCalm,
-              (value) => provider.setFollowOnQuestion(
-                'emotional',
-                'whatHelpsBuildCalm',
-                value,
-              ),
-              provider.followOnQuestions['emotional']?['whatHelpsBuildCalm'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.whatWouldHelpSupported,
-              (value) => provider.setFollowOnQuestion(
-                'emotional',
-                'whatWouldHelpSupported',
-                value,
-              ),
-              provider.followOnQuestions['emotional']
-                      ?['whatWouldHelpSupported'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-          // Celebrating Questions
-          if (provider.shouldShowCelebratingQuestions) ...[
-            _buildSectionTitle(localizations.celebratingQuestions),
-            _buildTextArea(
-              localizations.recentWinToCelebrate,
-              (value) => provider.setFollowOnQuestion(
-                'celebrating',
-                'recentWinToCelebrate',
-                value,
-              ),
-              provider.followOnQuestions['celebrating']
-                      ?['recentWinToCelebrate'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.howAcknowledgeProgress,
-              (value) => provider.setFollowOnQuestion(
-                'celebrating',
-                'howAcknowledgeProgress',
-                value,
-              ),
-              provider.followOnQuestions['celebrating']
-                      ?['howAcknowledgeProgress'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildCheckbox(
-              localizations.wouldLikeCelebrationIdeas,
-              (value) => provider.setFollowOnQuestion(
-                'celebrating',
-                'wouldLikeCelebrationIdeas',
-                value ?? false,
-              ),
-              provider.followOnQuestions['celebrating']
-                      ?['wouldLikeCelebrationIdeas'] ??
-                  false,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.howRecognizeProgress,
-              (value) => provider.setFollowOnQuestion(
-                'celebrating',
-                'howRecognizeProgress',
-                value,
-              ),
-              provider.followOnQuestions['celebrating']
-                      ?['howRecognizeProgress'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.xl),
-          ],
-          // Customization Questions
-          if (provider.shouldShowCustomizationQuestions) ...[
-            _buildSectionTitle(localizations.customizationQuestions),
-            _buildTextArea(
-              localizations.specificToolsToIntegrate,
-              (value) => provider.setFollowOnQuestion(
-                'customization',
-                'specificToolsToIntegrate',
-                value,
-              ),
-              provider.followOnQuestions['customization']
-                      ?['specificToolsToIntegrate'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.howCustomizeCommunication,
-              (value) => provider.setFollowOnQuestion(
-                'customization',
-                'howCustomizeCommunication',
-                value,
-              ),
-              provider.followOnQuestions['customization']
-                      ?['howCustomizeCommunication'] ??
-                  '',
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildTextArea(
-              localizations.tailoredNeeds,
-              (value) => provider.setFollowOnQuestion(
-                'customization',
-                'tailoredNeeds',
-                value,
-              ),
-              provider.followOnQuestions['customization']?['tailoredNeeds'] ??
-                  '',
-            ),
-          ],
+          for (final section in _followOnSections(provider, localizations))
+            if (section.visible) ...[
+              _buildSectionTitle(section.title),
+              for (final (index, question) in section.questions.indexed) ...[
+                if (index > 0) const SizedBox(height: AppSpacing.lg),
+                if (question.isYesNo)
+                  _buildCheckbox(
+                    question.label,
+                    (value) => provider.setFollowOnQuestion(
+                      section.category,
+                      question.key,
+                      value ?? false,
+                    ),
+                    answers[section.category]?[question.key] ?? false,
+                  )
+                else
+                  _buildTextArea(
+                    question.label,
+                    (value) => provider.setFollowOnQuestion(
+                      section.category,
+                      question.key,
+                      value,
+                    ),
+                    answers[section.category]?[question.key] ?? '',
+                  ),
+              ],
+              const SizedBox(height: AppSpacing.xl),
+            ],
         ],
       ),
     );
@@ -1512,4 +1240,27 @@ class _OnboardingPageState extends State<OnboardingPage> {
       ),
     );
   }
+}
+
+class _FollowOnSection {
+  const _FollowOnSection({
+    required this.visible,
+    required this.title,
+    required this.category,
+    required this.questions,
+  });
+
+  final bool visible;
+  final String title;
+  final String category;
+  final List<_FollowOnQuestion> questions;
+}
+
+class _FollowOnQuestion {
+  const _FollowOnQuestion(this.key, this.label) : isYesNo = false;
+  const _FollowOnQuestion.yesNo(this.key, this.label) : isYesNo = true;
+
+  final String key;
+  final String label;
+  final bool isYesNo;
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:projectbrain/core/network/rate_limited_exception.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
 import 'package:flutter/material.dart';
 import 'package:projectbrain/models/citation.dart';
 import 'package:projectbrain/models/agent/action_card.dart';
@@ -25,6 +26,36 @@ class ChatProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isSending = false;
   String? _errorMessage;
+
+  /// Bumped whenever the message list is replaced (new conversation, loading
+  /// another one, logout). A reply that is still streaming checks it and stops
+  /// writing, so it cannot index into, or leak into, the new list.
+  int _generation = 0;
+
+  bool _isStale(int generation) => generation != _generation;
+
+  /// Text of the last message whose reply failed, for [retryLastMessage].
+  String? _failedText;
+
+  /// A failed confirm/cancel of a pending action, shown once by the page.
+  String? _actionError;
+
+  /// Whether the last message failed and can be sent again.
+  bool get canRetryLastMessage => _failedText != null && !_isSending;
+
+  /// Returns the latest pending-action error once, then clears it.
+  String? consumeActionError() {
+    final error = _actionError;
+    _actionError = null;
+    return error;
+  }
+
+  /// Invalidate any in-flight reply before the message list is replaced.
+  void _startNewGeneration() {
+    _generation++;
+    _isSending = false;
+    _failedText = null;
+  }
 
   List<ChatMessage> get messages => List.unmodifiable(_messages);
   AgentMessageExtras messageExtrasFor(int index) =>
@@ -52,6 +83,8 @@ class ChatProvider extends ChangeNotifier {
     }
     _isSending = true;
     _errorMessage = null;
+    _failedText = null;
+    final generation = _generation;
     _messages.add(
         const ChatMessage(role: 'user', content: '').copyWith(content: text));
     notifyListeners();
@@ -64,7 +97,7 @@ class ChatProvider extends ChangeNotifier {
     StreamSubscription<List<Citation>>? citationsSubscription;
     try {
       if (featureFlagService.agentFeatureEnabled) {
-        await _sendViaAgent(text, assistantMessageIndex);
+        await _sendViaAgent(text, assistantMessageIndex, generation);
         return;
       }
 
@@ -75,6 +108,7 @@ class ChatProvider extends ChangeNotifier {
       final stream = response.stream;
       final citationsStream = response.citationsStream;
       final conversationId = response.conversationId;
+      if (_isStale(generation)) return;
 
       // If this is a new conversation, create and store it locally
       if (_conversation == null && conversationId != null) {
@@ -92,6 +126,7 @@ class ChatProvider extends ChangeNotifier {
       // Collect citations from stream
       final List<Citation> collectedCitations = [];
       citationsSubscription = citationsStream.listen((citations) {
+        if (_isStale(generation)) return;
         collectedCitations.clear();
         collectedCitations.addAll(citations);
         // Update message with current citations
@@ -108,6 +143,8 @@ class ChatProvider extends ChangeNotifier {
       var lastNotify = DateTime.fromMillisecondsSinceEpoch(0);
       const notifyInterval = Duration(milliseconds: 60);
       await for (final chunk in stream) {
+        // Leaving the loop cancels the stream.
+        if (_isStale(generation)) return;
         final currentMessage = _messages[assistantMessageIndex];
         _messages[assistantMessageIndex] = currentMessage.copyWith(
           content: currentMessage.content + chunk,
@@ -118,6 +155,8 @@ class ChatProvider extends ChangeNotifier {
           notifyListeners();
         }
       }
+
+      if (_isStale(generation)) return;
 
       // Final update: ensure citations are set on the message
       final finalMessage = _messages[assistantMessageIndex];
@@ -130,33 +169,46 @@ class ChatProvider extends ChangeNotifier {
     } catch (e, stackTrace) {
       logDebug('[ChatProvider] Error streaming: $e');
       logDebug('[ChatProvider] Stack trace: $stackTrace');
+      if (_isStale(generation)) return;
 
       // A 429 carries a message meant for the user (slow down, or a usage
       // quota reached), so show it as-is rather than as a generic failure.
       final rateLimited = e is RateLimitedException;
-      final errorMessage =
-          rateLimited ? e.message : 'Failed to get response. Please try again.';
+      final errorMessage = rateLimited
+          ? e.message
+          : userFriendlyError(e,
+              fallback: "Couldn't get a response. Please try again.");
       _errorMessage = errorMessage;
+      // Retrying straight after a rate limit would be rejected again.
+      if (!rateLimited) _failedText = text;
       // Update the message to show error
       final currentMessage = _messages[assistantMessageIndex];
       _messages[assistantMessageIndex] = currentMessage.copyWith(
-        content: rateLimited ? errorMessage : 'Error: $errorMessage',
+        content: errorMessage,
       );
       notifyListeners();
     } finally {
       // Always release the citation subscription, even on error/cancel, so it
       // does not leak across sends.
       await citationsSubscription?.cancel();
-      _isSending = false;
-      notifyListeners();
+      // A stale send must not clear the flag for a send that started since.
+      if (!_isStale(generation)) {
+        _isSending = false;
+        notifyListeners();
+      }
     }
   }
 
-  Future<void> _sendViaAgent(String text, int assistantMessageIndex) async {
+  Future<void> _sendViaAgent(
+    String text,
+    int assistantMessageIndex,
+    int generation,
+  ) async {
     final response = await aiService.streamAgentResponse(
       text,
       conversationId: _conversation?.id,
     );
+    if (_isStale(generation)) return;
 
     if (_conversation == null && response.conversationId != null) {
       _conversation = Conversation(
@@ -178,6 +230,8 @@ class ChatProvider extends ChangeNotifier {
     const notifyInterval = Duration(milliseconds: 60);
 
     await for (final event in response.stream) {
+      // Leaving the loop cancels the stream.
+      if (_isStale(generation)) return;
       switch (event.type) {
         case 'text':
           final chunk = event.value?.toString() ?? '';
@@ -206,6 +260,7 @@ class ChatProvider extends ChangeNotifier {
       }
     }
 
+    if (_isStale(generation)) return;
     final current = _messages[assistantMessageIndex];
     var finalContent = current.content;
     if (finalContent.isEmpty) {
@@ -229,6 +284,22 @@ class ChatProvider extends ChangeNotifier {
       userChoices: userChoices,
     );
     notifyListeners();
+  }
+
+  /// Send the last failed message again, replacing the failed exchange.
+  Future<void> retryLastMessage() async {
+    final text = _failedText;
+    if (text == null || _isSending) return;
+    _failedText = null;
+    final count = _messages.length;
+    if (count >= 2 &&
+        _messages[count - 2].role == 'user' &&
+        _messages[count - 2].content == text &&
+        _messages[count - 1].role == 'assistant') {
+      _messages.removeRange(count - 2, count);
+      _messageExtras.remove(count - 1);
+    }
+    await sendMessage(text);
   }
 
   void markUserChoiceAnswered(int messageIndex) {
@@ -281,7 +352,8 @@ class ChatProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e, stackTrace) {
       logError('[ChatProvider] Error confirming pending action', e, stackTrace);
-      _errorMessage = 'Failed to confirm action. Please try again.';
+      _errorMessage = "Couldn't confirm the action. Please try again.";
+      _actionError = _errorMessage;
       notifyListeners();
     }
   }
@@ -306,7 +378,8 @@ class ChatProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e, stackTrace) {
       logError('[ChatProvider] Error cancelling pending action', e, stackTrace);
-      _errorMessage = 'Failed to cancel action. Please try again.';
+      _errorMessage = "Couldn't cancel the action. Please try again.";
+      _actionError = _errorMessage;
       notifyListeners();
     }
   }
@@ -329,6 +402,8 @@ class ChatProvider extends ChangeNotifier {
 
   /// Load a specific conversation by ID
   Future<Conversation> loadConversation(String id) async {
+    _startNewGeneration();
+    final generation = _generation;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -337,6 +412,8 @@ class ChatProvider extends ChangeNotifier {
       logDebug('[ChatProvider] Loading conversation: $id');
       final conversation =
           await conversationService.getConversationWithMessagesById(id);
+      // Another conversation was opened (or cleared) while this one loaded.
+      if (_isStale(generation)) return conversation;
       _messages.clear();
       _messages.addAll(conversation.messages);
       _messageExtras.clear();
@@ -355,6 +432,7 @@ class ChatProvider extends ChangeNotifier {
 
   /// Clear the current conversation and start fresh
   void clearConversation() {
+    _startNewGeneration();
     _messages.clear();
     _messageExtras.clear();
     _answeredChoiceMessageIndexes.clear();
@@ -372,13 +450,13 @@ class ChatProvider extends ChangeNotifier {
 
   /// Reset all chat state so it does not leak into the next logged-in session.
   void resetOnLogout() {
+    _startNewGeneration();
     _messages.clear();
     _messageExtras.clear();
     _answeredChoiceMessageIndexes.clear();
     _conversation = null;
     _errorMessage = null;
     _isLoading = false;
-    _isSending = false;
     notifyListeners();
     logDebug('[ChatProvider] Reset on logout');
   }

@@ -10,6 +10,8 @@ import 'package:projectbrain/models/subscription.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
+import 'package:projectbrain/helpers/themes/contrast.dart';
 
 /// Page showing detailed information about a coach
 class CoachDetailsPage extends StatefulWidget {
@@ -31,6 +33,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
   ConnectionStatus _connectionStatus = ConnectionStatus.none;
   String? _connectionId;
   bool _isLoading = true;
+  Future<List<Coach>>? _connectedCoachesFuture;
   bool _isUpdatingConnection = false;
   String? _errorMessage;
 
@@ -64,13 +67,21 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to load coach details: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't load coach details.");
         _isLoading = false;
       });
     }
   }
 
   Future<void> _sendConnectionRequest() async {
+    // Set busy before the first await so a double tap sends one request.
+    if (_isUpdatingConnection) return;
+    setState(() {
+      _isUpdatingConnection = true;
+      _errorMessage = null;
+    });
+
     // Check connection limit
     final subscriptionProvider =
         Provider.of<SubscriptionProvider>(context, listen: false);
@@ -83,9 +94,10 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
         final currentCount = connectedCoaches.length;
 
         if (currentCount >= connectionLimit) {
+          if (mounted) setState(() => _isUpdatingConnection = false);
           // Show upgrade prompt
           if (mounted) {
-            showDialog(
+            await showDialog<void>(
               context: context,
               builder: (context) => UpgradePromptDialog(
                 requiredTier: SubscriptionTier.pro,
@@ -101,17 +113,13 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
       }
     }
 
-    setState(() {
-      _isUpdatingConnection = true;
-      _errorMessage = null;
-    });
-
     try {
       final status = await _coachService.sendConnectionRequest(widget.coachId);
       if (!mounted) return;
       setState(() {
         _connectionStatus = status;
         _isUpdatingConnection = false;
+        _connectedCoachesFuture = null;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -126,14 +134,17 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to send connection request: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't send connection request.");
         _isUpdatingConnection = false;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text(userFriendlyError(e,
+                fallback: 'Something went wrong. Please try again.')),
             backgroundColor: context.appTheme.errorColor,
           ),
         );
@@ -142,6 +153,28 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
   }
 
   Future<void> _cancelConnectionRequest() async {
+    if (_isUpdatingConnection) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancel request?'),
+        content: const Text(
+          'The coach will no longer see your connection request.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Keep request'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Cancel request'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
     setState(() {
       _isUpdatingConnection = true;
       _errorMessage = null;
@@ -149,6 +182,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
 
     try {
       await _coachService.cancelConnectionRequest(widget.coachId);
+      if (!mounted) return;
       setState(() {
         _connectionStatus = ConnectionStatus.none;
         _isUpdatingConnection = false;
@@ -162,14 +196,17 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to cancel connection request: ${e.toString()}';
+        _errorMessage = userFriendlyError(e,
+            fallback: "Couldn't cancel connection request.");
         _isUpdatingConnection = false;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text(userFriendlyError(e,
+                fallback: 'Something went wrong. Please try again.')),
             backgroundColor: context.appTheme.errorColor,
           ),
         );
@@ -182,7 +219,8 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
       return const SizedBox(
         width: 24,
         height: 24,
-        child: CircularProgressIndicator(strokeWidth: 2),
+        child: CircularProgressIndicator(
+            semanticsLabel: 'Loading', strokeWidth: 2),
       );
     }
 
@@ -198,7 +236,9 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
             if (connectionLimit != null) {
               // We'll need to fetch this, but for now show the limit
               connectionInfo = FutureBuilder<List<Coach>>(
-                future: _coachService.getConnectedCoaches(),
+                // Cached: a new future per build refetched on every rebuild.
+                future: _connectedCoachesFuture ??=
+                    _coachService.getConnectedCoaches(),
                 builder: (context, snapshot) {
                   if (snapshot.hasData) {
                     final currentCount = snapshot.data!.length;
@@ -251,8 +291,8 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
       case ConnectionStatus.pending:
         return OutlinedButton.icon(
           onPressed: _cancelConnectionRequest,
-          icon: const Icon(Icons.pending),
-          label: const Text('Pending'),
+          icon: const Icon(Icons.close),
+          label: const Text('Request pending · Cancel'),
           style: OutlinedButton.styleFrom(
             padding: AppInsets.button,
           ),
@@ -268,7 +308,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
           label: const Text('Message'),
           style: ElevatedButton.styleFrom(
             padding: AppInsets.button,
-            backgroundColor: context.appTheme.green,
+            backgroundColor: readableOn(context.appTheme.green, Colors.white),
             foregroundColor: Colors.white,
           ),
         );
@@ -304,7 +344,8 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
         title: Text(_coach?.fullName ?? 'Coach Details'),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(semanticsLabel: 'Loading'))
           : _coach == null
               ? Center(
                   child: Column(
@@ -430,8 +471,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                             Icon(
                                               Icons.email,
                                               size: 16,
-                                              color: theme.colorScheme.onSurface
-                                                  .withValues(alpha: 0.6),
+                                              color: context.appTheme.textMuted,
                                             ),
                                             SizedBox(width: AppSpacing.xs),
                                             Expanded(
@@ -461,8 +501,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                   Icon(
                                     Icons.phone,
                                     size: 16,
-                                    color: theme.colorScheme.onSurface
-                                        .withValues(alpha: 0.6),
+                                    color: context.appTheme.textMuted,
                                   ),
                                   SizedBox(width: AppSpacing.xs),
                                   Text(
@@ -495,8 +534,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                     Icon(
                                       Icons.home,
                                       size: 16,
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.6),
+                                      color: context.appTheme.textMuted,
                                     ),
                                     SizedBox(width: AppSpacing.xs),
                                     Expanded(
@@ -514,8 +552,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                     Icon(
                                       Icons.location_city,
                                       size: 16,
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.6),
+                                      color: context.appTheme.textMuted,
                                     ),
                                     SizedBox(width: AppSpacing.xs),
                                     Text(
@@ -532,8 +569,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                     Icon(
                                       Icons.location_on,
                                       size: 16,
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.6),
+                                      color: context.appTheme.textMuted,
                                     ),
                                     SizedBox(width: AppSpacing.xs),
                                     Text(
@@ -581,8 +617,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                     Icon(
                                       Icons.school,
                                       size: 16,
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.6),
+                                      color: context.appTheme.textMuted,
                                     ),
                                     SizedBox(width: AppSpacing.sm),
                                     Expanded(

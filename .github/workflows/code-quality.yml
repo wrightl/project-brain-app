@@ -38,8 +38,8 @@ jobs:
             - name: Check for outdated dependencies
               run: flutter pub outdated
 
-            - name: Run widget tests
-              run: flutter test test/widgets/ --coverage
+            - name: Run tests
+              run: flutter test --coverage
 
             - name: Coverage summary
               run: |

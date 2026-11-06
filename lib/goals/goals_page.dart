@@ -6,60 +6,61 @@ import 'package:projectbrain/goals/getting_started_page.dart';
 import 'package:projectbrain/goals/goal_entry_page.dart';
 import 'package:projectbrain/goals/goals_list_page.dart';
 
+enum _GoalsRoute { gettingStarted, list, entry }
+
 /// Main goals page that handles routing based on user state
-class GoalsPage extends StatelessWidget {
+class GoalsPage extends StatefulWidget {
   const GoalsPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final goalsProvider = Provider.of<EggGoalsProvider>(context, listen: false);
+  State<GoalsPage> createState() => _GoalsPageState();
+}
 
-    return FutureBuilder<bool>(
-      future: _determineRoute(context, goalsProvider),
+class _GoalsPageState extends State<GoalsPage> {
+  // Created once: building it in build() re-synced with the API (and showed
+  // two spinners in a row) on every rebuild, e.g. a theme change.
+  late final Future<_GoalsRoute> _route;
+
+  @override
+  void initState() {
+    super.initState();
+    _route = _determineRoute();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<_GoalsRoute>(
+      future: _route,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+            body: Center(
+                child: CircularProgressIndicator(semanticsLabel: 'Loading')),
           );
         }
 
-        final hasEverSetGoals = snapshot.data ?? false;
-
-        if (!hasEverSetGoals) {
-          return const GettingStartedPage();
+        switch (snapshot.data ?? _GoalsRoute.gettingStarted) {
+          case _GoalsRoute.gettingStarted:
+            return const GettingStartedPage();
+          case _GoalsRoute.list:
+            return const GoalsListPage();
+          case _GoalsRoute.entry:
+            return const GoalEntryPage();
         }
-
-        return FutureBuilder<bool>(
-          future: goalsProvider.hasGoalsForToday(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
-            }
-
-            final hasGoalsToday = snapshot.data ?? false;
-
-            if (hasGoalsToday) {
-              return const GoalsListPage();
-            } else {
-              return const GoalEntryPage();
-            }
-          },
-        );
       },
     );
   }
 
-  Future<bool> _determineRoute(
-      BuildContext context, EggGoalsProvider provider) async {
+  Future<_GoalsRoute> _determineRoute() async {
+    final provider = context.read<EggGoalsProvider>();
+    final isLoggedIn = context.read<AuthProvider>().isLoggedIn;
     await provider.init();
-    if (!context.mounted) return false;
-    final isLoggedIn =
-        Provider.of<AuthProvider>(context, listen: false).isLoggedIn;
     if (isLoggedIn) {
       await provider.syncFromAPI();
     }
-    return await provider.hasEverSetGoals();
+    if (!await provider.hasEverSetGoals()) return _GoalsRoute.gettingStarted;
+    return await provider.hasGoalsForToday()
+        ? _GoalsRoute.list
+        : _GoalsRoute.entry;
   }
 }

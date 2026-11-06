@@ -32,6 +32,10 @@ linter:
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
   rules:
+    # Catch fire-and-forget futures and streams/sinks left open.
+    cancel_subscriptions: true
+    close_sinks: true
+    unawaited_futures: true
     avoid_print: false
     prefer_const_constructors_in_immutables: false
     prefer_const_constructors: false

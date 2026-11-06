@@ -3,10 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:projectbrain/journal/journal_provider.dart';
 import 'package:projectbrain/journal/journal_localizations.dart';
-import 'package:intl/intl.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
 
 /// View a single journal entry (read-only) with Edit button.
 class JournalViewPage extends StatefulWidget {
@@ -19,6 +19,41 @@ class JournalViewPage extends StatefulWidget {
 }
 
 class _JournalViewPageState extends State<JournalViewPage> {
+  Future<void> _confirmDelete(JournalLocalizations l10n) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.delete),
+        content: Text(l10n.deleteEntryConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+              foregroundColor: Theme.of(ctx).colorScheme.onError,
+            ),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await context.read<JournalProvider>().deleteEntry(widget.entryId);
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text(l10n.entryDeleted)));
+      context.pop();
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.couldNotDeleteEntry)));
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -40,7 +75,8 @@ class _JournalViewPageState extends State<JournalViewPage> {
             final entry = provider.currentEntry;
 
             if (provider.isLoading && entry == null) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(
+                  child: CircularProgressIndicator(semanticsLabel: 'Loading'));
             }
             if (provider.errorMessage != null && entry == null) {
               return Center(
@@ -79,6 +115,7 @@ class _JournalViewPageState extends State<JournalViewPage> {
                       IconButton(
                         onPressed: () => context.pop(),
                         icon: const Icon(Icons.arrow_back),
+                        tooltip: 'Back',
                       ),
                       Expanded(
                         child: Text(
@@ -95,6 +132,15 @@ class _JournalViewPageState extends State<JournalViewPage> {
                         icon: Icon(Icons.edit_outlined, color: appTheme.coral),
                         tooltip: l10n.edit,
                       ),
+                      const SizedBox(width: AppSpacing.xs),
+                      IconButton(
+                        onPressed: () => _confirmDelete(l10n),
+                        icon: Icon(
+                          Icons.delete_outline,
+                          color: theme.colorScheme.error,
+                        ),
+                        tooltip: l10n.delete,
+                      ),
                     ],
                   ),
                 ),
@@ -105,7 +151,7 @@ class _JournalViewPageState extends State<JournalViewPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          DateFormat.yMMMd().add_Hm().format(entry.createdAt),
+                          AppDateFormat.dateTime(entry.createdAt),
                           style: theme.textTheme.labelSmall,
                         ),
                         if (entry.summary != null &&

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/helpers/themes/contrast.dart';
 
 /// Goal row with checkbox and optional status tag.
 class GoalRow extends StatelessWidget {
@@ -30,7 +31,7 @@ class GoalRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _GoalCheckbox(completed: completed, onTap: onToggle),
+          _GoalCheckbox(completed: completed, label: title, onTap: onToggle),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
@@ -65,32 +66,56 @@ class GoalRow extends StatelessWidget {
 }
 
 class _GoalCheckbox extends StatelessWidget {
-  const _GoalCheckbox({required this.completed, this.onTap});
+  const _GoalCheckbox({
+    required this.completed,
+    required this.label,
+    this.onTap,
+  });
 
   final bool completed;
+  final String label;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final appTheme = context.appTheme;
 
-    return GestureDetector(
+    // Announced as a checkbox with the goal's text, and tappable across a
+    // 48dp area around the 26dp box.
+    return Semantics(
+      checked: completed,
+      enabled: onTap != null,
+      label: label,
+      excludeSemantics: true,
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 26,
-        height: 26,
-        decoration: BoxDecoration(
-          color: completed ? appTheme.green : Colors.transparent,
-          borderRadius: BorderRadius.circular(9),
-          border: Border.all(
-            color: completed ? appTheme.green : appTheme.borderColor,
-            width: completed ? 0 : 2,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: SizedBox(
+          width: 48,
+          height: 48,
+          child: Center(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 26,
+              height: 26,
+              decoration: BoxDecoration(
+                // Icons need 3:1 against their fill (WCAG 1.4.11).
+                color: completed
+                    ? readableOn(appTheme.green, Colors.white, minRatio: 3)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(9),
+                border: Border.all(
+                  color: completed ? appTheme.green : appTheme.borderColor,
+                  width: completed ? 0 : 2,
+                ),
+              ),
+              child: completed
+                  ? const Icon(Icons.check, size: 16, color: Colors.white)
+                  : null,
+            ),
           ),
         ),
-        child: completed
-            ? const Icon(Icons.check, size: 16, color: Colors.white)
-            : null,
       ),
     );
   }

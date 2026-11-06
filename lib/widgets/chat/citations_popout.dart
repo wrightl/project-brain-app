@@ -108,37 +108,40 @@ class _CitationsPopoutState extends State<CitationsPopout>
         mainAxisSize: MainAxisSize.min,
         children: [
           // Header bar
-          InkWell(
-            onTap: _toggleExpanded,
-            child: Container(
-              padding: AppInsets.card,
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.library_books,
-                    size: 20,
-                    color: theme.colorScheme.onSurface,
+          Semantics(
+              expanded: _isExpanded,
+              button: true,
+              child: InkWell(
+                onTap: _toggleExpanded,
+                child: Container(
+                  padding: AppInsets.card,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.library_books,
+                        size: 20,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                      SizedBox(width: AppSpacing.sm),
+                      Text(
+                        'Citations (${widget.citations.length})',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Spacer(),
+                      AnimatedRotation(
+                        turns: _isExpanded ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 300),
+                        child: Icon(
+                          Icons.keyboard_arrow_up,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(width: AppSpacing.sm),
-                  Text(
-                    'Citations (${widget.citations.length})',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const Spacer(),
-                  AnimatedRotation(
-                    turns: _isExpanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 300),
-                    child: Icon(
-                      Icons.keyboard_arrow_up,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+                ),
+              )),
           // Expandable content
           SizeTransition(
             sizeFactor: _expandAnimation,

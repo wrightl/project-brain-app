@@ -80,30 +80,37 @@ class _TypingIndicatorState extends State<TypingIndicator>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color = widget.dotColor ?? theme.colorScheme.onSurfaceVariant;
+    final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(3, (index) {
-        return Padding(
-          padding: EdgeInsets.symmetric(horizontal: widget.dotSpacing / 2),
-          child: AnimatedBuilder(
-            animation: _animations[index],
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, _animations[index].value),
-                child: Container(
-                  width: widget.dotSize,
-                  height: widget.dotSize,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
+    return Semantics(
+      label: 'Typing',
+      liveRegion: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(3, (index) {
+          return Padding(
+            padding: EdgeInsets.symmetric(horizontal: widget.dotSpacing / 2),
+            child: AnimatedBuilder(
+              animation: _animations[index],
+              builder: (context, child) {
+                return Transform.translate(
+                  // Dots stay still under Reduce Motion.
+                  offset:
+                      Offset(0, reduceMotion ? 0 : _animations[index].value),
+                  child: Container(
+                    width: widget.dotSize,
+                    height: widget.dotSize,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                ),
-              );
-            },
-          ),
-        );
-      }),
+                );
+              },
+            ),
+          );
+        }),
+      ),
     );
   }
 }

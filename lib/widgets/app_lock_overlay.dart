@@ -17,16 +17,25 @@ class AppLockOverlay extends StatelessWidget {
     final lock = context.watch<AppLockController>();
     final authProvider = context.watch<AuthProvider>();
     final locked = lock.isLocked && authProvider.isLoggedIn;
+    final covered = locked || lock.isObscured;
 
     return Stack(
       children: [
-        child,
+        // A visual cover is not enough: screen readers would still read, and
+        // could activate, the content underneath. Remove it from semantics
+        // and hit testing while covered.
+        ExcludeSemantics(
+          excluding: covered,
+          child: IgnorePointer(ignoring: covered, child: child),
+        ),
         if (locked)
           Positioned.fill(
-            child: _UnlockScreen(
-              label: authProvider.biometricUnlockLabel,
-              isUnlocking: lock.isUnlocking,
-              onUnlock: lock.unlock,
+            child: BlockSemantics(
+              child: _UnlockScreen(
+                label: authProvider.biometricUnlockLabel,
+                isUnlocking: lock.isUnlocking,
+                onUnlock: lock.unlock,
+              ),
             ),
           )
         else if (lock.isObscured)
@@ -66,10 +75,14 @@ class _UnlockScreen extends StatelessWidget {
                 color: theme.colorScheme.primary,
               ),
               const SizedBox(height: AppSpacing.md),
-              Text(
-                'Project Brain is locked',
-                style: theme.textTheme.titleLarge,
-                textAlign: TextAlign.center,
+              Semantics(
+                header: true,
+                liveRegion: true,
+                child: Text(
+                  'Project Brain is locked',
+                  style: theme.textTheme.titleLarge,
+                  textAlign: TextAlign.center,
+                ),
               ),
               const Spacer(),
               SizedBox(

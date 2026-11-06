@@ -21,6 +21,7 @@ class UsageDashboardPage extends StatelessWidget {
         title: const Text('Usage Dashboard'),
         actions: [
           IconButton(
+            tooltip: 'Refresh',
             icon: const Icon(Icons.refresh),
             onPressed: () {
               Provider.of<SubscriptionProvider>(context, listen: false)
@@ -33,7 +34,8 @@ class UsageDashboardPage extends StatelessWidget {
         builder: (context, subscriptionProvider, _) {
           if (subscriptionProvider.isLoading &&
               subscriptionProvider.usage == null) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+                child: CircularProgressIndicator(semanticsLabel: 'Loading'));
           }
 
           if (subscriptionProvider.hasError &&

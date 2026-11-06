@@ -12,7 +12,7 @@ class GoalsRealtimeService {
   final AuthService authService;
 
   http.Client? _client;
-  StreamSubscription<List<int>>? _subscription;
+  StreamSubscription<String>? _subscription;
   void Function()? _onGoalsUpdated;
   bool _running = false;
 
@@ -21,11 +21,21 @@ class GoalsRealtimeService {
   int _reconnectAttempts = 0;
   Timer? _reconnectTimer;
 
+  /// Bumped by every [start] and [stop]. A start that is still waiting for a
+  /// token or the response checks it, so a [stop] (or a newer start) in the
+  /// meantime does not leave a second connection open.
+  int _attempt = 0;
+
   static const Duration _minReconnectDelay = Duration(seconds: 2);
   static const Duration _maxReconnectDelay = Duration(seconds: 60);
   static const Duration _connectTimeout = Duration(seconds: 15);
 
-  GoalsRealtimeService({required this.authService});
+  final http.Client Function() _createClient;
+
+  GoalsRealtimeService({
+    required this.authService,
+    http.Client Function()? createClient,
+  }) : _createClient = createClient ?? http.Client.new;
 
   bool get isRunning => _running;
 
@@ -43,16 +53,27 @@ class GoalsRealtimeService {
     }
 
     _onGoalsUpdated = onGoalsUpdated;
+    final attempt = ++_attempt;
+    _client?.close();
+    final client = _createClient();
+    _client = client;
 
     try {
       final token = await authService.getAccessToken();
+      if (attempt != _attempt) {
+        client.close();
+        return;
+      }
       final uri = Uri.parse('${AppConfig.apiBaseUrl}/eggs/stream');
       final request = http.Request('GET', uri)
         ..headers['Accept'] = 'text/event-stream'
         ..headers['Authorization'] = 'Bearer $token';
 
-      _client = http.Client();
-      final response = await _client!.send(request).timeout(_connectTimeout);
+      final response = await client.send(request).timeout(_connectTimeout);
+      if (attempt != _attempt) {
+        client.close();
+        return;
+      }
 
       // Auth/not-found are terminal; reconnecting will not help.
       if (response.statusCode == 401 || response.statusCode == 404) {
@@ -86,9 +107,10 @@ class GoalsRealtimeService {
       logDebug('[GoalsRealtimeService] SSE connection opened');
 
       String buffer = '';
-      _subscription = response.stream.listen(
+      // Decode as a stream: a multi-byte character can span two chunks.
+      _subscription = response.stream.transform(utf8.decoder).listen(
         (chunk) {
-          buffer += utf8.decode(chunk);
+          buffer += chunk;
           while (buffer.contains('\n\n')) {
             final idx = buffer.indexOf('\n\n');
             final block = buffer.substring(0, idx);
@@ -109,8 +131,9 @@ class GoalsRealtimeService {
         cancelOnError: true,
       );
     } catch (e, st) {
+      client.close();
+      if (attempt != _attempt) return;
       logWarning('[GoalsRealtimeService] Failed to start', e, st);
-      _client?.close();
       _client = null;
       _running = false;
       _scheduleReconnect();
@@ -156,6 +179,7 @@ class GoalsRealtimeService {
   /// Stop the SSE connection and release resources.
   Future<void> stop() async {
     _stopped = true;
+    _attempt++;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
     _reconnectAttempts = 0;

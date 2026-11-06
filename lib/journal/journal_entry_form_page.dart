@@ -6,9 +6,10 @@ import 'package:projectbrain/journal/journal_localizations.dart';
 import 'package:projectbrain/journal/widgets/system_tag_field_builder.dart';
 import 'package:projectbrain/models/journal/journal_request_dtos.dart';
 import 'package:projectbrain/models/journal/system_tag.dart';
-import 'package:intl/intl.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/widgets/unsaved_changes_scope.dart';
 
 /// Create or edit journal entry (same form).
 class JournalEntryFormPage extends StatefulWidget {
@@ -28,13 +29,35 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
   final Set<String> _selectedUserTagIds = {};
   bool _isSaving = false;
   bool _loaded = false;
+  // Set when an existing entry could not be loaded. The form stays hidden so
+  // saving cannot overwrite the entry with empty content.
+  bool _loadFailed = false;
+  bool _saved = false;
+  DateTime _entryDate = DateTime.now();
+  String? _initialSnapshot;
 
   bool get _isEdit => widget.entryId != null;
+
+  String _snapshot() => [
+        _contentController.text.trim(),
+        (_selectedUserTagIds.toList()..sort()).join(','),
+        (_selectedSystemTagIds.toList()..sort()).join(','),
+        _systemTagResponses.toString(),
+      ].join('|');
+
+  bool get _hasUnsavedChanges =>
+      !_saved && _initialSnapshot != null && _snapshot() != _initialSnapshot;
 
   @override
   void initState() {
     super.initState();
+    // Rebuild on typing so the unsaved-changes guard sees the new text.
+    _contentController.addListener(_onContentChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) => _init());
+  }
+
+  void _onContentChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -45,26 +68,41 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
   }
 
   Future<void> _init() async {
+    if (!mounted) return;
+    setState(() {
+      _loaded = false;
+      _loadFailed = false;
+    });
     final provider = context.read<JournalProvider>();
     await provider.loadSystemTags();
     await provider.loadUserTags();
     if (_isEdit && widget.entryId != null) {
       final entry = await provider.fetchEntry(widget.entryId!);
-      if (entry != null && mounted) {
-        _contentController.text = entry.content;
-        for (final t in entry.tags ?? []) {
-          _selectedUserTagIds.add(t.id);
-        }
-        for (final st in entry.systemTags ?? []) {
-          _selectedSystemTagIds.add(st.id);
-          if (st.responses != null && st.responses!.isNotEmpty) {
-            _systemTagResponses[st.id] = Map.from(st.responses!);
-          }
+      if (!mounted) return;
+      if (entry == null) {
+        setState(() {
+          _loaded = true;
+          _loadFailed = true;
+        });
+        return;
+      }
+      _contentController.text = entry.content;
+      _entryDate = entry.createdAt;
+      for (final t in entry.tags ?? []) {
+        _selectedUserTagIds.add(t.id);
+      }
+      for (final st in entry.systemTags ?? []) {
+        _selectedSystemTagIds.add(st.id);
+        if (st.responses != null && st.responses!.isNotEmpty) {
+          _systemTagResponses[st.id] = Map.from(st.responses!);
         }
       }
     }
     if (mounted) {
-      setState(() => _loaded = true);
+      setState(() {
+        _loaded = true;
+        _initialSnapshot = _snapshot();
+      });
     }
   }
 
@@ -104,6 +142,7 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
         );
         await provider.updateEntry(widget.entryId!, request);
         if (!mounted) return;
+        _saved = true;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.entrySaved)),
         );
@@ -118,11 +157,12 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
         );
         final entry = await provider.createEntry(request);
         if (!mounted) return;
+        _saved = true;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.entrySaved)),
         );
-        context.pop();
-        context.push('/journal/${entry.id}');
+        // Swap the form for the new entry.
+        context.pushReplacement('/journal/${entry.id}');
       }
     } catch (e) {
       if (!mounted) return;
@@ -164,18 +204,59 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = JournalLocalizations.of(context);
+    return UnsavedChangesScope(
+      hasUnsavedChanges: _hasUnsavedChanges,
+      message: 'Your journal entry has not been saved.',
+      child: _buildScaffold(context, theme, l10n),
+    );
+  }
+
+  /// Spinner while loading, or an error with Retry when the entry could not
+  /// be loaded.
+  Widget _buildNotReady(ThemeData theme, JournalLocalizations l10n) {
+    if (!_loaded) {
+      return const Center(
+        child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+      );
+    }
+    return Center(
+      child: Padding(
+        padding: AppInsets.screen,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              l10n.couldNotLoadEntry,
+              style: theme.textTheme.bodyLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            FilledButton(onPressed: _init, child: const Text('Retry')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScaffold(
+    BuildContext context,
+    ThemeData theme,
+    JournalLocalizations l10n,
+  ) {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () => context.pop(),
+          tooltip: 'Close',
+          // maybePop so the unsaved-changes check runs.
+          onPressed: () => Navigator.maybePop(context),
         ),
         title: Text(_isEdit ? l10n.editEntry : l10n.newEntry),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.sm),
             child: FilledButton(
-              onPressed: _isSaving ? null : _save,
+              onPressed: (_isSaving || _loadFailed) ? null : _save,
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.lg,
@@ -186,15 +267,16 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
                   ? const SizedBox(
                       height: 18,
                       width: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                          semanticsLabel: 'Loading', strokeWidth: 2),
                     )
                   : Text(l10n.save),
             ),
           ),
         ],
       ),
-      body: !_loaded
-          ? const Center(child: CircularProgressIndicator())
+      body: !_loaded || _loadFailed
+          ? _buildNotReady(theme, l10n)
           : Consumer<JournalProvider>(
               builder: (context, provider, _) {
                 final appTheme = context.appTheme;
@@ -208,8 +290,9 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        DateFormat('EEEE d MMMM · HH:mm')
-                            .format(DateTime.now())
+                        // The entry's own date when editing, not today's.
+                        '${AppDateFormat.weekdayDate(_entryDate)} · '
+                                '${AppDateFormat.time(_entryDate)}'
                             .toUpperCase(),
                         style: theme.textTheme.labelSmall?.copyWith(
                           letterSpacing: 1,
@@ -350,8 +433,9 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
                               ? const SizedBox(
                                   height: 20,
                                   width: 20,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                      semanticsLabel: 'Loading',
+                                      strokeWidth: 2),
                                 )
                               : Text(l10n.save),
                         ),

@@ -4,10 +4,11 @@ import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:projectbrain/models/quiz.dart';
 import 'package:projectbrain/services/quiz_service.dart';
-import 'package:intl/intl.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
 
 /// Quizzes page for managing neurodiversity quizzes
 class QuizzesPage extends StatefulWidget {
@@ -67,7 +68,8 @@ class _QuizzesPageState extends State<QuizzesPage> {
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Failed to load quizzes: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't load quizzes.");
         _isLoading = false;
       });
     }
@@ -87,7 +89,8 @@ class _QuizzesPageState extends State<QuizzesPage> {
       });
     } catch (e) {
       setState(() {
-        _insightsErrorMessage = 'Failed to load insights: ${e.toString()}';
+        _insightsErrorMessage =
+            userFriendlyError(e, fallback: "Couldn't load insights.");
         _isLoadingInsights = false;
       });
       logError('[QuizzesPage] Error loading insights: $e');
@@ -109,7 +112,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
     } catch (e) {
       setState(() {
         _completedErrorMessage =
-            'Failed to load completed quizzes: ${e.toString()}';
+            userFriendlyError(e, fallback: "Couldn't load completed quizzes.");
         _isLoadingCompleted = false;
       });
       logError('[QuizzesPage] Error loading completed quizzes: $e');
@@ -118,7 +121,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
 
   String _formatDate(DateTime? date) {
     if (date == null) return 'Unknown date';
-    return DateFormat('MMM d, y').format(date);
+    return AppDateFormat.date(date);
   }
 
   @override
@@ -127,6 +130,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
     final appTheme = context.appTheme;
 
     return Scaffold(
+      appBar: dsBackAppBar(context),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _loadAllData,
@@ -136,7 +140,10 @@ class _QuizzesPageState extends State<QuizzesPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Quizzes', style: theme.textTheme.headlineSmall),
+                Semantics(
+                    header: true,
+                    child:
+                        Text('Quizzes', style: theme.textTheme.headlineSmall)),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Identify neurodiverse traits and track your insights.',
@@ -169,7 +176,9 @@ class _QuizzesPageState extends State<QuizzesPage> {
                         ),
                         SizedBox(height: AppSpacing.lg),
                         if (_isLoadingInsights)
-                          const Center(child: CircularProgressIndicator())
+                          const Center(
+                              child: CircularProgressIndicator(
+                                  semanticsLabel: 'Loading'))
                         else if (_insightsErrorMessage != null)
                           Text(
                             _insightsErrorMessage!,
@@ -220,8 +229,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
                             Text(
                               'Last updated: ${_formatDate(_insights!.lastUpdated)}',
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface
-                                    .withValues(alpha: 0.6),
+                                color: context.appTheme.textMuted,
                               ),
                             ),
                           ],
@@ -252,7 +260,9 @@ class _QuizzesPageState extends State<QuizzesPage> {
 
                 // Loading state
                 if (_isLoading)
-                  const Center(child: CircularProgressIndicator())
+                  const Center(
+                      child:
+                          CircularProgressIndicator(semanticsLabel: 'Loading'))
                 // Empty state
                 else if (_quizzes.isEmpty)
                   Center(
@@ -269,16 +279,14 @@ class _QuizzesPageState extends State<QuizzesPage> {
                         Text(
                           'No quizzes available',
                           style: theme.textTheme.titleMedium?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.6),
+                            color: context.appTheme.textMuted,
                           ),
                         ),
                         SizedBox(height: AppSpacing.sm),
                         Text(
                           'Check back later for new quizzes',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.5),
+                            color: context.appTheme.textMuted,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -293,7 +301,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
                       child: DsSurfaceCard(
                         onTap: () async {
                           await context.push('/quizzes/${quiz.id}');
-                          if (mounted) _refreshAfterSubmission();
+                          if (mounted) await _refreshAfterSubmission();
                         },
                         child: Row(
                           children: [
@@ -361,7 +369,9 @@ class _QuizzesPageState extends State<QuizzesPage> {
 
                 // Loading state for completed quizzes
                 if (_isLoadingCompleted)
-                  const Center(child: CircularProgressIndicator())
+                  const Center(
+                      child:
+                          CircularProgressIndicator(semanticsLabel: 'Loading'))
                 // Empty state for completed quizzes
                 else if (_completedQuizzes.isEmpty)
                   Center(
@@ -378,16 +388,14 @@ class _QuizzesPageState extends State<QuizzesPage> {
                         Text(
                           'No completed quizzes',
                           style: theme.textTheme.titleMedium?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.6),
+                            color: context.appTheme.textMuted,
                           ),
                         ),
                         SizedBox(height: AppSpacing.sm),
                         Text(
                           'Complete a quiz to see it here',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.5),
+                            color: context.appTheme.textMuted,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -402,7 +410,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
                       child: DsSurfaceCard(
                         onTap: () async {
                           await context.push('/quizzes/${response.quizId}');
-                          if (mounted) _refreshAfterSubmission();
+                          if (mounted) await _refreshAfterSubmission();
                         },
                         child: Row(
                           children: [

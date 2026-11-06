@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:projectbrain/models/strategies/coping_strategy_library_item.dart';
 import 'package:projectbrain/strategies/strategies_localizations.dart';
@@ -8,6 +7,7 @@ import 'package:projectbrain/strategies/strategies_provider.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
 
 /// Strategies library screen: list saved strategies, rate, delete.
 class StrategiesLibraryPage extends StatefulWidget {
@@ -37,7 +37,8 @@ class _StrategiesLibraryPageState extends State<StrategiesLibraryPage> {
       body: Consumer<StrategiesProvider>(
         builder: (context, provider, _) {
           if (provider.isLoading && provider.items.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+                child: CircularProgressIndicator(semanticsLabel: 'Loading'));
           }
           if (provider.errorMessage != null && provider.items.isEmpty) {
             return Center(
@@ -169,7 +170,7 @@ class _StrategyLibraryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dateStr = DateFormat.yMMMd().format(item.savedAt);
+    final dateStr = AppDateFormat.date(item.savedAt);
     final icon = _iconFor(item.iconKey);
 
     return Padding(
@@ -234,18 +235,21 @@ class _StrategyLibraryCard extends StatelessWidget {
               children: List.generate(5, (i) {
                 final star = i + 1;
                 final isFilled = (item.rating ?? 0) >= star;
-                return IconButton(
-                  icon: Icon(
-                    isFilled ? Icons.star : Icons.star_border,
-                    color: isFilled
-                        ? context.appTheme.amber
-                        : context.appTheme.textMuted,
+                return Semantics(
+                  selected: isFilled,
+                  child: IconButton(
+                    tooltip: 'Rate $star out of 5',
+                    icon: Icon(
+                      isFilled ? Icons.star : Icons.star_border,
+                      color: isFilled
+                          ? context.appTheme.amber
+                          : context.appTheme.textMuted,
+                    ),
+                    onPressed: () => onRatingChanged(star),
+                    // 48dp minimum touch target.
+                    constraints:
+                        const BoxConstraints(minWidth: 48, minHeight: 48),
                   ),
-                  onPressed: () => onRatingChanged(star),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-                  constraints:
-                      const BoxConstraints(minWidth: 32, minHeight: 32),
                 );
               }),
             ),

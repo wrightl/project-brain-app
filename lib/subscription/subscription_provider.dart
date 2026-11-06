@@ -165,6 +165,21 @@ class SubscriptionProvider extends ChangeNotifier {
   }
 
   /// Refresh subscription data from API
+  DateTime? _lastRefreshedAt;
+
+  /// [refresh] unless the data was refreshed within [maxAge]. Used on app
+  /// resume, which also fires after the Face ID sheet and system dialogs.
+  Future<void> refreshIfStale({
+    Duration maxAge = const Duration(minutes: 1),
+  }) async {
+    final last = _lastRefreshedAt;
+    if (_isLoading ||
+        (last != null && DateTime.now().difference(last) < maxAge)) {
+      return;
+    }
+    await refresh();
+  }
+
   Future<void> refresh() async {
     _errorMessage = null;
     _isLoading = true;
@@ -184,6 +199,8 @@ class SubscriptionProvider extends ChangeNotifier {
       _subscription = results[0] as Subscription;
       _usage = results[1] as UsageStats;
       _tierInfo = results[2] as TierInfo;
+
+      _lastRefreshedAt = DateTime.now();
 
       // Save to cache
       await _saveToCache();
@@ -305,6 +322,7 @@ class SubscriptionProvider extends ChangeNotifier {
     _tierInfo = null;
     _errorMessage = null;
     _isLoading = false;
+    _lastRefreshedAt = null;
     await sharedPreferences.remove(_cacheTimestampKey);
     notifyListeners();
     logDebug('[SubscriptionProvider] Reset on logout');

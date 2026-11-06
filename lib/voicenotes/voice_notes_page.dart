@@ -7,12 +7,15 @@ import 'package:projectbrain/models/voice_note.dart';
 import 'package:projectbrain/services/voice_note_service.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:intl/intl.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/widgets/unsaved_changes_scope.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
 import 'package:projectbrain/core/storage/temporary_files.dart';
 
 /// Voice notes page for managing recorded voice notes
@@ -30,7 +33,9 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
 
   List<VoiceNote> _voiceNotes = [];
   bool _isLoading = true;
+  bool _loadFailed = false;
   bool _isRecording = false;
+  Timer? _recordingTimer;
   bool _isUploading = false;
   String? _errorMessage;
   String? _successMessage;
@@ -72,6 +77,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
 
   @override
   void dispose() {
+    _recordingTimer?.cancel();
     for (final subscription in _audioSubscriptions) {
       subscription.cancel();
     }
@@ -190,7 +196,8 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
           if (!mounted) return;
           setState(() {
             _downloadingVoiceNoteId = null;
-            _errorMessage = 'Failed to download audio: ${e.toString()}';
+            _errorMessage =
+                userFriendlyError(e, fallback: "Couldn't download audio.");
           });
           logError('[VoiceNotesPage] Error downloading audio: $e');
           return;
@@ -230,7 +237,8 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
       });
     } catch (e) {
       if (mounted) {
-        String errorMsg = 'Failed to play voice note: ${e.toString()}';
+        String errorMsg =
+            userFriendlyError(e, fallback: "Couldn't play voice note.");
         // Provide helpful messages for specific errors
         if (e.toString().contains('MissingPluginException')) {
           errorMsg =
@@ -301,7 +309,8 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
       });
     } catch (e) {
       if (mounted) {
-        String errorMsg = 'Failed to play recording: ${e.toString()}';
+        String errorMsg =
+            userFriendlyError(e, fallback: "Couldn't play recording.");
         // Provide helpful message for MissingPluginException
         if (e.toString().contains('MissingPluginException')) {
           errorMsg =
@@ -318,6 +327,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
   Future<void> _loadVoiceNotes() async {
     setState(() {
       _isLoading = true;
+      _loadFailed = false;
       _errorMessage = null;
     });
 
@@ -331,7 +341,9 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to load voice notes: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't load voice notes.");
+        _loadFailed = true;
         _isLoading = false;
       });
     }
@@ -365,31 +377,47 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
       });
 
       // Update duration while recording
-      _updateRecordingDuration();
+      _startRecordingTimer();
     } catch (e) {
       if (!mounted) return;
+      final errorMsg = e.toString().toLowerCase();
+      final permissionDenied =
+          errorMsg.contains('permission') || errorMsg.contains('denied');
+      if (permissionDenied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Allow microphone access in Settings to record.'),
+            action: SnackBarAction(
+              label: 'Open settings',
+              onPressed: openAppSettings,
+            ),
+          ),
+        );
+      }
       setState(() {
-        final errorMsg = e.toString().toLowerCase();
-        if (errorMsg.contains('permission') || errorMsg.contains('denied')) {
+        if (permissionDenied) {
           _errorMessage =
               'Microphone permission denied. Please enable microphone access in settings.';
         } else {
-          _errorMessage = 'Failed to start recording: ${e.toString()}';
+          _errorMessage =
+              userFriendlyError(e, fallback: "Couldn't start recording.");
         }
         _isRecording = false;
       });
     }
   }
 
-  Future<void> _updateRecordingDuration() async {
-    while (_isRecording) {
-      await Future.delayed(const Duration(seconds: 1));
-      if (mounted && _isRecording) {
-        setState(() {
-          _recordingDuration = _recordingDuration + const Duration(seconds: 1);
-        });
+  void _startRecordingTimer() {
+    _recordingTimer?.cancel();
+    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted || !_isRecording) {
+        timer.cancel();
+        return;
       }
-    }
+      setState(() {
+        _recordingDuration = _recordingDuration + const Duration(seconds: 1);
+      });
+    });
   }
 
   Future<void> _stopRecording() async {
@@ -405,7 +433,8 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to stop recording: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't stop recording.");
         _isRecording = false;
       });
     }
@@ -476,7 +505,8 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to upload voice note: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't upload voice note.");
       });
     } finally {
       if (mounted) {
@@ -518,11 +548,20 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to delete: ${e.toString()}')),
+            SnackBar(
+                content:
+                    Text(userFriendlyError(e, fallback: "Couldn't delete."))),
           );
         }
       }
     }
+  }
+
+  String _sliderPositionLabel(double value) {
+    final position = Duration(
+      milliseconds: (value * _playbackDuration.inMilliseconds).round(),
+    );
+    return '${_formatDuration(position)} of ${_formatDuration(_playbackDuration)}';
   }
 
   String _formatDuration(Duration duration) {
@@ -533,11 +572,20 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
 
   String _formatDate(DateTime? date) {
     if (date == null) return 'Unknown date';
-    return DateFormat('MMM d, y • h:mm a').format(date);
+    return AppDateFormat.dateTime(date);
   }
 
   @override
   Widget build(BuildContext context) {
+    return UnsavedChangesScope(
+      // A recording only exists on this device until it is uploaded.
+      hasUnsavedChanges: _isRecording || _recordingPath != null,
+      message: 'Your recording has not been uploaded and will be lost.',
+      child: _buildPage(context),
+    );
+  }
+
+  Widget _buildPage(BuildContext context) {
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -624,6 +672,10 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           IconButton(
+                            tooltip:
+                                _currentlyPlayingId == 'local' && _isPlaying
+                                    ? 'Pause recording'
+                                    : 'Play recording',
                             icon: Icon(
                               _currentlyPlayingId == 'local' && _isPlaying
                                   ? Icons.pause
@@ -639,6 +691,9 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                                   Expanded(
                                     flex: 8,
                                     child: Slider(
+// Read the position as a time, not "0.43".
+                                      semanticFormatterCallback:
+                                          _sliderPositionLabel,
                                       value: _playbackDuration.inMilliseconds >
                                               0
                                           ? _playbackPosition.inMilliseconds /
@@ -692,6 +747,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                                     width: 16,
                                     height: 16,
                                     child: CircularProgressIndicator(
+                                      semanticsLabel: 'Loading',
                                       strokeWidth: 2,
                                     ),
                                   )
@@ -716,187 +772,215 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
             // Voice notes list
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _voiceNotes.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.mic_none,
-                                size: 64,
-                                color: theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.3,
-                                ),
-                              ),
-                              SizedBox(height: AppSpacing.lg),
-                              Text(
-                                'No voice notes yet',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  color: theme.colorScheme.onSurface.withValues(
-                                    alpha: 0.6,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(height: AppSpacing.sm),
-                              Text(
-                                'Tap the record button to create your first voice note',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurface.withValues(
-                                    alpha: 0.5,
-                                  ),
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
+                  ? const Center(
+                      child:
+                          CircularProgressIndicator(semanticsLabel: 'Loading'))
+                  : _voiceNotes.isEmpty && _loadFailed
+                      ? DsLoadFailed(
+                          message: "Couldn't load your voice notes.",
+                          onRetry: _loadVoiceNotes,
                         )
-                      : ListView.builder(
-                          padding: AppInsets.screen,
-                          itemCount: _voiceNotes.length,
-                          itemBuilder: (context, index) {
-                            final voiceNote = _voiceNotes[index];
-                            final isCurrentlyPlaying =
-                                _currentlyPlayingId == voiceNote.id;
-                            final isDownloading =
-                                _downloadingVoiceNoteId == voiceNote.id;
-                            return Padding(
-                              padding:
-                                  const EdgeInsets.only(bottom: AppSpacing.sm),
-                              child: DsSurfaceCard(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    ListTile(
-                                      leading: IconBubble(
-                                        icon: Icons.mic,
-                                        color: context.appTheme.teal,
-                                        backgroundColor:
-                                            context.appTheme.tealSoft,
-                                        size: 40,
-                                        iconSize: 20,
-                                        borderRadius: 12,
-                                      ),
-                                      title: Text(
-                                        voiceNote.description?.isNotEmpty ==
-                                                true
-                                            ? voiceNote.description!
-                                            : 'Voice Note',
-                                        style: theme.textTheme.titleMedium,
-                                      ),
-                                      subtitle: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          if (voiceNote
-                                                  .description?.isNotEmpty ==
-                                              true)
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                  bottom: AppSpacing.xs),
-                                              child: Text(
-                                                voiceNote.fileName,
-                                                style: theme.textTheme.bodySmall
-                                                    ?.copyWith(
-                                                  color: theme
-                                                      .colorScheme.onSurface
-                                                      .withValues(alpha: 0.7),
-                                                ),
-                                              ),
-                                            ),
-                                          Text(
-                                            _formatDate(voiceNote.createdAt),
-                                            style: theme.textTheme.bodySmall,
-                                          ),
-                                        ],
-                                      ),
-                                      trailing: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          if (isDownloading)
-                                            const Padding(
-                                              padding: AppInsets.screen,
-                                              child: SizedBox(
-                                                width: 20,
-                                                height: 20,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                ),
-                                              ),
-                                            )
-                                          else
-                                            IconButton(
-                                              icon: Icon(
-                                                isCurrentlyPlaying && _isPlaying
-                                                    ? Icons.pause
-                                                    : Icons.play_arrow,
-                                              ),
-                                              onPressed: () =>
-                                                  _playVoiceNote(voiceNote),
-                                              color: theme.colorScheme.primary,
-                                            ),
-                                          IconButton(
-                                            icon: const Icon(Icons.delete),
-                                            onPressed: isDownloading
-                                                ? null
-                                                : () => _deleteVoiceNote(
-                                                    voiceNote.id),
-                                            color: theme.colorScheme.error,
-                                          ),
-                                        ],
+                      : _voiceNotes.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.mic_none,
+                                    size: 64,
+                                    color:
+                                        theme.colorScheme.onSurface.withValues(
+                                      alpha: 0.3,
+                                    ),
+                                  ),
+                                  SizedBox(height: AppSpacing.lg),
+                                  Text(
+                                    'No voice notes yet',
+                                    style:
+                                        theme.textTheme.titleMedium?.copyWith(
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(
+                                        alpha: 0.6,
                                       ),
                                     ),
-                                    if (isCurrentlyPlaying)
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: AppSpacing.lg,
-                                          vertical: AppSpacing.sm,
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Expanded(
-                                              flex: 8,
-                                              child: Slider(
-                                                value: _playbackDuration
-                                                            .inMilliseconds >
-                                                        0
-                                                    ? _playbackPosition
-                                                            .inMilliseconds /
-                                                        _playbackDuration
-                                                            .inMilliseconds
-                                                    : 0.0,
-                                                onChanged: (value) async {
-                                                  final position = Duration(
-                                                    milliseconds: (value *
-                                                            _playbackDuration
-                                                                .inMilliseconds)
-                                                        .round(),
-                                                  );
-                                                  await _audioPlayer
-                                                      .seek(position);
-                                                },
-                                              ),
-                                            ),
-                                            SizedBox(width: AppSpacing.sm),
-                                            Expanded(
-                                              flex: 2,
-                                              child: Text(
-                                                '${_formatDuration(_playbackPosition)} / ${_formatDuration(_playbackDuration)}',
+                                  ),
+                                  SizedBox(height: AppSpacing.sm),
+                                  Text(
+                                    'Tap the record button to create your first voice note',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(
+                                        alpha: 0.5,
+                                      ),
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: AppInsets.screen,
+                              itemCount: _voiceNotes.length,
+                              itemBuilder: (context, index) {
+                                final voiceNote = _voiceNotes[index];
+                                final isCurrentlyPlaying =
+                                    _currentlyPlayingId == voiceNote.id;
+                                final isDownloading =
+                                    _downloadingVoiceNoteId == voiceNote.id;
+                                return Padding(
+                                  padding: const EdgeInsets.only(
+                                      bottom: AppSpacing.sm),
+                                  child: DsSurfaceCard(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        ListTile(
+                                          leading: IconBubble(
+                                            icon: Icons.mic,
+                                            color: context.appTheme.teal,
+                                            backgroundColor:
+                                                context.appTheme.tealSoft,
+                                            size: 40,
+                                            iconSize: 20,
+                                            borderRadius: 12,
+                                          ),
+                                          title: Text(
+                                            voiceNote.description?.isNotEmpty ==
+                                                    true
+                                                ? voiceNote.description!
+                                                : 'Voice Note',
+                                            style: theme.textTheme.titleMedium,
+                                          ),
+                                          subtitle: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              if (voiceNote.description
+                                                      ?.isNotEmpty ==
+                                                  true)
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          bottom:
+                                                              AppSpacing.xs),
+                                                  child: Text(
+                                                    voiceNote.fileName,
+                                                    style: theme
+                                                        .textTheme.bodySmall
+                                                        ?.copyWith(
+                                                      color: theme
+                                                          .colorScheme.onSurface
+                                                          .withValues(
+                                                              alpha: 0.7),
+                                                    ),
+                                                  ),
+                                                ),
+                                              Text(
+                                                _formatDate(
+                                                    voiceNote.createdAt),
                                                 style:
                                                     theme.textTheme.bodySmall,
-                                                textAlign: TextAlign.right,
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
+                                          trailing: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              if (isDownloading)
+                                                const Padding(
+                                                  padding: AppInsets.screen,
+                                                  child: SizedBox(
+                                                    width: 20,
+                                                    height: 20,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                      semanticsLabel: 'Loading',
+                                                      strokeWidth: 2,
+                                                    ),
+                                                  ),
+                                                )
+                                              else
+                                                IconButton(
+                                                  tooltip: isCurrentlyPlaying &&
+                                                          _isPlaying
+                                                      ? 'Pause voice note'
+                                                      : 'Play voice note',
+                                                  icon: Icon(
+                                                    isCurrentlyPlaying &&
+                                                            _isPlaying
+                                                        ? Icons.pause
+                                                        : Icons.play_arrow,
+                                                  ),
+                                                  onPressed: () =>
+                                                      _playVoiceNote(voiceNote),
+                                                  color:
+                                                      theme.colorScheme.primary,
+                                                ),
+                                              IconButton(
+                                                tooltip: 'Delete voice note',
+                                                icon: const Icon(Icons.delete),
+                                                onPressed: isDownloading
+                                                    ? null
+                                                    : () => _deleteVoiceNote(
+                                                        voiceNote.id),
+                                                color: theme.colorScheme.error,
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                                        if (isCurrentlyPlaying)
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: AppSpacing.lg,
+                                              vertical: AppSpacing.sm,
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Expanded(
+                                                  flex: 8,
+                                                  child: Slider(
+// Read the position as a time, not "0.43".
+                                                    semanticFormatterCallback:
+                                                        _sliderPositionLabel,
+                                                    value: _playbackDuration
+                                                                .inMilliseconds >
+                                                            0
+                                                        ? _playbackPosition
+                                                                .inMilliseconds /
+                                                            _playbackDuration
+                                                                .inMilliseconds
+                                                        : 0.0,
+                                                    onChanged: (value) async {
+                                                      final position = Duration(
+                                                        milliseconds: (value *
+                                                                _playbackDuration
+                                                                    .inMilliseconds)
+                                                            .round(),
+                                                      );
+                                                      await _audioPlayer
+                                                          .seek(position);
+                                                    },
+                                                  ),
+                                                ),
+                                                SizedBox(width: AppSpacing.sm),
+                                                Expanded(
+                                                  flex: 2,
+                                                  child: Text(
+                                                    '${_formatDuration(_playbackPosition)} / ${_formatDuration(_playbackDuration)}',
+                                                    style: theme
+                                                        .textTheme.bodySmall,
+                                                    textAlign: TextAlign.right,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
             ),
           ],
         ),

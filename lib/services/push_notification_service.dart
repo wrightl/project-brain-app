@@ -101,10 +101,12 @@ class PushNotificationService {
   Future<void> _initializeLocalNotifications() async {
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
+    // Do not prompt here: this runs at app start, before sign-in. Permission
+    // is requested later through ensurePermissionsAndConfigure().
     const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
     );
 
     const initSettings = InitializationSettings(
@@ -220,7 +222,7 @@ class PushNotificationService {
     try {
       // Data-only goals sync: no notification, just refresh goals
       if (message.data['type'] == 'goals_updated') {
-        sl<EggGoalsProvider>().syncFromAPI();
+        await sl<EggGoalsProvider>().syncFromAPI();
         return;
       }
 

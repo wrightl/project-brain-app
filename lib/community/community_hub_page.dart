@@ -5,6 +5,8 @@ import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/models/community.dart';
 import 'package:projectbrain/services/community_service.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
 
 const _feedLimit = 20;
 
@@ -70,7 +72,7 @@ class _CommunityHubPageState extends State<CommunityHubPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = userFriendlyError(e, fallback: "Couldn't load the community.");
         _loading = false;
       });
     }
@@ -130,7 +132,9 @@ class _CommunityHubPageState extends State<CommunityHubPage> {
             const SizedBox(height: AppSpacing.xl),
             Text('Latest', style: theme.textTheme.titleLarge),
             const SizedBox(height: AppSpacing.md),
-            if (_loading) const Center(child: CircularProgressIndicator()),
+            if (_loading)
+              const Center(
+                  child: CircularProgressIndicator(semanticsLabel: 'Loading')),
             if (_error != null)
               Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
             if (!_loading && _error == null && _posts.isEmpty)
@@ -162,7 +166,7 @@ class _CommunityHubPageState extends State<CommunityHubPage> {
                             style: theme.textTheme.titleSmall,
                           ),
                           Text(
-                            '#${post.channelSlug} · ${post.createdAt.toLocal()}',
+                            '#${post.channelSlug} · ${AppDateFormat.dateTime(post.createdAt)}',
                             style: theme.textTheme.bodySmall,
                           ),
                           const SizedBox(height: AppSpacing.sm),
@@ -182,7 +186,9 @@ class _CommunityHubPageState extends State<CommunityHubPage> {
             if (_loadingMore)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(
+                    child:
+                        CircularProgressIndicator(semanticsLabel: 'Loading')),
               ),
             const SizedBox(height: AppSpacing.xl),
             Text('Channels', style: theme.textTheme.titleLarge),

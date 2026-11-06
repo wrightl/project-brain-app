@@ -7,7 +7,8 @@ abstract class DesignPalette {
   static const Color surface = Color(0xFFFFFFFF);
   static const Color textPrimary = Color(0xFF2B2733);
   static const Color textSecondary = Color(0xFF6F6A78);
-  static const Color textMuted = Color(0xFFA29BAD);
+  // Was #A29BAD (2.5:1 on bg); darkened to pass WCAG AA (4.5:1) as body text.
+  static const Color textMuted = Color(0xFF74707D);
   static const Color border = Color(0xFFE9E4EF);
   static const Color primary = Color(0xFF6C4FE0);
   static const Color primarySoft = Color(0xFFEDE8FC);
@@ -33,7 +34,8 @@ abstract class DesignPalette {
   static const Color darkBorder = Color(0xFF3A3544);
   static const Color darkTextPrimary = Color(0xFFF5F3F7);
   static const Color darkTextSecondary = Color(0xFFB8B3C0);
-  static const Color darkTextMuted = Color(0xFF7A7485);
+  // Was #7A7485 (3.7:1 on darkSurface); lightened to pass WCAG AA.
+  static const Color darkTextMuted = Color(0xFF9690A1);
   static const Color darkPrimary = Color(0xFF9B8AF0);
   static const Color darkPrimarySoft = Color(0xFF2E2850);
 }

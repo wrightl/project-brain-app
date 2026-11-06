@@ -129,22 +129,10 @@ class ActionCardWidget extends StatelessWidget {
           ],
           if (card.cardType == 'pending_confirmation') ...[
             const SizedBox(height: AppSpacing.md),
-            Row(
-              children: [
-                FilledButton(
-                  onPressed: onConfirmPendingAction == null
-                      ? null
-                      : () => onConfirmPendingAction!(card),
-                  child: const Text('Confirm'),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                OutlinedButton(
-                  onPressed: onCancelPendingAction == null
-                      ? null
-                      : () => onCancelPendingAction!(card),
-                  child: const Text('Cancel'),
-                ),
-              ],
+            _PendingActionButtons(
+              card: card,
+              onConfirm: onConfirmPendingAction,
+              onCancel: onCancelPendingAction,
             ),
           ],
         ],
@@ -183,5 +171,61 @@ class ActionCardWidget extends StatelessWidget {
       default:
         return card.title ?? 'Action completed';
     }
+  }
+}
+
+/// Confirm / Cancel for a pending action. Both are disabled while either
+/// request is in flight, so a double tap cannot confirm twice.
+class _PendingActionButtons extends StatefulWidget {
+  const _PendingActionButtons({
+    required this.card,
+    required this.onConfirm,
+    required this.onCancel,
+  });
+
+  final ActionCard card;
+  final PendingActionCallback? onConfirm;
+  final PendingActionCallback? onCancel;
+
+  @override
+  State<_PendingActionButtons> createState() => _PendingActionButtonsState();
+}
+
+class _PendingActionButtonsState extends State<_PendingActionButtons> {
+  bool _busy = false;
+
+  Future<void> _run(PendingActionCallback callback) async {
+    setState(() => _busy = true);
+    try {
+      await callback(widget.card);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final onConfirm = widget.onConfirm;
+    final onCancel = widget.onCancel;
+    return Row(
+      children: [
+        FilledButton(
+          onPressed: _busy || onConfirm == null ? null : () => _run(onConfirm),
+          child: _busy
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                      semanticsLabel: 'Loading', strokeWidth: 2),
+                )
+              : const Text('Confirm'),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        OutlinedButton(
+          onPressed: _busy || onCancel == null ? null : () => _run(onCancel),
+          child: const Text('Cancel'),
+        ),
+      ],
+    );
   }
 }

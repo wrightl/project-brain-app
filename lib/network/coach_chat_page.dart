@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -8,11 +9,16 @@ import 'package:projectbrain/services/coach_message_signalr_service.dart';
 import 'package:projectbrain/services/coach_service.dart';
 import 'package:projectbrain/services/connection_service.dart';
 import 'package:projectbrain/utils/coach_message_utils.dart';
-import 'package:intl/intl.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
+import 'package:projectbrain/widgets/chat/chat_composer.dart';
 import 'package:projectbrain/core/storage/temporary_files.dart';
 
 /// Chat page for communicating with connected coaches.
@@ -34,30 +40,98 @@ class _CoachChatPageState extends State<CoachChatPage> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final AudioRecorder _audioRecorder = AudioRecorder();
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  StreamSubscription<PlayerState>? _playerStateSubscription;
+
+  /// Downloaded audio per message id, deleted when the page closes.
+  final Map<String, File> _downloadedAudio = {};
+  String? _playingMessageId;
+  String? _loadingAudioMessageId;
 
   List<Connection> _connections = [];
   String? _selectedConnectionId;
   String? _headerName;
   List<CoachMessage> _messages = [];
   bool _isLoading = true;
+  bool _messagesLoadFailed = false;
   bool _isSending = false;
   bool _isRecording = false;
+  Timer? _recordingTimer;
   String? _errorMessage;
   Duration _recordingDuration = Duration.zero;
 
   @override
   void initState() {
     super.initState();
+    _playerStateSubscription = _audioPlayer.playerStateStream.listen((state) {
+      if (state.processingState == ProcessingState.completed && mounted) {
+        setState(() => _playingMessageId = null);
+        _audioPlayer.stop();
+      }
+    });
     _loadConnections();
   }
 
   @override
   void dispose() {
+    _recordingTimer?.cancel();
     _signalRService.stop();
     _textController.dispose();
     _scrollController.dispose();
     _audioRecorder.dispose();
+    _playerStateSubscription?.cancel();
+    _audioPlayer.dispose();
+    for (final file in _downloadedAudio.values) {
+      file.delete().catchError((_) => file);
+    }
     super.dispose();
+  }
+
+  Future<void> _toggleAudio(CoachMessage message) async {
+    if (_playingMessageId == message.id) {
+      await _audioPlayer.pause();
+      if (mounted) setState(() => _playingMessageId = null);
+      return;
+    }
+    if (_loadingAudioMessageId != null) return;
+
+    setState(() => _loadingAudioMessageId = message.id);
+    try {
+      final file = _downloadedAudio[message.id] ??=
+          await _coachService.downloadMessageAudio(message.id);
+      await _audioPlayer.stop();
+      await _audioPlayer.setFilePath(file.path);
+      if (!mounted) return;
+      setState(() {
+        _playingMessageId = message.id;
+        _loadingAudioMessageId = null;
+      });
+      await _audioPlayer.play();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadingAudioMessageId = null;
+        _errorMessage = "Couldn't play that audio message. Please try again.";
+      });
+    }
+  }
+
+  Future<void> _cancelRecording() async {
+    _recordingTimer?.cancel();
+    try {
+      final path = await _audioRecorder.stop();
+      if (path != null) {
+        final file = File(path);
+        if (await file.exists()) await file.delete();
+      }
+    } catch (_) {
+      // Nothing to send either way.
+    }
+    if (!mounted) return;
+    setState(() {
+      _isRecording = false;
+      _recordingDuration = Duration.zero;
+    });
   }
 
   Future<void> _loadConnections() async {
@@ -85,7 +159,8 @@ class _CoachChatPageState extends State<CoachChatPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to load coaches: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't load coaches.");
         _isLoading = false;
       });
     }
@@ -171,6 +246,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
     final connectionId = _selectedConnectionId;
     if (connectionId == null) return;
 
+    setState(() => _messagesLoadFailed = false);
     try {
       final messages = await _coachService.getMessages(connectionId);
       if (!mounted) return;
@@ -187,14 +263,21 @@ class _CoachChatPageState extends State<CoachChatPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to load messages: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't load messages.");
+        _messagesLoadFailed = true;
       });
     }
   }
 
   Future<void> _sendTextMessage() async {
     final connectionId = _selectedConnectionId;
-    if (connectionId == null || _textController.text.trim().isEmpty) return;
+    // The keyboard's send action bypasses the disabled button, so check here.
+    if (_isSending ||
+        connectionId == null ||
+        _textController.text.trim().isEmpty) {
+      return;
+    }
 
     setState(() {
       _isSending = true;
@@ -215,7 +298,8 @@ class _CoachChatPageState extends State<CoachChatPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to send message: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't send message.");
       });
     } finally {
       if (mounted) {
@@ -248,31 +332,47 @@ class _CoachChatPageState extends State<CoachChatPage> {
         _errorMessage = null;
       });
 
-      _updateRecordingDuration();
+      _startRecordingTimer();
     } catch (e) {
       if (!mounted) return;
+      final errorMsg = e.toString().toLowerCase();
+      final permissionDenied =
+          errorMsg.contains('permission') || errorMsg.contains('denied');
+      if (permissionDenied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Allow microphone access in Settings to record.'),
+            action: SnackBarAction(
+              label: 'Open settings',
+              onPressed: openAppSettings,
+            ),
+          ),
+        );
+      }
       setState(() {
-        final errorMsg = e.toString().toLowerCase();
-        if (errorMsg.contains('permission') || errorMsg.contains('denied')) {
+        if (permissionDenied) {
           _errorMessage =
               'Microphone permission denied. Please enable microphone access in settings.';
         } else {
-          _errorMessage = 'Failed to start recording: ${e.toString()}';
+          _errorMessage =
+              userFriendlyError(e, fallback: "Couldn't start recording.");
         }
         _isRecording = false;
       });
     }
   }
 
-  Future<void> _updateRecordingDuration() async {
-    while (_isRecording) {
-      await Future.delayed(const Duration(seconds: 1));
-      if (mounted && _isRecording) {
-        setState(() {
-          _recordingDuration = _recordingDuration + const Duration(seconds: 1);
-        });
+  void _startRecordingTimer() {
+    _recordingTimer?.cancel();
+    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted || !_isRecording) {
+        timer.cancel();
+        return;
       }
-    }
+      setState(() {
+        _recordingDuration = _recordingDuration + const Duration(seconds: 1);
+      });
+    });
   }
 
   Future<void> _stopRecording() async {
@@ -283,12 +383,13 @@ class _CoachChatPageState extends State<CoachChatPage> {
         _isRecording = false;
       });
       if (path != null) {
-        _sendAudioMessage(File(path));
+        await _sendAudioMessage(File(path));
       }
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to stop recording: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't stop recording.");
         _isRecording = false;
       });
     }
@@ -317,7 +418,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to send audio: ${e.toString()}';
+        _errorMessage = userFriendlyError(e, fallback: "Couldn't send audio.");
       });
     } finally {
       // There is no resend for audio, so the file is not needed either way.
@@ -343,7 +444,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
   }
 
   String _formatTime(DateTime date) {
-    return DateFormat('h:mm a').format(date);
+    return AppDateFormat.time(date);
   }
 
   String _formatDuration(Duration duration) {
@@ -389,103 +490,115 @@ class _CoachChatPageState extends State<CoachChatPage> {
               ),
             ),
           if (_isLoading)
-            const Expanded(child: Center(child: CircularProgressIndicator()))
+            const Expanded(
+                child: Center(
+                    child:
+                        CircularProgressIndicator(semanticsLabel: 'Loading')))
           else if (_selectedConnectionId == null)
             const Expanded(
               child: Center(child: Text('No connected coaches available')),
             )
           else
             Expanded(
-              child: _messages.isEmpty
-                  ? Center(
-                      child: Text(
-                        'Start a conversation with $coachName',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.6),
-                        ),
-                      ),
+              child: _messages.isEmpty && _messagesLoadFailed
+                  ? DsLoadFailed(
+                      message: "Couldn't load your messages.",
+                      onRetry: _loadMessages,
                     )
-                  : ListView.builder(
-                      controller: _scrollController,
-                      padding: AppInsets.screen,
-                      itemCount: _messages.length,
-                      itemBuilder: (context, index) {
-                        final message = _messages[index];
-                        return Align(
-                          alignment: message.isFromCoach
-                              ? Alignment.centerLeft
-                              : Alignment.centerRight,
-                          child: Container(
-                            margin:
-                                const EdgeInsets.only(bottom: AppSpacing.sm),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.lg,
-                              vertical: AppSpacing.md,
-                            ),
-                            constraints: BoxConstraints(
-                              maxWidth:
-                                  MediaQuery.of(context).size.width * 0.75,
-                            ),
-                            decoration: BoxDecoration(
-                              color: message.isFromCoach
-                                  ? theme.colorScheme.surface
-                                  : theme.colorScheme.primary,
-                              borderRadius: message.isFromCoach
-                                  ? const BorderRadius.only(
-                                      topLeft: Radius.circular(18),
-                                      topRight: Radius.circular(18),
-                                      bottomRight: Radius.circular(18),
-                                      bottomLeft: Radius.circular(4),
-                                    )
-                                  : const BorderRadius.only(
-                                      topLeft: Radius.circular(18),
-                                      topRight: Radius.circular(18),
-                                      bottomLeft: Radius.circular(18),
-                                      bottomRight: Radius.circular(4),
-                                    ),
-                              border: message.isFromCoach
-                                  ? Border.all(
-                                      color: context.appTheme.borderColor,
-                                    )
-                                  : null,
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (message.text != null)
-                                  Text(
-                                    message.text!,
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: message.isFromCoach
-                                          ? theme.colorScheme.onSurface
-                                          : theme.colorScheme.onPrimary,
-                                    ),
-                                  ),
-                                if (message.audioUrl != null)
-                                  const Row(
-                                    children: [
-                                      Icon(Icons.mic, size: 20),
-                                      SizedBox(width: AppSpacing.sm),
-                                      Text('Audio message'),
-                                    ],
-                                  ),
-                                SizedBox(height: AppSpacing.xs),
-                                Text(
-                                  _formatTime(message.createdAt),
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: message.isFromCoach
-                                        ? context.appTheme.textMuted
-                                        : theme.colorScheme.onPrimary
-                                            .withValues(alpha: 0.7),
-                                  ),
-                                ),
-                              ],
+                  : _messages.isEmpty
+                      ? Center(
+                          child: Text(
+                            'Start a conversation with $coachName',
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: context.appTheme.textMuted,
                             ),
                           ),
-                        );
-                      },
-                    ),
+                        )
+                      : ListView.builder(
+                          controller: _scrollController,
+                          padding: AppInsets.screen,
+                          itemCount: _messages.length,
+                          itemBuilder: (context, index) {
+                            final message = _messages[index];
+                            return Align(
+                              alignment: message.isFromCoach
+                                  ? Alignment.centerLeft
+                                  : Alignment.centerRight,
+                              child: Container(
+                                margin: const EdgeInsets.only(
+                                    bottom: AppSpacing.sm),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.lg,
+                                  vertical: AppSpacing.md,
+                                ),
+                                constraints: BoxConstraints(
+                                  maxWidth:
+                                      MediaQuery.of(context).size.width * 0.75,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: message.isFromCoach
+                                      ? theme.colorScheme.surface
+                                      : theme.colorScheme.primary,
+                                  borderRadius: message.isFromCoach
+                                      ? const BorderRadius.only(
+                                          topLeft: Radius.circular(18),
+                                          topRight: Radius.circular(18),
+                                          bottomRight: Radius.circular(18),
+                                          bottomLeft: Radius.circular(4),
+                                        )
+                                      : const BorderRadius.only(
+                                          topLeft: Radius.circular(18),
+                                          topRight: Radius.circular(18),
+                                          bottomLeft: Radius.circular(18),
+                                          bottomRight: Radius.circular(4),
+                                        ),
+                                  border: message.isFromCoach
+                                      ? Border.all(
+                                          color: context.appTheme.borderColor,
+                                        )
+                                      : null,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (message.text != null)
+                                      Text(
+                                        message.text!,
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                          color: message.isFromCoach
+                                              ? theme.colorScheme.onSurface
+                                              : theme.colorScheme.onPrimary,
+                                        ),
+                                      ),
+                                    if (message.audioUrl != null)
+                                      _AudioMessageControl(
+                                        isPlaying:
+                                            _playingMessageId == message.id,
+                                        isLoading: _loadingAudioMessageId ==
+                                            message.id,
+                                        color: message.isFromCoach
+                                            ? theme.colorScheme.onSurface
+                                            : theme.colorScheme.onPrimary,
+                                        onPressed: () => _toggleAudio(message),
+                                      ),
+                                    SizedBox(height: AppSpacing.xs),
+                                    Text(
+                                      _formatTime(message.createdAt),
+                                      style:
+                                          theme.textTheme.bodySmall?.copyWith(
+                                        color: message.isFromCoach
+                                            ? context.appTheme.textMuted
+                                            : theme.colorScheme.onPrimary
+                                                .withValues(alpha: 0.7),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
             ),
           if (_isRecording)
             Container(
@@ -504,6 +617,14 @@ class _CoachChatPageState extends State<CoachChatPage> {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.lg),
+                  TextButton(
+                    onPressed: _cancelRecording,
+                    style: TextButton.styleFrom(
+                      foregroundColor: theme.colorScheme.onErrorContainer,
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
                   ElevatedButton(
                     onPressed: _stopRecording,
                     child: const Text('Stop & Send'),
@@ -512,75 +633,72 @@ class _CoachChatPageState extends State<CoachChatPage> {
               ),
             ),
           if (_selectedConnectionId != null)
-            SafeArea(
-              top: false,
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md,
-                  AppSpacing.sm,
-                  AppSpacing.md,
-                  AppSpacing.md,
-                ),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  border: Border(
-                    top: BorderSide(color: context.appTheme.borderColor),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.mic),
-                      onPressed:
-                          _isSending || _isRecording ? null : _startRecording,
-                      tooltip: 'Record audio',
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller: _textController,
-                        decoration: InputDecoration(
-                          hintText: 'Message coach…',
-                          filled: true,
-                          fillColor: theme.scaffoldBackgroundColor,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.lg,
-                            vertical: AppSpacing.s14,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: AppRadius.circularPill,
-                            borderSide: BorderSide.none,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: AppRadius.circularPill,
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                        maxLines: null,
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => _sendTextMessage(),
-                      ),
-                    ),
-                    FilledButton(
-                      onPressed: _isSending ? null : _sendTextMessage,
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size(44, 44),
-                        padding: EdgeInsets.zero,
-                        shape: const CircleBorder(),
-                      ),
-                      child: _isSending
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.arrow_upward, size: 20),
-                    ),
-                  ],
-                ),
+            ChatComposer(
+              controller: _textController,
+              hintText: 'Message coach…',
+              semanticsLabel: 'Message to your coach',
+              isBusy: _isSending,
+              showBusySpinner: true,
+              onSend: (_) => _sendTextMessage(),
+              leading: IconButton(
+                icon: const Icon(Icons.mic),
+                onPressed: _isSending || _isRecording ? null : _startRecording,
+                tooltip: 'Record audio',
               ),
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Play/pause button and label for a voice message bubble.
+class _AudioMessageControl extends StatelessWidget {
+  const _AudioMessageControl({
+    required this.isPlaying,
+    required this.isLoading,
+    required this.color,
+    required this.onPressed,
+  });
+
+  final bool isPlaying;
+  final bool isLoading;
+  final Color color;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (isLoading)
+          SizedBox(
+            width: 48,
+            height: 48,
+            child: Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                    semanticsLabel: 'Loading', strokeWidth: 2, color: color),
+              ),
+            ),
+          )
+        else
+          IconButton(
+            onPressed: onPressed,
+            tooltip: isPlaying ? 'Pause audio message' : 'Play audio message',
+            icon: Icon(
+              isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+              color: color,
+              size: 32,
+            ),
+          ),
+        Text(
+          'Audio message',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: color),
+        ),
+      ],
     );
   }
 }

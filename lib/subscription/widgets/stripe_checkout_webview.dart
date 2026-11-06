@@ -131,6 +131,7 @@ class _StripeCheckoutWebViewState extends State<StripeCheckoutWebView> {
       appBar: AppBar(
         title: const Text('Checkout'),
         leading: IconButton(
+          tooltip: 'Close checkout',
           icon: const Icon(Icons.close),
           onPressed: () {
             if (widget.onCancel != null) {
@@ -157,7 +158,7 @@ class _StripeCheckoutWebViewState extends State<StripeCheckoutWebView> {
                 WebViewWidget(controller: _controller),
                 if (_isLoading)
                   const Center(
-                    child: CircularProgressIndicator(),
+                    child: CircularProgressIndicator(semanticsLabel: 'Loading'),
                   ),
               ],
             ),

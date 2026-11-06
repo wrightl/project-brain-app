@@ -86,11 +86,13 @@ class _LearnedMemoryPageState extends State<LearnedMemoryPage> {
     final theme = Theme.of(context);
     final appTheme = context.appTheme;
     return Scaffold(
+      appBar: dsBackAppBar(context),
       body: SafeArea(
         child: Consumer<UserMemoryProvider>(
           builder: (context, provider, _) {
             if (provider.isLoading && provider.isEmpty) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(
+                  child: CircularProgressIndicator(semanticsLabel: 'Loading'));
             }
 
             if (provider.errorMessage != null && provider.isEmpty) {
@@ -270,7 +272,8 @@ class _MemoryTile extends StatelessWidget {
                       ? const SizedBox(
                           width: 16,
                           height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                              semanticsLabel: 'Loading', strokeWidth: 2),
                         )
                       : Text(isPinned ? 'Unpin' : 'Pin'),
                 ),
@@ -280,7 +283,8 @@ class _MemoryTile extends StatelessWidget {
                       ? const SizedBox(
                           width: 16,
                           height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                              semanticsLabel: 'Loading', strokeWidth: 2),
                         )
                       : Text(
                           'Remove',

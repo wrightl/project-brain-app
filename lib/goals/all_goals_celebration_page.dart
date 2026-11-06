@@ -4,6 +4,7 @@ import 'package:confetti/confetti.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/helpers/themes/contrast.dart';
 
 /// Celebration page shown when user completes all goals for the day.
 class AllGoalsCelebrationPage extends StatefulWidget {
@@ -16,13 +17,26 @@ class AllGoalsCelebrationPage extends StatefulWidget {
 
 class _AllGoalsCelebrationPageState extends State<AllGoalsCelebrationPage> {
   late ConfettiController _confettiController;
+  bool _confettiPlayed = false;
 
   @override
   void initState() {
     super.initState();
     _confettiController =
         ConfettiController(duration: const Duration(seconds: 3));
-    _confettiController.play();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // No confetti when the system asks for reduced motion.
+    final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (!reduceMotion &&
+        _confettiController.state != ConfettiControllerState.playing &&
+        !_confettiPlayed) {
+      _confettiPlayed = true;
+      _confettiController.play();
+    }
   }
 
   @override
@@ -79,7 +93,8 @@ class _AllGoalsCelebrationPageState extends State<AllGoalsCelebrationPage> {
                     child: ElevatedButton(
                       onPressed: () => context.go('/'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: appTheme.green,
+                        backgroundColor:
+                            readableOn(appTheme.green, Colors.white),
                         foregroundColor: Colors.white,
                       ),
                       child: const Text('Home'),

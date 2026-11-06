@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:projectbrain/core/logging/app_logger.dart';
 import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/models/community.dart';
 import 'package:projectbrain/services/community_service.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
 
 class CommunityChannelPage extends StatefulWidget {
   final String slug;
@@ -53,7 +56,7 @@ class _CommunityChannelPageState extends State<CommunityChannelPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = userFriendlyError(e, fallback: "Couldn't load posts.");
         _loading = false;
       });
     }
@@ -65,12 +68,14 @@ class _CommunityChannelPageState extends State<CommunityChannelPage> {
     setState(() => _submitting = true);
     try {
       await _service.createPost(widget.slug, body);
+      if (!mounted) return;
       _controller.clear();
       await _load();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to post: $e')),
+        SnackBar(
+            content: Text(userFriendlyError(e, fallback: "Couldn't post."))),
       );
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -84,6 +89,7 @@ class _CommunityChannelPageState extends State<CommunityChannelPage> {
       } else {
         await _service.addReaction(post.id);
       }
+      if (!mounted) return;
       setState(() {
         _posts = _posts
             .map(
@@ -98,25 +104,59 @@ class _CommunityChannelPageState extends State<CommunityChannelPage> {
             )
             .toList();
       });
-    } catch (_) {}
+    } catch (e) {
+      logError('[CommunityChannelPage] Reaction failed', e);
+      _showError("Couldn't update your reaction. Please try again.");
+    }
   }
 
   Future<void> _delete(CommunityPost post) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete post?'),
+        content: const Text('This removes your post for everyone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
     try {
       await _service.deletePost(post.id);
+      if (!mounted) return;
       setState(() => _posts = _posts.where((p) => p.id != post.id).toList());
-    } catch (_) {}
+    } catch (e) {
+      logError('[CommunityChannelPage] Delete failed', e);
+      _showError("Couldn't delete the post. Please try again.");
+    }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   Future<void> _report(CommunityPost post) async {
-    final reasonController = TextEditingController();
+    // A plain variable rather than a controller: a controller disposed right
+    // after the dialog closes would still be in use by its exit animation.
+    var reasonText = '';
     final reason = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Report post'),
         content: TextField(
-          controller: reasonController,
-          decoration: const InputDecoration(hintText: 'Reason'),
+          onChanged: (value) => reasonText = value,
+          decoration: const InputDecoration(labelText: 'Reason'),
           maxLines: 3,
         ),
         actions: [
@@ -125,7 +165,7 @@ class _CommunityChannelPageState extends State<CommunityChannelPage> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, reasonController.text),
+            onPressed: () => Navigator.pop(context, reasonText),
             child: const Text('Report'),
           ),
         ],
@@ -138,7 +178,10 @@ class _CommunityChannelPageState extends State<CommunityChannelPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Report submitted')),
       );
-    } catch (_) {}
+    } catch (e) {
+      logError('[CommunityChannelPage] Report failed', e);
+      _showError("Couldn't send the report. Please try again.");
+    }
   }
 
   @override
@@ -158,7 +201,9 @@ class _CommunityChannelPageState extends State<CommunityChannelPage> {
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 children: [
                   if (_loading)
-                    const Center(child: CircularProgressIndicator()),
+                    const Center(
+                        child: CircularProgressIndicator(
+                            semanticsLabel: 'Loading')),
                   if (_error != null)
                     Text(_error!,
                         style: TextStyle(color: theme.colorScheme.error)),
@@ -177,7 +222,7 @@ class _CommunityChannelPageState extends State<CommunityChannelPage> {
                           Text(post.authorDisplayName,
                               style: theme.textTheme.titleSmall),
                           Text(
-                            post.createdAt.toLocal().toString(),
+                            AppDateFormat.dateTime(post.createdAt),
                             style: theme.textTheme.bodySmall,
                           ),
                           const SizedBox(height: AppSpacing.sm),
@@ -227,25 +272,30 @@ class _CommunityChannelPageState extends State<CommunityChannelPage> {
               child: Row(
                 children: [
                   Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      maxLength: 2000,
-                      maxLines: 3,
-                      minLines: 1,
-                      decoration: const InputDecoration(
-                        hintText: 'Share with the community…',
-                        counterText: '',
-                      ),
-                    ),
+                    child: Semantics(
+// The hint disappears once typing starts; keep a label.
+                        label: 'New post',
+                        child: TextField(
+                          controller: _controller,
+                          maxLength: 2000,
+                          maxLines: 3,
+                          minLines: 1,
+                          decoration: const InputDecoration(
+                            hintText: 'Share with the community…',
+                            counterText: '',
+                          ),
+                        )),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   IconButton.filled(
+                    tooltip: 'Post',
                     onPressed: _submitting ? null : _submit,
                     icon: _submitting
                         ? const SizedBox(
                             width: 16,
                             height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                                semanticsLabel: 'Loading', strokeWidth: 2),
                           )
                         : const Icon(Icons.send),
                   ),

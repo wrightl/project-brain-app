@@ -1,5 +1,6 @@
 // lib/pages/ai_chat_page.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:projectbrain/authentication/auth_provider.dart';
 import 'package:projectbrain/chat/chat_provider.dart';
@@ -31,6 +32,7 @@ class _ChatPageState extends State<ChatPage> {
   late Future<List<Conversation>> _conversationsFuture;
   ChatProvider? _chatProvider;
   bool _scrollScheduled = false;
+  bool _wasSending = false;
 
   @override
   void initState() {
@@ -52,9 +54,22 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   /// Coalesce scroll-to-bottom requests into a single post-frame jump so rapid
-  /// streaming updates don't queue many callbacks.
+  /// streaming updates don't queue many callbacks. Only follows the reply when
+  /// the user is already at (or near) the bottom, so reading earlier messages
+  /// is not interrupted.
   void _handleChatChanged() {
+    _announceReplyFinished();
+    final actionError = _chatProvider?.consumeActionError();
+    if (actionError != null && mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(actionError)));
+    }
+
     if (_scrollScheduled) return;
+    if (_scrollController.hasClients) {
+      final position = _scrollController.position;
+      if (position.maxScrollExtent - position.pixels > 120) return;
+    }
     _scrollScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollScheduled = false;
@@ -62,6 +77,25 @@ class _ChatPageState extends State<ChatPage> {
         _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       }
     });
+  }
+
+  /// Tell screen reader users when a streamed reply is complete; the text
+  /// arrives a few words at a time and is otherwise not announced.
+  void _announceReplyFinished() {
+    final provider = _chatProvider;
+    if (provider == null || !mounted) return;
+    final finished = _wasSending && !provider.isSending;
+    _wasSending = provider.isSending;
+    if (!finished || provider.messages.isEmpty) return;
+    final last = provider.messages.last;
+    if (last.role != 'assistant') return;
+    final message =
+        provider.canRetryLastMessage ? last.content : 'AI Buddy replied';
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      Directionality.of(context),
+    );
   }
 
   void _loadConversations() {
@@ -77,15 +111,24 @@ class _ChatPageState extends State<ChatPage> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final theme = Theme.of(context);
     final appTheme = context.appTheme;
-    final firstName = authProvider.profile?.name.split(' ').first ?? 'Buddy';
+    final rawFirstName = authProvider.profile?.name.split(' ').first.trim();
+    final firstName =
+        (rawFirstName == null || rawFirstName.isEmpty) ? null : rawFirstName;
 
     return Scaffold(
       key: _scaffoldKey,
+      // Refresh the list each time it opens so new conversations show up.
+      onDrawerChanged: (isOpen) {
+        if (isOpen) _loadConversations();
+      },
       appBar: AppBar(
-        title: Text("$firstName's AI Buddy"),
+        title: Text(
+          firstName == null ? 'Your AI Buddy' : "$firstName's AI Buddy",
+        ),
         titleTextStyle: theme.textTheme.titleMedium,
         leading: IconButton(
           icon: const Icon(Icons.menu),
+          tooltip: 'Conversations',
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
         actions: [
@@ -127,7 +170,8 @@ class _ChatPageState extends State<ChatPage> {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: TypingIndicator());
                       } else if (snapshot.hasError) {
-                        return Center(child: Text('Error: ${snapshot.error}'));
+                        return Center(
+                            child: Text("Couldn't load your conversations."));
                       } else if (snapshot.hasData &&
                           snapshot.data!.isNotEmpty) {
                         return Consumer<ChatProvider>(
@@ -142,10 +186,23 @@ class _ChatPageState extends State<ChatPage> {
                                 return ConversationListItem(
                                   conversation: conversation,
                                   isActive: isActive,
-                                  onTap: () {
-                                    chatProvider
-                                        .loadConversation(conversation.id);
+                                  onTap: () async {
+                                    final messenger =
+                                        ScaffoldMessenger.of(context);
                                     Navigator.pop(context); // Close the drawer
+                                    try {
+                                      await chatProvider
+                                          .loadConversation(conversation.id);
+                                    } catch (_) {
+                                      messenger.showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            "Couldn't open that conversation. "
+                                            'Please try again.',
+                                          ),
+                                        ),
+                                      );
+                                    }
                                   },
                                 );
                               },
@@ -176,7 +233,15 @@ class _ChatPageState extends State<ChatPage> {
                 // Loading a previous conversation (not token streaming, which
                 // appends to messages): show a spinner instead of a blank list.
                 if (chatProvider.isLoading && chatProvider.messages.isEmpty) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+                      child:
+                          CircularProgressIndicator(semanticsLabel: 'Loading'));
+                }
+                if (chatProvider.messages.isEmpty) {
+                  return _ChatWelcome(
+                    firstName: firstName ?? 'there',
+                    onPromptSelected: chatProvider.sendMessage,
+                  );
                 }
                 return ListView.builder(
                   controller: _scrollController,
@@ -204,6 +269,17 @@ class _ChatPageState extends State<ChatPage> {
                               message.role == 'assistant' &&
                               message.content.isEmpty,
                         ),
+                        if (isLastMessage && chatProvider.canRetryLastMessage)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg,
+                            ),
+                            child: TextButton.icon(
+                              onPressed: chatProvider.retryLastMessage,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Retry'),
+                            ),
+                          ),
                         if (message.role == 'assistant') ...[
                           for (final tool in extras.toolExecutions
                               .where((tool) => tool.toolName != 'ask_user'))
@@ -275,6 +351,54 @@ class _ChatPageState extends State<ChatPage> {
             controller: _controller,
             scrollController: _scrollController,
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Shown for a new conversation: a greeting and prompts to start from.
+class _ChatWelcome extends StatelessWidget {
+  const _ChatWelcome({
+    required this.firstName,
+    required this.onPromptSelected,
+  });
+
+  final String firstName;
+  final ValueChanged<String> onPromptSelected;
+
+  static const _prompts = [
+    'Help me plan my day',
+    "I'm feeling overwhelmed. Where do I start?",
+    'Give me a tip for staying focused',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final appTheme = context.appTheme;
+
+    return SingleChildScrollView(
+      padding: AppInsets.page,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Hi $firstName, what would you like to talk about?',
+            style: theme.textTheme.titleMedium,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text('Try one of these:', style: theme.textTheme.bodySmall),
+          const SizedBox(height: AppSpacing.sm),
+          for (final prompt in _prompts) ...[
+            ActionChip(
+              label: Text(prompt),
+              backgroundColor: appTheme.primarySoft,
+              side: BorderSide.none,
+              onPressed: () => onPromptSelected(prompt),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
         ],
       ),
     );

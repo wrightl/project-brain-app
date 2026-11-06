@@ -22,9 +22,13 @@ class UserOnboardingData {
     final map = <String, dynamic>{
       'email': email,
       'fullName': fullName,
-      'doB': doB,
-      'preferredPronoun': preferredPronoun,
     };
+    // Both are optional. The API reads doB as a date, so an empty string
+    // would fail to parse; leave them out instead.
+    if (doB.isNotEmpty) map['doB'] = doB;
+    if (preferredPronoun.isNotEmpty) {
+      map['preferredPronoun'] = preferredPronoun;
+    }
 
     if (neurodiverseTraits != null && neurodiverseTraits!.isNotEmpty) {
       map['neurodiverseTraits'] = neurodiverseTraits;

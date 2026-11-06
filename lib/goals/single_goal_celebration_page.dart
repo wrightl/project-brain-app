@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/helpers/themes/contrast.dart';
 
 /// Celebration page shown when user completes a single goal.
 class SingleGoalCelebrationPage extends StatelessWidget {
@@ -54,7 +55,7 @@ class SingleGoalCelebrationPage extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () => context.pop(),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: appTheme.green,
+                    backgroundColor: readableOn(appTheme.green, Colors.white),
                     foregroundColor: Colors.white,
                   ),
                   child: const Text('Back to Goals'),

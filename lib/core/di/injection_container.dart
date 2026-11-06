@@ -293,6 +293,7 @@ Future<void> initializeDependencies() async {
       sl<StrategyService>(),
       sl<TagService>(),
       sl<UserService>(),
+      sl<UserMemoryService>(),
     ]),
   );
 

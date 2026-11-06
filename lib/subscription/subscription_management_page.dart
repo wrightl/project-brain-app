@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:projectbrain/subscription/subscription_provider.dart';
 import 'package:projectbrain/subscription/widgets/tier_badge.dart';
 import 'package:projectbrain/models/subscription.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
+import 'package:projectbrain/helpers/themes/contrast.dart';
 
 /// Subscription management page showing current subscription details
 class SubscriptionManagementPage extends StatelessWidget {
@@ -22,6 +24,7 @@ class SubscriptionManagementPage extends StatelessWidget {
         title: const Text('Subscription'),
         actions: [
           IconButton(
+            tooltip: 'Refresh',
             icon: const Icon(Icons.refresh),
             onPressed: () {
               Provider.of<SubscriptionProvider>(context, listen: false)
@@ -34,7 +37,8 @@ class SubscriptionManagementPage extends StatelessWidget {
         builder: (context, subscriptionProvider, _) {
           if (subscriptionProvider.isLoading &&
               subscriptionProvider.subscription == null) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+                child: CircularProgressIndicator(semanticsLabel: 'Loading'));
           }
 
           if (subscriptionProvider.hasError &&
@@ -152,7 +156,8 @@ class SubscriptionManagementPage extends StatelessWidget {
                     vertical: AppSpacing.xs,
                   ),
                   decoration: BoxDecoration(
-                    color: appTheme.amber,
+                    // White on the amber accent is 2.2:1; darken the fill.
+                    color: readableOn(appTheme.amber, Colors.white),
                     borderRadius: AppRadius.circularPill,
                   ),
                   child: Text(
@@ -189,7 +194,6 @@ class SubscriptionManagementPage extends StatelessWidget {
     Subscription subscription,
   ) {
     final theme = Theme.of(context);
-    final dateFormat = DateFormat('MMM d, yyyy');
 
     return DsSurfaceCard(
       child: Column(
@@ -210,26 +214,26 @@ class SubscriptionManagementPage extends StatelessWidget {
           if (subscription.isTrialing && subscription.trialEndsAt != null)
             _StatusRow(
               label: 'Trial Ends',
-              value: dateFormat.format(subscription.trialEndsAt!),
+              value: AppDateFormat.date(subscription.trialEndsAt!),
             ),
           _StatusRow(
             label: 'Current Period',
             value: (subscription.currentPeriodStart != null &&
                     subscription.currentPeriodEnd != null)
-                ? '${dateFormat.format(subscription.currentPeriodStart!)} - ${dateFormat.format(subscription.currentPeriodEnd!)}'
+                ? '${AppDateFormat.date(subscription.currentPeriodStart!)} - ${AppDateFormat.date(subscription.currentPeriodEnd!)}'
                 : 'N/A',
           ),
           if (subscription.canceledAt != null)
             _StatusRow(
               label: 'Canceled On',
-              value: dateFormat.format(subscription.canceledAt!),
+              value: AppDateFormat.date(subscription.canceledAt!),
               valueColor: theme.colorScheme.error,
             ),
           if (!subscription.isCanceled && !subscription.isExpired)
             _StatusRow(
               label: 'Next Billing Date',
               value: (subscription.currentPeriodEnd != null)
-                  ? dateFormat.format(subscription.currentPeriodEnd!)
+                  ? AppDateFormat.date(subscription.currentPeriodEnd!)
                   : 'N/A',
             ),
         ],
@@ -384,7 +388,8 @@ class SubscriptionManagementPage extends StatelessWidget {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Error: ${e.toString()}'),
+                      content: Text(userFriendlyError(e,
+                          fallback: 'Something went wrong. Please try again.')),
                       backgroundColor: context.appTheme.errorColor,
                     ),
                   );

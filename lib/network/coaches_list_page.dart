@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:projectbrain/core/di/injection_container.dart';
 import 'package:projectbrain/models/connection.dart';
 import 'package:projectbrain/services/connection_service.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
+import 'package:projectbrain/core/network/user_friendly_error.dart';
+import 'package:projectbrain/core/util/app_date_format.dart';
 
 /// Talk to a Coach — list connected coaches with message and manage actions.
 class CoachesListPage extends StatefulWidget {
@@ -21,6 +22,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
   List<Connection> _connections = [];
   final Set<String> _removingIds = {};
   bool _isLoading = true;
+  bool _loadFailed = false;
   String? _errorMessage;
 
   @override
@@ -32,18 +34,23 @@ class _CoachesListPageState extends State<CoachesListPage> {
   Future<void> _loadConnections() async {
     setState(() {
       _isLoading = true;
+      _loadFailed = false;
       _errorMessage = null;
     });
 
     try {
       final connections = await _connectionService.getActiveConnections();
+      if (!mounted) return;
       setState(() {
         _connections = connections;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to load coaches: ${e.toString()}';
+        _errorMessage =
+            userFriendlyError(e, fallback: "Couldn't load coaches.");
+        _loadFailed = true;
         _isLoading = false;
       });
     }
@@ -121,7 +128,8 @@ class _CoachesListPageState extends State<CoachesListPage> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to update connection: ${e.toString()}'),
+          content: Text(
+              userFriendlyError(e, fallback: "Couldn't update connection.")),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
@@ -130,14 +138,14 @@ class _CoachesListPageState extends State<CoachesListPage> {
 
   String _formatDate(DateTime? date) {
     if (date == null) return '';
-    return DateFormat('d MMM yyyy').format(date);
+    return AppDateFormat.date(date);
   }
 
   Color _statusColor(Connection connection, ThemeData theme) {
     final appTheme = theme.extension<AppThemeExtension>();
     if (connection.isAccepted) return appTheme?.green ?? Colors.green;
     if (connection.isPending) return appTheme?.amber ?? Colors.orange;
-    return theme.colorScheme.onSurface.withValues(alpha: 0.6);
+    return context.appTheme.textMuted;
   }
 
   String _statusLabel(Connection connection) {
@@ -205,7 +213,16 @@ class _CoachesListPageState extends State<CoachesListPage> {
               ),
             if (_isLoading)
               const Expanded(
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(
+                    child:
+                        CircularProgressIndicator(semanticsLabel: 'Loading')),
+              )
+            else if (_connections.isEmpty && _loadFailed)
+              Expanded(
+                child: DsLoadFailed(
+                  message: "Couldn't load your coaches.",
+                  onRetry: _loadConnections,
+                ),
               )
             else if (_connections.isEmpty)
               Expanded(
@@ -225,8 +242,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
                         Text(
                           'No coaches connected yet',
                           style: theme.textTheme.titleMedium?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.6),
+                            color: context.appTheme.textMuted,
                           ),
                         ),
                         SizedBox(height: AppSpacing.sm),
@@ -234,8 +250,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
                           'Find and connect with a coach to start messaging.',
                           textAlign: TextAlign.center,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.5),
+                            color: context.appTheme.textMuted,
                           ),
                         ),
                         SizedBox(height: AppSpacing.xl),
@@ -309,8 +324,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
                                   child: Text(
                                     'Connected on ${_formatDate(connection.respondedAt)}',
                                     style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.6),
+                                      color: context.appTheme.textMuted,
                                     ),
                                   ),
                                 ),
@@ -321,8 +335,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
                                   child: Text(
                                     'Requested on ${_formatDate(connection.requestedAt)}',
                                     style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.6),
+                                      color: context.appTheme.textMuted,
                                     ),
                                   ),
                                 ),
@@ -359,6 +372,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
                                             width: 18,
                                             height: 18,
                                             child: CircularProgressIndicator(
+                                              semanticsLabel: 'Loading',
                                               strokeWidth: 2,
                                               color: theme.colorScheme.primary,
                                             ),
