@@ -191,7 +191,7 @@ class _PricingPageState extends State<PricingPage> {
                               child: Text(
                                 'Most Popular',
                                 style: theme.textTheme.labelMedium?.copyWith(
-                                  color: Colors.white,
+                                  color: theme.colorScheme.onPrimary,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -300,7 +300,8 @@ class _PricingPageState extends State<PricingPage> {
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                  semanticsLabel: 'Loading', strokeWidth: 2),
                             )
                           : Text(
                               tier == SubscriptionTier.free
@@ -439,7 +440,6 @@ class _PricingPageState extends State<PricingPage> {
               content: Text(
                 'SUBSCRIPTION_BILLING_WEB_URL must be a valid https:// URL.',
               ),
-              backgroundColor: Colors.red,
             ),
           );
           return;
@@ -453,7 +453,6 @@ class _PricingPageState extends State<PricingPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Could not open the billing page.'),
-              backgroundColor: Colors.red,
             ),
           );
         } else {
@@ -511,7 +510,6 @@ class _PricingPageState extends State<PricingPage> {
         SnackBar(
           content: Text(userFriendlyError(e,
               fallback: 'Something went wrong. Please try again.')),
-          backgroundColor: Colors.red,
         ),
       );
     } finally {
@@ -571,40 +569,45 @@ class _BillingOption extends StatelessWidget {
     final theme = Theme.of(context);
     final appTheme = context.appTheme;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: AppRadius.circularPill,
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-        decoration: BoxDecoration(
-          color: isSelected ? appTheme.primarySoft : Colors.transparent,
+    return Semantics(
+        selected: isSelected,
+        inMutuallyExclusiveGroup: true,
+        button: true,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: AppRadius.circularPill,
-        ),
-        child: Column(
-          children: [
-            Text(
-              label,
-              style: theme.textTheme.labelLarge?.copyWith(
-                color:
-                    isSelected ? theme.colorScheme.primary : appTheme.textMuted,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              ),
+          child: Container(
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+            decoration: BoxDecoration(
+              color: isSelected ? appTheme.primarySoft : Colors.transparent,
+              borderRadius: AppRadius.circularPill,
             ),
-            if (badge != null && isSelected)
-              Padding(
-                padding: EdgeInsets.only(top: AppSpacing.xs),
-                child: Text(
-                  badge!,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.w600,
+            child: Column(
+              children: [
+                Text(
+                  label,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : appTheme.textMuted,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   ),
                 ),
-              ),
-          ],
-        ),
-      ),
-    );
+                if (badge != null && isSelected)
+                  Padding(
+                    padding: EdgeInsets.only(top: AppSpacing.xs),
+                    child: Text(
+                      badge!,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ));
   }
 }
 

@@ -550,6 +550,13 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
     }
   }
 
+  String _sliderPositionLabel(double value) {
+    final position = Duration(
+      milliseconds: (value * _playbackDuration.inMilliseconds).round(),
+    );
+    return '${_formatDuration(position)} of ${_formatDuration(_playbackDuration)}';
+  }
+
   String _formatDuration(Duration duration) {
     final minutes = duration.inMinutes;
     final seconds = duration.inSeconds % 60;
@@ -658,6 +665,10 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           IconButton(
+                            tooltip:
+                                _currentlyPlayingId == 'local' && _isPlaying
+                                    ? 'Pause recording'
+                                    : 'Play recording',
                             icon: Icon(
                               _currentlyPlayingId == 'local' && _isPlaying
                                   ? Icons.pause
@@ -673,6 +684,9 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                                   Expanded(
                                     flex: 8,
                                     child: Slider(
+// Read the position as a time, not "0.43".
+                                      semanticFormatterCallback:
+                                          _sliderPositionLabel,
                                       value: _playbackDuration.inMilliseconds >
                                               0
                                           ? _playbackPosition.inMilliseconds /
@@ -726,6 +740,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                                     width: 16,
                                     height: 16,
                                     child: CircularProgressIndicator(
+                                      semanticsLabel: 'Loading',
                                       strokeWidth: 2,
                                     ),
                                   )
@@ -750,7 +765,9 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
             // Voice notes list
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Center(
+                      child:
+                          CircularProgressIndicator(semanticsLabel: 'Loading'))
                   : _voiceNotes.isEmpty && _loadFailed
                       ? DsLoadFailed(
                           message: "Couldn't load your voice notes.",
@@ -870,12 +887,17 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                                                     height: 20,
                                                     child:
                                                         CircularProgressIndicator(
+                                                      semanticsLabel: 'Loading',
                                                       strokeWidth: 2,
                                                     ),
                                                   ),
                                                 )
                                               else
                                                 IconButton(
+                                                  tooltip: isCurrentlyPlaying &&
+                                                          _isPlaying
+                                                      ? 'Pause voice note'
+                                                      : 'Play voice note',
                                                   icon: Icon(
                                                     isCurrentlyPlaying &&
                                                             _isPlaying
@@ -888,6 +910,7 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                                                       theme.colorScheme.primary,
                                                 ),
                                               IconButton(
+                                                tooltip: 'Delete voice note',
                                                 icon: const Icon(Icons.delete),
                                                 onPressed: isDownloading
                                                     ? null
@@ -909,6 +932,9 @@ class _VoiceNotesPageState extends State<VoiceNotesPage> {
                                                 Expanded(
                                                   flex: 8,
                                                   child: Slider(
+// Read the position as a time, not "0.43".
+                                                    semanticFormatterCallback:
+                                                        _sliderPositionLabel,
                                                     value: _playbackDuration
                                                                 .inMilliseconds >
                                                             0

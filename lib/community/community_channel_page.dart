@@ -156,7 +156,7 @@ class _CommunityChannelPageState extends State<CommunityChannelPage> {
         title: const Text('Report post'),
         content: TextField(
           onChanged: (value) => reasonText = value,
-          decoration: const InputDecoration(hintText: 'Reason'),
+          decoration: const InputDecoration(labelText: 'Reason'),
           maxLines: 3,
         ),
         actions: [
@@ -201,7 +201,9 @@ class _CommunityChannelPageState extends State<CommunityChannelPage> {
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 children: [
                   if (_loading)
-                    const Center(child: CircularProgressIndicator()),
+                    const Center(
+                        child: CircularProgressIndicator(
+                            semanticsLabel: 'Loading')),
                   if (_error != null)
                     Text(_error!,
                         style: TextStyle(color: theme.colorScheme.error)),
@@ -270,25 +272,30 @@ class _CommunityChannelPageState extends State<CommunityChannelPage> {
               child: Row(
                 children: [
                   Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      maxLength: 2000,
-                      maxLines: 3,
-                      minLines: 1,
-                      decoration: const InputDecoration(
-                        hintText: 'Share with the community…',
-                        counterText: '',
-                      ),
-                    ),
+                    child: Semantics(
+// The hint disappears once typing starts; keep a label.
+                        label: 'New post',
+                        child: TextField(
+                          controller: _controller,
+                          maxLength: 2000,
+                          maxLines: 3,
+                          minLines: 1,
+                          decoration: const InputDecoration(
+                            hintText: 'Share with the community…',
+                            counterText: '',
+                          ),
+                        )),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   IconButton.filled(
+                    tooltip: 'Post',
                     onPressed: _submitting ? null : _submit,
                     icon: _submitting
                         ? const SizedBox(
                             width: 16,
                             height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                                semanticsLabel: 'Loading', strokeWidth: 2),
                           )
                         : const Icon(Icons.send),
                   ),

@@ -65,7 +65,10 @@ class _JournalListPageState extends State<JournalListPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(l10n.journal, style: theme.textTheme.headlineSmall),
+                  Semantics(
+                      header: true,
+                      child: Text(l10n.journal,
+                          style: theme.textTheme.headlineSmall)),
                   FilledButton(
                     onPressed: () => context.push('/journal/new'),
                     style: FilledButton.styleFrom(
@@ -82,7 +85,9 @@ class _JournalListPageState extends State<JournalListPage> {
               child: Consumer<JournalProvider>(
                 builder: (context, provider, _) {
                   if (provider.isLoading && provider.items.isEmpty) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(
+                        child: CircularProgressIndicator(
+                            semanticsLabel: 'Loading'));
                   }
                   if (provider.errorMessage != null && provider.items.isEmpty) {
                     return Center(
@@ -166,7 +171,9 @@ class _JournalListPageState extends State<JournalListPage> {
                         if (index >= provider.items.length) {
                           return const Padding(
                             padding: AppInsets.screen,
-                            child: Center(child: CircularProgressIndicator()),
+                            child: Center(
+                                child: CircularProgressIndicator(
+                                    semanticsLabel: 'Loading')),
                           );
                         }
                         return Padding(

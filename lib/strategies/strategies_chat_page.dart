@@ -179,37 +179,46 @@ class _StrategiesChatPageState extends State<StrategiesChatPage> {
                       child: Row(
                         children: [
                           Expanded(
-                            child: TextField(
-                              controller: _controller,
-                              decoration: InputDecoration(
-                                hintText: "Tell me what you're dealing with...",
-                                filled: true,
-                                fillColor: theme.scaffoldBackgroundColor,
-                                border: OutlineInputBorder(
-                                  borderRadius: AppRadius.circularPill,
-                                  borderSide: BorderSide.none,
-                                ),
-                              ),
-                              enabled: !chatProvider.isLoading,
-                              onSubmitted: (text) => _send(context, text),
-                            ),
+                            child: Semantics(
+// The hint disappears once typing starts; keep a label.
+                                label: 'Message',
+                                child: TextField(
+                                  controller: _controller,
+                                  decoration: InputDecoration(
+                                    hintText:
+                                        "Tell me what you're dealing with...",
+                                    filled: true,
+                                    fillColor: theme.scaffoldBackgroundColor,
+                                    border: OutlineInputBorder(
+                                      borderRadius: AppRadius.circularPill,
+                                      borderSide: BorderSide.none,
+                                    ),
+                                  ),
+                                  // readOnly, not enabled: false, so the keyboard
+                                  // stays up between messages.
+                                  readOnly: chatProvider.isLoading,
+                                  onSubmitted: (text) => _send(context, text),
+                                )),
                           ),
                           const SizedBox(width: AppSpacing.sm),
-                          Material(
-                            color: theme.colorScheme.primary,
-                            shape: const CircleBorder(),
-                            child: InkWell(
-                              onTap: chatProvider.isLoading
-                                  ? null
-                                  : () => _send(context, _controller.text),
-                              customBorder: const CircleBorder(),
-                              child: SizedBox(
-                                width: 44,
-                                height: 44,
-                                child: Icon(
-                                  Icons.arrow_upward,
-                                  color: theme.colorScheme.onPrimary,
-                                  size: 20,
+                          Tooltip(
+                            message: 'Send',
+                            child: Material(
+                              color: theme.colorScheme.primary,
+                              shape: const CircleBorder(),
+                              child: InkWell(
+                                onTap: chatProvider.isLoading
+                                    ? null
+                                    : () => _send(context, _controller.text),
+                                customBorder: const CircleBorder(),
+                                child: SizedBox(
+                                  width: 48,
+                                  height: 48,
+                                  child: Icon(
+                                    Icons.arrow_upward,
+                                    color: theme.colorScheme.onPrimary,
+                                    size: 20,
+                                  ),
                                 ),
                               ),
                             ),

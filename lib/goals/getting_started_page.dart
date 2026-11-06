@@ -20,7 +20,10 @@ class GettingStartedPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Daily Goals', style: theme.textTheme.headlineSmall),
+              Semantics(
+                  header: true,
+                  child: Text('Daily Goals',
+                      style: theme.textTheme.headlineSmall)),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Set and track 3 daily goals to help you stay focused.',

@@ -124,7 +124,9 @@ class _UserPageState extends State<UserPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Profile', style: theme.textTheme.headlineSmall),
+              Semantics(
+                  header: true,
+                  child: Text('Profile', style: theme.textTheme.headlineSmall)),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Manage your account and resources.',

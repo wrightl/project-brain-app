@@ -1,5 +1,6 @@
 // lib/pages/ai_chat_page.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:projectbrain/authentication/auth_provider.dart';
 import 'package:projectbrain/chat/chat_provider.dart';
@@ -31,6 +32,7 @@ class _ChatPageState extends State<ChatPage> {
   late Future<List<Conversation>> _conversationsFuture;
   ChatProvider? _chatProvider;
   bool _scrollScheduled = false;
+  bool _wasSending = false;
 
   @override
   void initState() {
@@ -56,6 +58,7 @@ class _ChatPageState extends State<ChatPage> {
   /// the user is already at (or near) the bottom, so reading earlier messages
   /// is not interrupted.
   void _handleChatChanged() {
+    _announceReplyFinished();
     final actionError = _chatProvider?.consumeActionError();
     if (actionError != null && mounted) {
       ScaffoldMessenger.of(context)
@@ -74,6 +77,25 @@ class _ChatPageState extends State<ChatPage> {
         _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       }
     });
+  }
+
+  /// Tell screen reader users when a streamed reply is complete; the text
+  /// arrives a few words at a time and is otherwise not announced.
+  void _announceReplyFinished() {
+    final provider = _chatProvider;
+    if (provider == null || !mounted) return;
+    final finished = _wasSending && !provider.isSending;
+    _wasSending = provider.isSending;
+    if (!finished || provider.messages.isEmpty) return;
+    final last = provider.messages.last;
+    if (last.role != 'assistant') return;
+    final message =
+        provider.canRetryLastMessage ? last.content : 'AI Buddy replied';
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      Directionality.of(context),
+    );
   }
 
   void _loadConversations() {
@@ -211,7 +233,9 @@ class _ChatPageState extends State<ChatPage> {
                 // Loading a previous conversation (not token streaming, which
                 // appends to messages): show a spinner instead of a blank list.
                 if (chatProvider.isLoading && chatProvider.messages.isEmpty) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+                      child:
+                          CircularProgressIndicator(semanticsLabel: 'Loading'));
                 }
                 if (chatProvider.messages.isEmpty) {
                   return _ChatWelcome(

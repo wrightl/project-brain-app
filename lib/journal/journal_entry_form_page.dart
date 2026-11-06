@@ -214,7 +214,11 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
   /// Spinner while loading, or an error with Retry when the entry could not
   /// be loaded.
   Widget _buildNotReady(ThemeData theme, JournalLocalizations l10n) {
-    if (!_loaded) return const Center(child: CircularProgressIndicator());
+    if (!_loaded) {
+      return const Center(
+        child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+      );
+    }
     return Center(
       child: Padding(
         padding: AppInsets.screen,
@@ -263,7 +267,8 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
                   ? const SizedBox(
                       height: 18,
                       width: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                          semanticsLabel: 'Loading', strokeWidth: 2),
                     )
                   : Text(l10n.save),
             ),
@@ -428,8 +433,9 @@ class _JournalEntryFormPageState extends State<JournalEntryFormPage> {
                               ? const SizedBox(
                                   height: 20,
                                   width: 20,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                      semanticsLabel: 'Loading',
+                                      strokeWidth: 2),
                                 )
                               : Text(l10n.save),
                         ),

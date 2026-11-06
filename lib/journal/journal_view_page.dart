@@ -75,7 +75,8 @@ class _JournalViewPageState extends State<JournalViewPage> {
             final entry = provider.currentEntry;
 
             if (provider.isLoading && entry == null) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(
+                  child: CircularProgressIndicator(semanticsLabel: 'Loading'));
             }
             if (provider.errorMessage != null && entry == null) {
               return Center(

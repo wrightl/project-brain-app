@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
+import 'package:projectbrain/helpers/themes/contrast.dart';
 
 /// A bare app bar with only the back button, for pages that show their title
 /// in the body. Returns null when there is nothing to go back to, so tab
@@ -104,6 +105,7 @@ class AccentTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = readableOn(color, backgroundColor);
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
@@ -117,13 +119,13 @@ class AccentTag extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 14, color: color),
+            Icon(icon, size: 14, color: textColor),
             const SizedBox(width: AppSpacing.xs),
           ],
           Text(
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: color,
+                  color: textColor,
                   fontWeight: FontWeight.w600,
                 ),
           ),
@@ -153,10 +155,14 @@ class SectionHeader extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+          // Lets screen reader users jump between sections.
+          child: Semantics(
+            header: true,
+            child: Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),

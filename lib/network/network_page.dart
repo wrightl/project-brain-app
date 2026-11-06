@@ -39,7 +39,9 @@ class NetworkPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Coach', style: theme.textTheme.headlineSmall),
+              Semantics(
+                  header: true,
+                  child: Text('Coach', style: theme.textTheme.headlineSmall)),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Connect with coaches to get support and guidance.',

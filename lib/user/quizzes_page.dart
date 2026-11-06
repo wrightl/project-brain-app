@@ -140,7 +140,10 @@ class _QuizzesPageState extends State<QuizzesPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Quizzes', style: theme.textTheme.headlineSmall),
+                Semantics(
+                    header: true,
+                    child:
+                        Text('Quizzes', style: theme.textTheme.headlineSmall)),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Identify neurodiverse traits and track your insights.',
@@ -173,7 +176,9 @@ class _QuizzesPageState extends State<QuizzesPage> {
                         ),
                         SizedBox(height: AppSpacing.lg),
                         if (_isLoadingInsights)
-                          const Center(child: CircularProgressIndicator())
+                          const Center(
+                              child: CircularProgressIndicator(
+                                  semanticsLabel: 'Loading'))
                         else if (_insightsErrorMessage != null)
                           Text(
                             _insightsErrorMessage!,
@@ -224,8 +229,7 @@ class _QuizzesPageState extends State<QuizzesPage> {
                             Text(
                               'Last updated: ${_formatDate(_insights!.lastUpdated)}',
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface
-                                    .withValues(alpha: 0.6),
+                                color: context.appTheme.textMuted,
                               ),
                             ),
                           ],
@@ -256,7 +260,9 @@ class _QuizzesPageState extends State<QuizzesPage> {
 
                 // Loading state
                 if (_isLoading)
-                  const Center(child: CircularProgressIndicator())
+                  const Center(
+                      child:
+                          CircularProgressIndicator(semanticsLabel: 'Loading'))
                 // Empty state
                 else if (_quizzes.isEmpty)
                   Center(
@@ -273,16 +279,14 @@ class _QuizzesPageState extends State<QuizzesPage> {
                         Text(
                           'No quizzes available',
                           style: theme.textTheme.titleMedium?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.6),
+                            color: context.appTheme.textMuted,
                           ),
                         ),
                         SizedBox(height: AppSpacing.sm),
                         Text(
                           'Check back later for new quizzes',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.5),
+                            color: context.appTheme.textMuted,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -365,7 +369,9 @@ class _QuizzesPageState extends State<QuizzesPage> {
 
                 // Loading state for completed quizzes
                 if (_isLoadingCompleted)
-                  const Center(child: CircularProgressIndicator())
+                  const Center(
+                      child:
+                          CircularProgressIndicator(semanticsLabel: 'Loading'))
                 // Empty state for completed quizzes
                 else if (_completedQuizzes.isEmpty)
                   Center(
@@ -382,16 +388,14 @@ class _QuizzesPageState extends State<QuizzesPage> {
                         Text(
                           'No completed quizzes',
                           style: theme.textTheme.titleMedium?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.6),
+                            color: context.appTheme.textMuted,
                           ),
                         ),
                         SizedBox(height: AppSpacing.sm),
                         Text(
                           'Complete a quiz to see it here',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.5),
+                            color: context.appTheme.textMuted,
                           ),
                           textAlign: TextAlign.center,
                         ),

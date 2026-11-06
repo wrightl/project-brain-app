@@ -215,7 +215,8 @@ class _PendingActionButtonsState extends State<_PendingActionButtons> {
               ? const SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                      semanticsLabel: 'Loading', strokeWidth: 2),
                 )
               : const Text('Confirm'),
         ),

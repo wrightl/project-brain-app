@@ -300,8 +300,9 @@ class _ProfilePageState extends State<ProfilePage> {
                               ? const SizedBox(
                                   height: 20,
                                   width: 20,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                      semanticsLabel: 'Loading',
+                                      strokeWidth: 2),
                                 )
                               : const Text('Save'),
                         ),
@@ -505,62 +506,66 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   return Material(
                     color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => themeModeProvider.setMode(option.id),
-                      borderRadius: isLast
-                          ? const BorderRadius.vertical(
-                              bottom: Radius.circular(16),
-                            )
-                          : null,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg,
-                          vertical: AppSpacing.md,
-                        ),
-                        decoration: BoxDecoration(
-                          border: isLast
-                              ? null
-                              : Border(
-                                  bottom:
-                                      BorderSide(color: appTheme.borderColor),
-                                ),
-                        ),
-                        child: Row(
-                          children: [
-                            IconBubble(
-                              icon: option.icon,
-                              color: isSelected
-                                  ? theme.colorScheme.primary
-                                  : appTheme.textMuted,
-                              backgroundColor: isSelected
-                                  ? appTheme.primarySoft
-                                  : appTheme.borderColor
-                                      .withValues(alpha: 0.35),
-                              size: 40,
-                              iconSize: 20,
-                              borderRadius: 12,
+                    child: Semantics(
+                        selected: isSelected,
+                        inMutuallyExclusiveGroup: true,
+                        button: true,
+                        child: InkWell(
+                          onTap: () => themeModeProvider.setMode(option.id),
+                          borderRadius: isLast
+                              ? const BorderRadius.vertical(
+                                  bottom: Radius.circular(16),
+                                )
+                              : null,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg,
+                              vertical: AppSpacing.md,
                             ),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              child: Text(
-                                option.label,
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: isSelected
-                                      ? FontWeight.w700
-                                      : FontWeight.w500,
-                                ),
-                              ),
+                            decoration: BoxDecoration(
+                              border: isLast
+                                  ? null
+                                  : Border(
+                                      bottom: BorderSide(
+                                          color: appTheme.borderColor),
+                                    ),
                             ),
-                            if (isSelected)
-                              Icon(
-                                Icons.check_circle,
-                                color: theme.colorScheme.primary,
-                                size: 22,
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
+                            child: Row(
+                              children: [
+                                IconBubble(
+                                  icon: option.icon,
+                                  color: isSelected
+                                      ? theme.colorScheme.primary
+                                      : appTheme.textMuted,
+                                  backgroundColor: isSelected
+                                      ? appTheme.primarySoft
+                                      : appTheme.borderColor
+                                          .withValues(alpha: 0.35),
+                                  size: 40,
+                                  iconSize: 20,
+                                  borderRadius: 12,
+                                ),
+                                const SizedBox(width: AppSpacing.md),
+                                Expanded(
+                                  child: Text(
+                                    option.label,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: isSelected
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                if (isSelected)
+                                  Icon(
+                                    Icons.check_circle,
+                                    color: theme.colorScheme.primary,
+                                    size: 22,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        )),
                   );
                 }).toList(),
               ),

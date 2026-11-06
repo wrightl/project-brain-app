@@ -30,44 +30,49 @@ class ConversationListItem extends StatelessWidget {
       child: Material(
         color: isActive ? appTheme.primarySoft : Colors.transparent,
         borderRadius: AppRadius.circularLg,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: AppRadius.circularLg,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.md,
-            ),
-            child: Row(
-              children: [
-                IconBubble(
-                  icon: Icons.chat_bubble_outline,
-                  color:
-                      isActive ? theme.colorScheme.primary : appTheme.textMuted,
-                  backgroundColor: isActive
-                      ? theme.colorScheme.surface
-                      : appTheme.borderColor.withValues(alpha: 0.35),
-                  size: 36,
-                  iconSize: 18,
-                  borderRadius: 10,
+        child: Semantics(
+            selected: isActive,
+            button: true,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: AppRadius.circularLg,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.md,
                 ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Text(
-                    conversation.title,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                child: Row(
+                  children: [
+                    IconBubble(
+                      icon: Icons.chat_bubble_outline,
                       color: isActive
                           ? theme.colorScheme.primary
-                          : theme.colorScheme.onSurface,
+                          : appTheme.textMuted,
+                      backgroundColor: isActive
+                          ? theme.colorScheme.surface
+                          : appTheme.borderColor.withValues(alpha: 0.35),
+                      size: 36,
+                      iconSize: 18,
+                      borderRadius: 10,
                     ),
-                  ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Text(
+                        conversation.title,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight:
+                              isActive ? FontWeight.w700 : FontWeight.w500,
+                          color: isActive
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-        ),
+              ),
+            )),
       ),
     );
   }

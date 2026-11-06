@@ -200,6 +200,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             children: [
               if (currentStep > 0)
                 IconButton(
+                  tooltip: 'Previous step',
                   icon: const Icon(Icons.arrow_back),
                   onPressed: () => _previousPage(provider),
                   style: IconButton.styleFrom(
@@ -233,28 +234,38 @@ class _OnboardingPageState extends State<OnboardingPage> {
               const SizedBox(width: 48),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: List.generate(
-              totalSteps,
-              (index) => Expanded(
-                child: GestureDetector(
-                  onTap: () => _onStepTapped(provider, index),
-                  child: MouseRegion(
-                    cursor: (index == 0 || index <= currentStep)
-                        ? SystemMouseCursors.click
-                        : SystemMouseCursors.basic,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.micro,
-                      ),
-                      height: 6.0,
-                      decoration: BoxDecoration(
-                        color: index <= currentStep
-                            ? theme.colorScheme.primary
-                            : appTheme.primarySoft,
-                        borderRadius: AppRadius.circularPill,
+          // Read as one "Step n of m" instead of a row of unlabelled bars.
+          // The 6dp bars get a taller transparent hit area.
+          Semantics(
+            label: 'Step ${currentStep + 1} of $totalSteps',
+            child: ExcludeSemantics(
+              child: Row(
+                children: List.generate(
+                  totalSteps,
+                  (index) => Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => _onStepTapped(provider, index),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        child: MouseRegion(
+                          cursor: (index == 0 || index <= currentStep)
+                              ? SystemMouseCursors.click
+                              : SystemMouseCursors.basic,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.micro,
+                            ),
+                            height: 6.0,
+                            decoration: BoxDecoration(
+                              color: index <= currentStep
+                                  ? theme.colorScheme.primary
+                                  : appTheme.primarySoft,
+                              borderRadius: AppRadius.circularPill,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -328,7 +339,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ? const SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                              semanticsLabel: 'Loading', strokeWidth: 2),
                         )
                       : Icon(isLastStep ? Icons.check : Icons.arrow_forward,
                           size: 18),
@@ -390,7 +402,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
           borderRadius: 16,
         ),
         const SizedBox(height: AppSpacing.lg),
-        Text(title, style: theme.textTheme.headlineSmall),
+        Semantics(
+            header: true,
+            child: Text(title, style: theme.textTheme.headlineSmall)),
         if (subtitle != null) ...[
           const SizedBox(height: AppSpacing.sm),
           Text(subtitle, style: theme.textTheme.bodySmall),

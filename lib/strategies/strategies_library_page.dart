@@ -37,7 +37,8 @@ class _StrategiesLibraryPageState extends State<StrategiesLibraryPage> {
       body: Consumer<StrategiesProvider>(
         builder: (context, provider, _) {
           if (provider.isLoading && provider.items.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+                child: CircularProgressIndicator(semanticsLabel: 'Loading'));
           }
           if (provider.errorMessage != null && provider.items.isEmpty) {
             return Center(
@@ -234,18 +235,21 @@ class _StrategyLibraryCard extends StatelessWidget {
               children: List.generate(5, (i) {
                 final star = i + 1;
                 final isFilled = (item.rating ?? 0) >= star;
-                return IconButton(
-                  icon: Icon(
-                    isFilled ? Icons.star : Icons.star_border,
-                    color: isFilled
-                        ? context.appTheme.amber
-                        : context.appTheme.textMuted,
+                return Semantics(
+                  selected: isFilled,
+                  child: IconButton(
+                    tooltip: 'Rate $star out of 5',
+                    icon: Icon(
+                      isFilled ? Icons.star : Icons.star_border,
+                      color: isFilled
+                          ? context.appTheme.amber
+                          : context.appTheme.textMuted,
+                    ),
+                    onPressed: () => onRatingChanged(star),
+                    // 48dp minimum touch target.
+                    constraints:
+                        const BoxConstraints(minWidth: 48, minHeight: 48),
                   ),
-                  onPressed: () => onRatingChanged(star),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-                  constraints:
-                      const BoxConstraints(minWidth: 32, minHeight: 32),
                 );
               }),
             ),

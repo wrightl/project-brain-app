@@ -124,11 +124,13 @@ class _CitySearchFieldState extends State<CitySearchField> {
                     child: SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                          semanticsLabel: 'Loading', strokeWidth: 2),
                     ),
                   )
                 : widget.value != null
                     ? IconButton(
+                        tooltip: 'Clear',
                         icon: const Icon(Icons.clear),
                         onPressed: isEnabled
                             ? () {

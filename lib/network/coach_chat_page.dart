@@ -486,7 +486,10 @@ class _CoachChatPageState extends State<CoachChatPage> {
               ),
             ),
           if (_isLoading)
-            const Expanded(child: Center(child: CircularProgressIndicator()))
+            const Expanded(
+                child: Center(
+                    child:
+                        CircularProgressIndicator(semanticsLabel: 'Loading')))
           else if (_selectedConnectionId == null)
             const Expanded(
               child: Center(child: Text('No connected coaches available')),
@@ -503,8 +506,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
                           child: Text(
                             'Start a conversation with $coachName',
                             style: theme.textTheme.bodyLarge?.copyWith(
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.6),
+                              color: context.appTheme.textMuted,
                             ),
                           ),
                         )
@@ -651,29 +653,32 @@ class _CoachChatPageState extends State<CoachChatPage> {
                       tooltip: 'Record audio',
                     ),
                     Expanded(
-                      child: TextField(
-                        controller: _textController,
-                        decoration: InputDecoration(
-                          hintText: 'Message coach…',
-                          filled: true,
-                          fillColor: theme.scaffoldBackgroundColor,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.lg,
-                            vertical: AppSpacing.s14,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: AppRadius.circularPill,
-                            borderSide: BorderSide.none,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: AppRadius.circularPill,
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                        maxLines: null,
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => _sendTextMessage(),
-                      ),
+                      child: Semantics(
+// The hint disappears once typing starts; keep a label.
+                          label: 'Message to your coach',
+                          child: TextField(
+                            controller: _textController,
+                            decoration: InputDecoration(
+                              hintText: 'Message coach…',
+                              filled: true,
+                              fillColor: theme.scaffoldBackgroundColor,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.lg,
+                                vertical: AppSpacing.s14,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: AppRadius.circularPill,
+                                borderSide: BorderSide.none,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: AppRadius.circularPill,
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            maxLines: null,
+                            textInputAction: TextInputAction.send,
+                            onSubmitted: (_) => _sendTextMessage(),
+                          )),
                     ),
                     FilledButton(
                       onPressed: _isSending ? null : _sendTextMessage,
@@ -686,7 +691,8 @@ class _CoachChatPageState extends State<CoachChatPage> {
                           ? const SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                  semanticsLabel: 'Loading', strokeWidth: 2),
                             )
                           : const Icon(Icons.arrow_upward, size: 20),
                     ),
@@ -727,7 +733,8 @@ class _AudioMessageControl extends StatelessWidget {
               child: SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: color),
+                child: CircularProgressIndicator(
+                    semanticsLabel: 'Loading', strokeWidth: 2, color: color),
               ),
             ),
           )

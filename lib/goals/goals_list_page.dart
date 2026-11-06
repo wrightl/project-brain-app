@@ -56,7 +56,7 @@ class GoalsListPage extends StatelessWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         children: const [
           SizedBox(height: AppSpacing.emptyStateTop),
-          Center(child: CircularProgressIndicator()),
+          Center(child: CircularProgressIndicator(semanticsLabel: 'Loading')),
         ],
       );
     }
@@ -101,7 +101,10 @@ class GoalsListPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Daily goals', style: theme.textTheme.headlineSmall),
+                  Semantics(
+                      header: true,
+                      child: Text('Daily goals',
+                          style: theme.textTheme.headlineSmall)),
                   Text(dateLabel, style: theme.textTheme.bodySmall),
                 ],
               ),

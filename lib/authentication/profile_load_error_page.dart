@@ -47,7 +47,7 @@ class ProfileLoadErrorPage extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.xl),
               if (authProvider.isLoading)
-                const CircularProgressIndicator()
+                const CircularProgressIndicator(semanticsLabel: 'Loading')
               else
                 SizedBox(
                   width: double.infinity,

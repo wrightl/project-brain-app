@@ -169,7 +169,6 @@ class _ResourcesPageState extends State<ResourcesPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(_successMessage!),
-              backgroundColor: Colors.green,
               duration: const Duration(seconds: 3),
             ),
           );
@@ -186,7 +185,6 @@ class _ResourcesPageState extends State<ResourcesPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_errorMessage!),
-            backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
           ),
         );
@@ -209,7 +207,8 @@ class _ResourcesPageState extends State<ResourcesPage> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error),
             child: const Text('Delete'),
           ),
         ],
@@ -236,7 +235,6 @@ class _ResourcesPageState extends State<ResourcesPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(_successMessage!),
-              backgroundColor: Colors.green,
               duration: const Duration(seconds: 3),
             ),
           );
@@ -251,7 +249,6 @@ class _ResourcesPageState extends State<ResourcesPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(_errorMessage!),
-              backgroundColor: Colors.red,
               duration: const Duration(seconds: 5),
             ),
           );
@@ -278,7 +275,8 @@ class _ResourcesPageState extends State<ResourcesPage> {
               child: SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: CircularProgressIndicator(
+                    semanticsLabel: 'Loading', strokeWidth: 2),
               ),
             )
           else
@@ -295,7 +293,8 @@ class _ResourcesPageState extends State<ResourcesPage> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(semanticsLabel: 'Loading'))
           : _errorMessage != null && _resources.isEmpty
               ? Center(
                   child: Column(

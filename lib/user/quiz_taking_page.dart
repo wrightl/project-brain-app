@@ -80,7 +80,6 @@ class _QuizTakingViewState extends State<_QuizTakingView> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(provider.errorMessage!),
-            backgroundColor: Colors.red,
             duration: const Duration(seconds: 4),
           ),
         );
@@ -89,16 +88,18 @@ class _QuizTakingViewState extends State<_QuizTakingView> {
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Row(
           children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            SizedBox(width: AppSpacing.sm),
-            Text('Quiz submitted successfully!'),
+            Icon(
+              Icons.check_circle,
+              color: Theme.of(context).colorScheme.onInverseSurface,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            const Text('Quiz submitted successfully!'),
           ],
         ),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 3),
+        duration: const Duration(seconds: 3),
       ),
     );
 
@@ -149,7 +150,8 @@ class _QuizTakingViewState extends State<_QuizTakingView> {
         ],
       ),
       body: provider.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(semanticsLabel: 'Loading'))
           : provider.quiz == null ||
                   (provider.errorMessage != null &&
                       provider.visibleQuestions.isEmpty)
@@ -320,12 +322,13 @@ class _QuizTakingViewState extends State<_QuizTakingView> {
                                       ? () => _submitQuiz(provider)
                                       : null,
                                   icon: provider.isSubmitting
-                                      ? const SizedBox(
+                                      ? SizedBox(
                                           width: 16,
                                           height: 16,
                                           child: CircularProgressIndicator(
+                                            semanticsLabel: 'Loading',
                                             strokeWidth: 2,
-                                            color: Colors.white,
+                                            color: theme.colorScheme.onPrimary,
                                           ),
                                         )
                                       : const Icon(Icons.check),

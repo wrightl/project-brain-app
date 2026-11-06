@@ -9,6 +9,7 @@ import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 import 'package:projectbrain/core/network/user_friendly_error.dart';
 import 'package:projectbrain/core/util/app_date_format.dart';
+import 'package:projectbrain/helpers/themes/contrast.dart';
 
 /// Subscription management page showing current subscription details
 class SubscriptionManagementPage extends StatelessWidget {
@@ -23,6 +24,7 @@ class SubscriptionManagementPage extends StatelessWidget {
         title: const Text('Subscription'),
         actions: [
           IconButton(
+            tooltip: 'Refresh',
             icon: const Icon(Icons.refresh),
             onPressed: () {
               Provider.of<SubscriptionProvider>(context, listen: false)
@@ -35,7 +37,8 @@ class SubscriptionManagementPage extends StatelessWidget {
         builder: (context, subscriptionProvider, _) {
           if (subscriptionProvider.isLoading &&
               subscriptionProvider.subscription == null) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+                child: CircularProgressIndicator(semanticsLabel: 'Loading'));
           }
 
           if (subscriptionProvider.hasError &&
@@ -153,7 +156,8 @@ class SubscriptionManagementPage extends StatelessWidget {
                     vertical: AppSpacing.xs,
                   ),
                   decoration: BoxDecoration(
-                    color: appTheme.amber,
+                    // White on the amber accent is 2.2:1; darken the fill.
+                    color: readableOn(appTheme.amber, Colors.white),
                     borderRadius: AppRadius.circularPill,
                   ),
                   child: Text(

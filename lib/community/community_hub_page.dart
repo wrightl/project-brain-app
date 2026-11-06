@@ -132,7 +132,9 @@ class _CommunityHubPageState extends State<CommunityHubPage> {
             const SizedBox(height: AppSpacing.xl),
             Text('Latest', style: theme.textTheme.titleLarge),
             const SizedBox(height: AppSpacing.md),
-            if (_loading) const Center(child: CircularProgressIndicator()),
+            if (_loading)
+              const Center(
+                  child: CircularProgressIndicator(semanticsLabel: 'Loading')),
             if (_error != null)
               Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
             if (!_loading && _error == null && _posts.isEmpty)
@@ -184,7 +186,9 @@ class _CommunityHubPageState extends State<CommunityHubPage> {
             if (_loadingMore)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(
+                    child:
+                        CircularProgressIndicator(semanticsLabel: 'Loading')),
               ),
             const SizedBox(height: AppSpacing.xl),
             Text('Channels', style: theme.textTheme.titleLarge),

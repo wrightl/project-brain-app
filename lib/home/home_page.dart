@@ -311,35 +311,48 @@ class _HeroCard extends StatelessWidget {
                       ? "You're on a roll, $firstName"
                       : "Ready when you are, $firstName",
                   style: theme.textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
+                    color: theme.colorScheme.onPrimary,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   '$completed of $total goals done today',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.8),
+                    color: theme.colorScheme.onPrimary.withValues(alpha: 0.85),
                   ),
                 ),
               ],
             ),
           ),
           SizedBox(
-            width: 72,
-            height: 72,
+            // Grows with the system text size so the percentage still fits.
+            width: MediaQuery.textScalerOf(context).scale(72).clamp(72, 120),
+            height: MediaQuery.textScalerOf(context).scale(72).clamp(72, 120),
             child: Stack(
               alignment: Alignment.center,
               children: [
                 CircularProgressIndicator(
+                  semanticsLabel: "Today's goals done",
+                  semanticsValue: pctLabel,
                   value: progress,
                   strokeWidth: 6,
-                  backgroundColor: Colors.white.withValues(alpha: 0.2),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                  backgroundColor:
+                      theme.colorScheme.onPrimary.withValues(alpha: 0.2),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                      theme.colorScheme.onPrimary),
                 ),
-                Text(
-                  pctLabel,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: Colors.white,
+                // The indicator already reads the value.
+                ExcludeSemantics(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: FittedBox(
+                      child: Text(
+                        pctLabel,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: theme.colorScheme.onPrimary,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],

@@ -41,38 +41,41 @@ class ChatInputField extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: TextField(
-                controller: controller,
-                minLines: 1,
-                maxLines: 5,
-                textCapitalization: TextCapitalization.sentences,
-                textInputAction: TextInputAction.send,
-                decoration: InputDecoration(
-                  hintText: hintText,
-                  filled: true,
-                  fillColor: theme.scaffoldBackgroundColor,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
-                    vertical: AppSpacing.s14,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: AppRadius.circularPill,
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: AppRadius.circularPill,
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: AppRadius.circularPill,
-                    borderSide: BorderSide(
-                      color: theme.colorScheme.primary,
-                      width: 1.5,
+              child: Semantics(
+// The hint disappears once typing starts; keep a label.
+                  label: 'Message',
+                  child: TextField(
+                    controller: controller,
+                    minLines: 1,
+                    maxLines: 5,
+                    textCapitalization: TextCapitalization.sentences,
+                    textInputAction: TextInputAction.send,
+                    decoration: InputDecoration(
+                      hintText: hintText,
+                      filled: true,
+                      fillColor: theme.scaffoldBackgroundColor,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.s14,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: AppRadius.circularPill,
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: AppRadius.circularPill,
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: AppRadius.circularPill,
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.primary,
+                          width: 1.5,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                onSubmitted: (text) => _sendMessage(context, text),
-              ),
+                    onSubmitted: (text) => _sendMessage(context, text),
+                  )),
             ),
             const SizedBox(width: AppSpacing.sm),
             _RoundIconButton(
@@ -103,10 +106,16 @@ class ChatInputField extends StatelessWidget {
       controller.clear();
       onMessageSent?.call();
       if (scrollController != null) {
+        final reduceMotion =
+            MediaQuery.maybeDisableAnimationsOf(context) ?? false;
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (scrollController!.hasClients) {
+          if (!scrollController!.hasClients) return;
+          final end = scrollController!.position.maxScrollExtent;
+          if (reduceMotion) {
+            scrollController!.jumpTo(end);
+          } else {
             scrollController!.animateTo(
-              scrollController!.position.maxScrollExtent,
+              end,
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeOut,
             );

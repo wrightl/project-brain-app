@@ -54,11 +54,13 @@ class CountrySearchField extends StatelessWidget {
                     child: SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                          semanticsLabel: 'Loading', strokeWidth: 2),
                     ),
                   )
                 : value != null
                     ? IconButton(
+                        tooltip: 'Clear',
                         icon: const Icon(Icons.clear),
                         onPressed: enabled
                             ? () {

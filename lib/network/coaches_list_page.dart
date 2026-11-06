@@ -145,7 +145,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
     final appTheme = theme.extension<AppThemeExtension>();
     if (connection.isAccepted) return appTheme?.green ?? Colors.green;
     if (connection.isPending) return appTheme?.amber ?? Colors.orange;
-    return theme.colorScheme.onSurface.withValues(alpha: 0.6);
+    return context.appTheme.textMuted;
   }
 
   String _statusLabel(Connection connection) {
@@ -213,7 +213,9 @@ class _CoachesListPageState extends State<CoachesListPage> {
               ),
             if (_isLoading)
               const Expanded(
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(
+                    child:
+                        CircularProgressIndicator(semanticsLabel: 'Loading')),
               )
             else if (_connections.isEmpty && _loadFailed)
               Expanded(
@@ -240,8 +242,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
                         Text(
                           'No coaches connected yet',
                           style: theme.textTheme.titleMedium?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.6),
+                            color: context.appTheme.textMuted,
                           ),
                         ),
                         SizedBox(height: AppSpacing.sm),
@@ -249,8 +250,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
                           'Find and connect with a coach to start messaging.',
                           textAlign: TextAlign.center,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.5),
+                            color: context.appTheme.textMuted,
                           ),
                         ),
                         SizedBox(height: AppSpacing.xl),
@@ -324,8 +324,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
                                   child: Text(
                                     'Connected on ${_formatDate(connection.respondedAt)}',
                                     style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.6),
+                                      color: context.appTheme.textMuted,
                                     ),
                                   ),
                                 ),
@@ -336,8 +335,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
                                   child: Text(
                                     'Requested on ${_formatDate(connection.requestedAt)}',
                                     style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.6),
+                                      color: context.appTheme.textMuted,
                                     ),
                                   ),
                                 ),
@@ -374,6 +372,7 @@ class _CoachesListPageState extends State<CoachesListPage> {
                                             width: 18,
                                             height: 18,
                                             child: CircularProgressIndicator(
+                                              semanticsLabel: 'Loading',
                                               strokeWidth: 2,
                                               color: theme.colorScheme.primary,
                                             ),

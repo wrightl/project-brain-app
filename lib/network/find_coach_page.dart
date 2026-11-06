@@ -420,7 +420,9 @@ class _FindCoachPageState extends State<FindCoachPage> {
                   if (_isLoading)
                     const Padding(
                       padding: AppInsets.screen,
-                      child: Center(child: CircularProgressIndicator()),
+                      child: Center(
+                          child: CircularProgressIndicator(
+                              semanticsLabel: 'Loading')),
                     ),
                   if (_hasSearched && !_isLoading) _buildResultsHeader(theme),
                 ]),
@@ -475,6 +477,7 @@ class _FindCoachPageState extends State<FindCoachPage> {
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
+                      semanticsLabel: 'Loading',
                       strokeWidth: 2,
                       color: theme.colorScheme.primary,
                     ),
@@ -627,7 +630,8 @@ class _FindCoachPageState extends State<FindCoachPage> {
                   ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                          semanticsLabel: 'Loading', strokeWidth: 2),
                     )
                   : const Icon(Icons.my_location),
               label: Text(
@@ -718,7 +722,7 @@ class _FindCoachPageState extends State<FindCoachPage> {
             child: Text(
               'Map view is available after a location-based search.',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                color: context.appTheme.textMuted,
               ),
             ),
           ),
@@ -775,14 +779,14 @@ class _FindCoachPageState extends State<FindCoachPage> {
           Text(
             'No coaches found',
             style: theme.textTheme.titleMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              color: context.appTheme.textMuted,
             ),
           ),
           SizedBox(height: AppSpacing.sm),
           Text(
             'Try a different location or adjust your filters',
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              color: context.appTheme.textMuted,
             ),
           ),
         ],

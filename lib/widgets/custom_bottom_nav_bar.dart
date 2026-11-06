@@ -144,8 +144,13 @@ class _NavTab extends StatelessWidget {
                 ExcludeSemantics(
                   child: Text(
                     destination.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    // Scales with the system text size, up to what the bar
+                    // can hold; the tab's Semantics label carries the name.
+                    textScaler: MediaQuery.textScalerOf(context)
+                        .clamp(maxScaleFactor: 1.3),
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          fontSize: 10,
                           fontWeight:
                               isSelected ? FontWeight.w700 : FontWeight.w500,
                           color: isSelected ? activeColor : inactiveColor,

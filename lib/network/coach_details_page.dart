@@ -11,6 +11,7 @@ import 'package:projectbrain/helpers/themes/app_spacing.dart';
 import 'package:projectbrain/helpers/themes/app_theme_extension.dart';
 import 'package:projectbrain/widgets/ds/ds_widgets.dart';
 import 'package:projectbrain/core/network/user_friendly_error.dart';
+import 'package:projectbrain/helpers/themes/contrast.dart';
 
 /// Page showing detailed information about a coach
 class CoachDetailsPage extends StatefulWidget {
@@ -218,7 +219,8 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
       return const SizedBox(
         width: 24,
         height: 24,
-        child: CircularProgressIndicator(strokeWidth: 2),
+        child: CircularProgressIndicator(
+            semanticsLabel: 'Loading', strokeWidth: 2),
       );
     }
 
@@ -306,7 +308,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
           label: const Text('Message'),
           style: ElevatedButton.styleFrom(
             padding: AppInsets.button,
-            backgroundColor: context.appTheme.green,
+            backgroundColor: readableOn(context.appTheme.green, Colors.white),
             foregroundColor: Colors.white,
           ),
         );
@@ -342,7 +344,8 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
         title: Text(_coach?.fullName ?? 'Coach Details'),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(semanticsLabel: 'Loading'))
           : _coach == null
               ? Center(
                   child: Column(
@@ -468,8 +471,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                             Icon(
                                               Icons.email,
                                               size: 16,
-                                              color: theme.colorScheme.onSurface
-                                                  .withValues(alpha: 0.6),
+                                              color: context.appTheme.textMuted,
                                             ),
                                             SizedBox(width: AppSpacing.xs),
                                             Expanded(
@@ -499,8 +501,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                   Icon(
                                     Icons.phone,
                                     size: 16,
-                                    color: theme.colorScheme.onSurface
-                                        .withValues(alpha: 0.6),
+                                    color: context.appTheme.textMuted,
                                   ),
                                   SizedBox(width: AppSpacing.xs),
                                   Text(
@@ -533,8 +534,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                     Icon(
                                       Icons.home,
                                       size: 16,
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.6),
+                                      color: context.appTheme.textMuted,
                                     ),
                                     SizedBox(width: AppSpacing.xs),
                                     Expanded(
@@ -552,8 +552,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                     Icon(
                                       Icons.location_city,
                                       size: 16,
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.6),
+                                      color: context.appTheme.textMuted,
                                     ),
                                     SizedBox(width: AppSpacing.xs),
                                     Text(
@@ -570,8 +569,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                     Icon(
                                       Icons.location_on,
                                       size: 16,
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.6),
+                                      color: context.appTheme.textMuted,
                                     ),
                                     SizedBox(width: AppSpacing.xs),
                                     Text(
@@ -619,8 +617,7 @@ class _CoachDetailsPageState extends State<CoachDetailsPage> {
                                     Icon(
                                       Icons.school,
                                       size: 16,
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.6),
+                                      color: context.appTheme.textMuted,
                                     ),
                                     SizedBox(width: AppSpacing.sm),
                                     Expanded(

@@ -79,7 +79,10 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Set your goals', style: theme.textTheme.headlineSmall),
+                Semantics(
+                    header: true,
+                    child: Text('Set your goals',
+                        style: theme.textTheme.headlineSmall)),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Set up to 3 goals for today. Mark them complete as you go.',
@@ -157,7 +160,8 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
                       ? const SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                              semanticsLabel: 'Loading', strokeWidth: 2),
                         )
                       : const Icon(Icons.auto_awesome_outlined),
                   label: Text(_suggestingGoals
@@ -235,7 +239,8 @@ class _GoalEntryPageState extends State<GoalEntryPage> {
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                                semanticsLabel: 'Loading', strokeWidth: 2),
                           )
                         : const Text('Save Goals'),
                   ),

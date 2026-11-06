@@ -109,7 +109,7 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
           Text(
             widget.question.hint!,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              color: context.appTheme.textMuted,
             ),
           ),
         ],
@@ -276,68 +276,71 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
       }
     }
 
-    return InkWell(
-      onTap: () async {
-        final now = DateTime.now();
-        final initialDate = currentDate ?? now;
+    return Semantics(
+        button: true,
+        label: widget.question.label,
+        child: InkWell(
+          onTap: () async {
+            final now = DateTime.now();
+            final initialDate = currentDate ?? now;
 
-        // Parse min/max as years if they're reasonable year values
-        DateTime? firstDate;
-        DateTime? lastDate;
+            // Parse min/max as years if they're reasonable year values
+            DateTime? firstDate;
+            DateTime? lastDate;
 
-        if (widget.question.minValue != null) {
-          final minVal = widget.question.minValue!.toInt();
-          // If it's a reasonable year (1900-2100), treat as year
-          if (minVal >= 1900 && minVal <= 2100) {
-            firstDate = DateTime(minVal);
-          } else {
-            // Otherwise treat as days offset from now
-            firstDate = now.subtract(Duration(days: minVal));
-          }
-        } else {
-          firstDate = DateTime(1900);
-        }
+            if (widget.question.minValue != null) {
+              final minVal = widget.question.minValue!.toInt();
+              // If it's a reasonable year (1900-2100), treat as year
+              if (minVal >= 1900 && minVal <= 2100) {
+                firstDate = DateTime(minVal);
+              } else {
+                // Otherwise treat as days offset from now
+                firstDate = now.subtract(Duration(days: minVal));
+              }
+            } else {
+              firstDate = DateTime(1900);
+            }
 
-        if (widget.question.maxValue != null) {
-          final maxVal = widget.question.maxValue!.toInt();
-          if (maxVal >= 1900 && maxVal <= 2100) {
-            lastDate = DateTime(maxVal);
-          } else {
-            lastDate = now.add(Duration(days: maxVal));
-          }
-        } else {
-          lastDate = DateTime(2100);
-        }
+            if (widget.question.maxValue != null) {
+              final maxVal = widget.question.maxValue!.toInt();
+              if (maxVal >= 1900 && maxVal <= 2100) {
+                lastDate = DateTime(maxVal);
+              } else {
+                lastDate = now.add(Duration(days: maxVal));
+              }
+            } else {
+              lastDate = DateTime(2100);
+            }
 
-        final pickedDate = await showDatePicker(
-          context: context,
-          initialDate: initialDate,
-          firstDate: firstDate,
-          lastDate: lastDate,
-        );
+            final pickedDate = await showDatePicker(
+              context: context,
+              initialDate: initialDate,
+              firstDate: firstDate,
+              lastDate: lastDate,
+            );
 
-        if (pickedDate != null) {
-          _handleChanged(pickedDate.toIso8601String().split('T')[0]);
-        }
-      },
-      child: InputDecorator(
-        decoration: InputDecoration(
-          hintText: widget.question.placeholder ?? 'Select a date',
-          border: const OutlineInputBorder(),
-          suffixIcon: const Icon(Icons.calendar_today),
-        ),
-        child: Text(
-          currentDate != null
-              ? '${currentDate.year}-${currentDate.month.toString().padLeft(2, '0')}-${currentDate.day.toString().padLeft(2, '0')}'
-              : 'Select a date',
-          style: theme.textTheme.bodyLarge?.copyWith(
-            color: currentDate != null
-                ? theme.colorScheme.onSurface
-                : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            if (pickedDate != null) {
+              _handleChanged(pickedDate.toIso8601String().split('T')[0]);
+            }
+          },
+          child: InputDecorator(
+            decoration: InputDecoration(
+              hintText: widget.question.placeholder ?? 'Select a date',
+              border: const OutlineInputBorder(),
+              suffixIcon: const Icon(Icons.calendar_today),
+            ),
+            child: Text(
+              currentDate != null
+                  ? '${currentDate.year}-${currentDate.month.toString().padLeft(2, '0')}-${currentDate.day.toString().padLeft(2, '0')}'
+                  : 'Select a date',
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: currentDate != null
+                    ? theme.colorScheme.onSurface
+                    : context.appTheme.textMuted,
+              ),
+            ),
           ),
-        ),
-      ),
-    );
+        ));
   }
 
   Widget _buildChoiceInput(ThemeData theme) {
@@ -364,66 +367,71 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
           child: Material(
             color: Colors.transparent,
-            child: InkWell(
-              onTap: () => _handleChanged(choice),
-              borderRadius: AppRadius.circularLg,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? appTheme.primarySoft
-                      : theme.colorScheme.surface,
+            child: Semantics(
+                selected: isSelected,
+                inMutuallyExclusiveGroup: true,
+                button: true,
+                child: InkWell(
+                  onTap: () => _handleChanged(choice),
                   borderRadius: AppRadius.circularLg,
-                  border: Border.all(
-                    color: isSelected
-                        ? theme.colorScheme.primary
-                        : appTheme.borderColor,
-                    width: isSelected ? 2 : 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? appTheme.primarySoft
+                          : theme.colorScheme.surface,
+                      borderRadius: AppRadius.circularLg,
+                      border: Border.all(
                         color: isSelected
                             ? theme.colorScheme.primary
-                            : appTheme.borderColor.withValues(alpha: 0.35),
-                        borderRadius: AppRadius.circularSm,
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        letter,
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: isSelected
-                              ? Colors.white
-                              : theme.colorScheme.onSurface,
-                          fontWeight: FontWeight.w700,
-                        ),
+                            : appTheme.borderColor,
+                        width: isSelected ? 2 : 1,
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Text(
-                        choice,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          fontWeight:
-                              isSelected ? FontWeight.w600 : FontWeight.w400,
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? theme.colorScheme.primary
+                                : appTheme.borderColor.withValues(alpha: 0.35),
+                            borderRadius: AppRadius.circularSm,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            letter,
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: isSelected
+                                  ? theme.colorScheme.onPrimary
+                                  : theme.colorScheme.onSurface,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Text(
+                            choice,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                            ),
+                          ),
+                        ),
+                        if (isSelected)
+                          Icon(
+                            Icons.check_circle,
+                            color: theme.colorScheme.primary,
+                            size: 22,
+                          ),
+                      ],
                     ),
-                    if (isSelected)
-                      Icon(
-                        Icons.check_circle,
-                        color: theme.colorScheme.primary,
-                        size: 22,
-                      ),
-                  ],
-                ),
-              ),
-            ),
+                  ),
+                )),
           ),
         );
       }).toList(),
@@ -455,77 +463,81 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
           child: Material(
             color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                final newList = List<String>.from(selectedValues);
-                if (isSelected) {
-                  newList.remove(choice);
-                } else {
-                  newList.add(choice);
-                }
-                _handleChanged(newList.isEmpty ? null : newList);
-              },
-              borderRadius: AppRadius.circularLg,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? appTheme.primarySoft
-                      : theme.colorScheme.surface,
+            child: Semantics(
+                checked: isSelected,
+                button: true,
+                child: InkWell(
+                  onTap: () {
+                    final newList = List<String>.from(selectedValues);
+                    if (isSelected) {
+                      newList.remove(choice);
+                    } else {
+                      newList.add(choice);
+                    }
+                    _handleChanged(newList.isEmpty ? null : newList);
+                  },
                   borderRadius: AppRadius.circularLg,
-                  border: Border.all(
-                    color: isSelected
-                        ? theme.colorScheme.primary
-                        : appTheme.borderColor,
-                    width: isSelected ? 2 : 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? appTheme.primarySoft
+                          : theme.colorScheme.surface,
+                      borderRadius: AppRadius.circularLg,
+                      border: Border.all(
                         color: isSelected
                             ? theme.colorScheme.primary
-                            : appTheme.borderColor.withValues(alpha: 0.35),
-                        borderRadius: AppRadius.circularSm,
+                            : appTheme.borderColor,
+                        width: isSelected ? 2 : 1,
                       ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        letter,
-                        style: theme.textTheme.labelLarge?.copyWith(
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? theme.colorScheme.primary
+                                : appTheme.borderColor.withValues(alpha: 0.35),
+                            borderRadius: AppRadius.circularSm,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            letter,
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: isSelected
+                                  ? theme.colorScheme.onPrimary
+                                  : theme.colorScheme.onSurface,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Text(
+                            choice,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          isSelected
+                              ? Icons.check_box
+                              : Icons.check_box_outline_blank,
                           color: isSelected
-                              ? Colors.white
-                              : theme.colorScheme.onSurface,
-                          fontWeight: FontWeight.w700,
+                              ? theme.colorScheme.primary
+                              : appTheme.textMuted,
+                          size: 22,
                         ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Text(
-                        choice,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          fontWeight:
-                              isSelected ? FontWeight.w600 : FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                    Icon(
-                      isSelected
-                          ? Icons.check_box
-                          : Icons.check_box_outline_blank,
-                      color: isSelected
-                          ? theme.colorScheme.primary
-                          : appTheme.textMuted,
-                      size: 22,
-                    ),
-                  ],
-                ),
-              ),
-            ),
+                  ),
+                )),
           ),
         );
       }).toList(),
@@ -574,13 +586,13 @@ class _QuizQuestionWidgetState extends State<QuizQuestionWidget> {
             Text(
               min.toInt().toString(),
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                color: context.appTheme.textMuted,
               ),
             ),
             Text(
               max.toInt().toString(),
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                color: context.appTheme.textMuted,
               ),
             ),
           ],
